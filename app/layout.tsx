@@ -1,0 +1,18 @@
+import type { Metadata } from 'next';
+import { AntdRegistry } from '@ant-design/nextjs-registry';
+import './globals.css';
+
+export const metadata: Metadata = {
+  title: 'Gestión de Compras - Sistema Escolar',
+  description: 'Sistema de gestión de solicitudes de compra para colegios',
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="es">
+      <body>
+        <AntdRegistry>{children}</AntdRegistry>
+      </body>
+    </html>
+  );
+}

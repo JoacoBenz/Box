@@ -1,0 +1,65 @@
+import { prisma } from './prisma';
+
+interface NotificationData {
+  tenantId: number;
+  destinatarioId: number;
+  tipo: string;
+  titulo: string;
+  mensaje: string;
+  solicitudId?: number;
+}
+
+export async function crearNotificacion(data: NotificationData): Promise<void> {
+  try {
+    await prisma.notificaciones.create({
+      data: {
+        tenant_id: data.tenantId,
+        usuario_destino_id: data.destinatarioId,
+        tipo: data.tipo,
+        titulo: data.titulo,
+        mensaje: data.mensaje,
+        solicitud_id: data.solicitudId,
+        leida: false,
+      },
+    });
+  } catch (error) {
+    console.error('Error creando notificación:', error);
+  }
+}
+
+export async function notificarPorRol(
+  tenantId: number,
+  rolNombre: string,
+  titulo: string,
+  mensaje: string,
+  solicitudId?: number
+): Promise<void> {
+  try {
+    const usuarios = await prisma.usuarios.findMany({
+      where: {
+        tenant_id: tenantId,
+        activo: true,
+        usuarios_roles: {
+          some: { rol: { nombre: rolNombre } },
+        },
+      },
+      select: { id: true },
+    });
+
+    if (usuarios.length === 0) return;
+
+    await prisma.notificaciones.createMany({
+      data: usuarios.map((u) => ({
+        tenant_id: tenantId,
+        usuario_destino_id: u.id,
+        tipo: `notif_${rolNombre}`,
+        titulo,
+        mensaje,
+        solicitud_id: solicitudId,
+        leida: false,
+      })),
+    });
+  } catch (error) {
+    console.error('Error creando notificaciones por rol:', error);
+  }
+}

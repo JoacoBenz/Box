@@ -1,0 +1,252 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model tenants {
+  id             Int      @id @default(autoincrement())
+  nombre         String   @db.VarChar(255)
+  slug           String   @unique @db.VarChar(100)
+  estado         String   @default("activo") @db.VarChar(20)
+  email_contacto String   @db.VarChar(255)
+  moneda         String   @default("ARS") @db.VarChar(10)
+  fecha_registro DateTime @default(now())
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  areas          areas[]
+  usuarios       usuarios[]
+  solicitudes    solicitudes[]
+  compras        compras[]
+  recepciones    recepciones[]
+  archivos       archivos[]
+  notificaciones notificaciones[]
+  log_auditoria  log_auditoria[]
+  configuracion  configuracion[]
+}
+
+model roles {
+  id          Int    @id @default(autoincrement())
+  nombre      String @unique @db.VarChar(50)
+  descripcion String?
+
+  usuarios_roles usuarios_roles[]
+}
+
+model areas {
+  id             Int      @id @default(autoincrement())
+  tenant_id      Int
+  nombre         String   @db.VarChar(100)
+  activo         Boolean  @default(true)
+  responsable_id Int?
+  created_at     DateTime @default(now())
+
+  tenant        tenants    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  responsable   usuarios?  @relation("area_responsable", fields: [responsable_id], references: [id])
+  usuarios_area usuarios[] @relation("usuario_area")
+  solicitudes   solicitudes[]
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, nombre])
+}
+
+model usuarios {
+  id            Int      @id @default(autoincrement())
+  tenant_id     Int
+  nombre        String   @db.VarChar(150)
+  email         String   @db.VarChar(255)
+  password_hash String   @db.VarChar(255)
+  area_id       Int?
+  activo        Boolean  @default(true)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  tenant                   tenants          @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  area                     areas?           @relation("usuario_area", fields: [area_id], references: [id])
+  areas_responsable        areas[]          @relation("area_responsable")
+  usuarios_roles           usuarios_roles[]
+  solicitudes_creadas      solicitudes[]    @relation("solicitud_solicitante")
+  solicitudes_validadas    solicitudes[]    @relation("solicitud_validador")
+  solicitudes_aprobadas    solicitudes[]    @relation("solicitud_aprobador")
+  solicitudes_rechazadas   solicitudes[]    @relation("solicitud_rechazador")
+  compras_ejecutadas       compras[]
+  recepciones_realizadas   recepciones[]
+  archivos_subidos         archivos[]
+  notificaciones_recibidas notificaciones[]
+  log_auditoria            log_auditoria[]
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, email])
+}
+
+model usuarios_roles {
+  usuario_id Int
+  rol_id     Int
+
+  usuario usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  rol     roles    @relation(fields: [rol_id], references: [id], onDelete: Cascade)
+
+  @@id([usuario_id, rol_id])
+}
+
+model solicitudes {
+  id                        Int      @id @default(autoincrement())
+  tenant_id                 Int
+  numero                    String   @db.VarChar(20)
+  titulo                    String   @db.VarChar(255)
+  descripcion               String
+  justificacion             String
+  urgencia                  String   @default("normal") @db.VarChar(20)
+  monto_estimado_total      Decimal? @db.Decimal(15, 2)
+  solicitante_id            Int
+  area_id                   Int
+  validado_por_id           Int?
+  aprobado_por_id           Int?
+  rechazado_por_id          Int?
+  estado                    String   @default("borrador") @db.VarChar(30)
+  fecha_envio               DateTime?
+  fecha_validacion          DateTime?
+  fecha_aprobacion          DateTime?
+  fecha_rechazo             DateTime?
+  observaciones_responsable String?
+  observaciones_director    String?
+  motivo_rechazo            String?
+  proveedor_sugerido        String?  @db.VarChar(255)
+  created_at                DateTime @default(now())
+  updated_at                DateTime @updatedAt
+
+  tenant        tenants   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  area          areas     @relation(fields: [area_id], references: [id])
+  solicitante   usuarios  @relation("solicitud_solicitante", fields: [solicitante_id], references: [id])
+  validado_por  usuarios? @relation("solicitud_validador", fields: [validado_por_id], references: [id])
+  aprobado_por  usuarios? @relation("solicitud_aprobador", fields: [aprobado_por_id], references: [id])
+  rechazado_por usuarios? @relation("solicitud_rechazador", fields: [rechazado_por_id], references: [id])
+
+  items_solicitud items_solicitud[]
+  compras         compras[]
+  recepciones     recepciones[]
+  notificaciones  notificaciones[]
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, numero])
+  @@index([tenant_id, estado])
+  @@index([tenant_id, solicitante_id])
+  @@index([tenant_id, area_id])
+  @@index([tenant_id, estado, area_id])
+}
+
+model items_solicitud {
+  id              Int      @id @default(autoincrement())
+  tenant_id       Int
+  solicitud_id    Int
+  descripcion     String   @db.VarChar(255)
+  cantidad        Decimal  @db.Decimal(10, 2)
+  unidad          String   @default("unidades") @db.VarChar(50)
+  precio_estimado Decimal? @db.Decimal(15, 2)
+
+  solicitud solicitudes @relation(fields: [solicitud_id], references: [id], onDelete: Cascade)
+}
+
+model compras {
+  id                  Int      @id @default(autoincrement())
+  tenant_id           Int
+  solicitud_id        Int
+  ejecutado_por_id    Int
+  proveedor_nombre    String   @db.VarChar(255)
+  proveedor_detalle   String?
+  fecha_compra        DateTime @db.Date
+  monto_total         Decimal  @db.Decimal(15, 2)
+  medio_pago          String   @db.VarChar(50)
+  referencia_bancaria String?  @db.VarChar(100)
+  numero_factura      String?  @db.VarChar(50)
+  observaciones       String?
+  created_at          DateTime @default(now())
+
+  tenant        tenants     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  solicitud     solicitudes @relation(fields: [solicitud_id], references: [id])
+  ejecutado_por usuarios    @relation(fields: [ejecutado_por_id], references: [id])
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, solicitud_id])
+}
+
+model recepciones {
+  id              Int      @id @default(autoincrement())
+  tenant_id       Int
+  solicitud_id    Int
+  receptor_id     Int
+  fecha_recepcion DateTime @default(now())
+  conforme        Boolean
+  tipo_problema   String?  @db.VarChar(50)
+  observaciones   String?
+  created_at      DateTime @default(now())
+
+  tenant    tenants     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  solicitud solicitudes @relation(fields: [solicitud_id], references: [id])
+  receptor  usuarios    @relation(fields: [receptor_id], references: [id])
+}
+
+model archivos {
+  id             Int      @id @default(autoincrement())
+  tenant_id      Int
+  entidad        String   @db.VarChar(30)
+  entidad_id     Int
+  nombre_archivo String   @db.VarChar(255)
+  ruta_archivo   String   @db.VarChar(500)
+  tamanio_bytes  BigInt?
+  subido_por_id  Int
+  created_at     DateTime @default(now())
+
+  tenant     tenants  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  subido_por usuarios @relation(fields: [subido_por_id], references: [id])
+}
+
+model notificaciones {
+  id                 Int      @id @default(autoincrement())
+  tenant_id          Int
+  usuario_destino_id Int
+  tipo               String   @db.VarChar(50)
+  titulo             String   @db.VarChar(255)
+  mensaje            String?
+  leida              Boolean  @default(false)
+  solicitud_id       Int?
+  created_at         DateTime @default(now())
+
+  tenant          tenants     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  usuario_destino usuarios    @relation(fields: [usuario_destino_id], references: [id])
+  solicitud       solicitudes? @relation(fields: [solicitud_id], references: [id])
+
+  @@index([tenant_id, usuario_destino_id, leida])
+}
+
+model log_auditoria {
+  id               BigInt   @id @default(autoincrement())
+  tenant_id        Int
+  usuario_id       Int
+  accion           String   @db.VarChar(50)
+  entidad          String   @db.VarChar(50)
+  entidad_id       Int?
+  datos_anteriores Json?
+  datos_nuevos     Json?
+  ip_address       String?  @db.VarChar(45)
+  created_at       DateTime @default(now())
+
+  tenant  tenants  @relation(fields: [tenant_id], references: [id])
+  usuario usuarios @relation(fields: [usuario_id], references: [id])
+
+  @@index([tenant_id, created_at])
+}
+
+model configuracion {
+  tenant_id Int
+  clave     String @db.VarChar(100)
+  valor     String
+
+  tenant tenants @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+  @@id([tenant_id, clave])
+}
