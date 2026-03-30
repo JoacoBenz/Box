@@ -19,6 +19,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         validado_por: { select: { id: true, nombre: true } },
         aprobado_por: { select: { id: true, nombre: true } },
         rechazado_por: { select: { id: true, nombre: true } },
+        proveedor: true,
         items_solicitud: true,
         compras: { include: { ejecutado_por: { select: { id: true, nombre: true } } } },
         recepciones: { include: { receptor: { select: { id: true, nombre: true } } } },
@@ -72,7 +73,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return Response.json({ error: { code: 'VALIDATION_ERROR', message: 'Datos inválidos', details: [{ field: 'items', message: 'Agregá al menos un ítem' }] } }, { status: 400 });
     }
 
-    const { titulo, descripcion, justificacion, urgencia, proveedor_sugerido, items } = result.data;
+    const { titulo, descripcion, justificacion, urgencia, proveedor_sugerido, proveedor_id, items } = result.data;
 
     const anterior = { ...solicitud };
 
@@ -83,6 +84,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       if (justificacion !== undefined) updateData.justificacion = justificacion;
       if (urgencia !== undefined) updateData.urgencia = urgencia;
       if (proveedor_sugerido !== undefined) updateData.proveedor_sugerido = proveedor_sugerido ?? null;
+      if (proveedor_id !== undefined) updateData.proveedor_id = proveedor_id ?? null;
 
       if (items !== undefined) {
         const montoTotal = items.reduce((acc, item) => acc + (item.precio_estimado ? Number(item.precio_estimado) * Number(item.cantidad) : 0), 0);
@@ -103,6 +105,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
             cantidad: item.cantidad,
             unidad: item.unidad ?? 'unidades',
             precio_estimado: item.precio_estimado ?? null,
+            link_producto: item.link_producto || null,
           })),
         });
       }

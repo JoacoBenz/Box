@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Form,
@@ -19,6 +19,8 @@ import {
   Tag,
 } from 'antd'
 import { UploadOutlined } from '@ant-design/icons'
+import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
+import ProveedorInfoCard from '@/components/ProveedorInfoCard'
 import type { UploadFile } from 'antd/es/upload'
 import type { Dayjs } from 'dayjs'
 import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types'
@@ -26,6 +28,17 @@ import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types'
 
 const { TextArea } = Input
 const { Title } = Typography
+
+interface ProveedorData {
+  id: number
+  nombre: string
+  cuit?: string | null
+  datos_bancarios?: string | null
+  link_pagina?: string | null
+  telefono?: string | null
+  email?: string | null
+  direccion?: string | null
+}
 
 interface SolicitudSummary {
   id: number
@@ -36,6 +49,8 @@ interface SolicitudSummary {
   monto_estimado_total: number | null
   area: { nombre: string } | null
   solicitante: { nombre: string }
+  proveedor?: ProveedorData | null
+  proveedor_id?: number | null
 }
 
 interface Props {
@@ -59,6 +74,19 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
   const [loading, setLoading] = useState(false)
   const [fileList, setFileList] = useState<UploadFile[]>([])
   const medioPago = Form.useWatch('medio_pago', form)
+
+  const prov = solicitud.proveedor
+
+  // Auto-fill proveedor fields from solicitud's proveedor
+  useEffect(() => {
+    if (prov) {
+      const detalle = [prov.cuit && `CUIT: ${prov.cuit}`, prov.datos_bancarios, prov.direccion && `Dir: ${prov.direccion}`, prov.telefono && `Tel: ${prov.telefono}`].filter(Boolean).join('\n')
+      form.setFieldsValue({
+        proveedor_nombre: prov.nombre,
+        proveedor_detalle: detalle || undefined,
+      })
+    }
+  }, [prov, form])
 
   const estadoInfo = ESTADOS_SOLICITUD[solicitud.estado as EstadoSolicitud]
   const urgenciaInfo = URGENCIAS[solicitud.urgencia as UrgenciaSolicitud]
@@ -99,6 +127,7 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
       }
 
       message.success('Compra registrada correctamente')
+      await new Promise(r => setTimeout(r, 3500))
       router.push('/compras')
     } catch (err: any) {
       if (err?.errorFields) return
@@ -140,6 +169,11 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
           )}
         </Descriptions>
       </Card>
+
+      {/* Proveedor info from solicitud (read-only) */}
+      {prov && (
+        <ProveedorInfoCard proveedor={prov} style={{ marginBottom: 24 }} />
+      )}
 
       {/* Purchase form */}
       <Card title="Datos de la Compra">
@@ -242,14 +276,13 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
           <Divider />
 
           <Space>
-            <Button
-              type="primary"
-              size="large"
+            <AnimatedSubmitButton
+              variant="send"
               onClick={handleSubmit}
-              loading={loading}
+              disabled={loading}
             >
               Registrar Compra
-            </Button>
+            </AnimatedSubmitButton>
             <Button size="large" onClick={() => router.push('/compras')} disabled={loading}>
               Cancelar
             </Button>

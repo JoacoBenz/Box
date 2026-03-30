@@ -106,6 +106,10 @@ export default function ValidacionesPage() {
         pagination={{ pageSize: 20, showSizeChanger: false }}
         size="middle"
         locale={{ emptyText: 'No hay solicitudes pendientes de validación' }}
+        rowClassName={(record: any) =>
+          record.urgencia === 'critica' ? 'urgencia-row-critica' :
+          record.urgencia === 'urgente' ? 'urgencia-row-urgente' : ''
+        }
       />
     </div>
   )

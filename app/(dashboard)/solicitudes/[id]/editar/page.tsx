@@ -17,6 +17,9 @@ import {
 } from 'antd'
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons'
 import Link from 'next/link'
+import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
+import ProveedorSelect from '@/components/ProveedorSelect'
+import ProveedorInfoCard from '@/components/ProveedorInfoCard'
 
 const { TextArea } = Input
 const { Title } = Typography
@@ -26,6 +29,7 @@ interface ItemForm {
   cantidad: number
   unidad: string
   precio_estimado?: number
+  link_producto?: string
 }
 
 interface SolicitudFormValues {
@@ -33,7 +37,7 @@ interface SolicitudFormValues {
   descripcion: string
   justificacion: string
   urgencia: 'normal' | 'urgente' | 'critica'
-  proveedor_sugerido?: string
+  proveedor_id?: number | null
   items: ItemForm[]
 }
 
@@ -46,6 +50,7 @@ export default function EditarSolicitudPage() {
   const [fetching, setFetching] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [estado, setEstado] = useState<string>('')
+  const [selectedProveedor, setSelectedProveedor] = useState<any>(null)
 
   useEffect(() => {
     fetch(`/api/solicitudes/${id}`)
@@ -59,17 +64,19 @@ export default function EditarSolicitudPage() {
           return
         }
         setEstado(data.estado)
+        if (data.proveedor) setSelectedProveedor(data.proveedor)
         form.setFieldsValue({
           titulo: data.titulo,
           descripcion: data.descripcion,
           justificacion: data.justificacion,
           urgencia: data.urgencia,
-          proveedor_sugerido: data.proveedor_sugerido ?? undefined,
+          proveedor_id: data.proveedor_id ?? undefined,
           items: data.items_solicitud.map((item: any) => ({
             descripcion: item.descripcion,
             cantidad: Number(item.cantidad),
             unidad: item.unidad,
             precio_estimado: item.precio_estimado != null ? Number(item.precio_estimado) : undefined,
+            link_producto: item.link_producto ?? undefined,
           })),
         })
       })
@@ -106,6 +113,7 @@ export default function EditarSolicitudPage() {
         message.success('Cambios guardados')
       }
 
+      if (accion === 'enviar') await new Promise(r => setTimeout(r, 3500))
       router.push(`/solicitudes/${id}`)
     } catch (err: any) {
       if (err?.errorFields) return
@@ -126,8 +134,8 @@ export default function EditarSolicitudPage() {
   const isDevuelta = estado === 'devuelta_resp' || estado === 'devuelta_dir'
 
   return (
-    <div style={{ padding: 24, maxWidth: 900 }}>
-      <Title level={3} style={{ marginBottom: 24 }}>
+    <div className="page-content" style={{ padding: '32px 24px', maxWidth: 880, margin: '0 auto' }}>
+      <Title level={3} style={{ marginBottom: 32, fontWeight: 700 }}>
         Editar Solicitud
       </Title>
 
@@ -142,8 +150,8 @@ export default function EditarSolicitudPage() {
         />
       )}
 
-      <Form form={form} layout="vertical">
-        <Card title="Información General" style={{ marginBottom: 24 }}>
+      <Form form={form} layout="vertical" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <Card title={<span style={{ fontWeight: 600, fontSize: 15 }}>Información General</span>} style={{ borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           <Form.Item
             label="Título"
             name="titulo"
@@ -183,12 +191,24 @@ export default function EditarSolicitudPage() {
             />
           </Form.Item>
 
-          <Form.Item label="Proveedor Sugerido (opcional)" name="proveedor_sugerido">
-            <Input placeholder="Nombre del proveedor" maxLength={200} />
+          <Form.Item label="Proveedor (opcional)" name="proveedor_id">
+            <ProveedorSelect
+              onChange={(id, prov) => {
+                form.setFieldValue('proveedor_id', id)
+                setSelectedProveedor(prov ? { ...prov, id } : null)
+                if (id) {
+                  fetch(`/api/proveedores/${id}`).then(r => r.json()).then(setSelectedProveedor).catch(() => {})
+                }
+              }}
+            />
           </Form.Item>
+
+          {selectedProveedor && selectedProveedor.id && (
+            <ProveedorInfoCard proveedor={selectedProveedor} style={{ marginBottom: 16 }} />
+          )}
         </Card>
 
-        <Card title="Items Solicitados" style={{ marginBottom: 24 }}>
+        <Card title={<span style={{ fontWeight: 600, fontSize: 15 }}>Items Solicitados</span>} style={{ borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           <Form.List
             name="items"
             rules={[
@@ -207,11 +227,11 @@ export default function EditarSolicitudPage() {
                   <div
                     key={key}
                     style={{
-                      border: '1px solid #f0f0f0',
-                      borderRadius: 8,
-                      padding: 16,
-                      marginBottom: 12,
-                      background: '#fafafa',
+                      border: '1px solid #e8e8e8',
+                      borderRadius: 10,
+                      padding: '20px 20px 12px',
+                      marginBottom: 16,
+                      background: '#fafbfc',
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -268,6 +288,15 @@ export default function EditarSolicitudPage() {
                         <InputNumber min={0} precision={2} prefix="$" style={{ width: 160 }} placeholder="0.00" />
                       </Form.Item>
                     </Space>
+
+                    <Form.Item
+                      {...restField}
+                      label="Link del producto (opcional)"
+                      name={[name, 'link_producto']}
+                      style={{ marginTop: 12, marginBottom: 0 }}
+                    >
+                      <Input placeholder="https://pagina.com/producto" maxLength={500} />
+                    </Form.Item>
                   </div>
                 ))}
 
@@ -287,7 +316,7 @@ export default function EditarSolicitudPage() {
           </Form.List>
         </Card>
 
-        <Space>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', paddingTop: 8 }}>
           <Button
             size="large"
             onClick={() => handleSubmit('guardar')}
@@ -296,19 +325,17 @@ export default function EditarSolicitudPage() {
           >
             Guardar Cambios
           </Button>
-          <Button
-            type="primary"
-            size="large"
+          <AnimatedSubmitButton
+            variant="send"
             onClick={() => handleSubmit('enviar')}
-            loading={loading === 'enviar'}
             disabled={loading === 'guardar'}
           >
             Guardar y Enviar
-          </Button>
+          </AnimatedSubmitButton>
           <Button size="large" onClick={() => router.push(`/solicitudes/${id}`)} disabled={!!loading}>
             Cancelar
           </Button>
-        </Space>
+        </div>
       </Form>
     </div>
   )

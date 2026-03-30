@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: { code: 'VALIDATION_ERROR', message: 'Datos inválidos', details: result.error.issues.map(i => ({ field: i.path.join('.'), message: i.message })) } }, { status: 400 });
     }
 
-    const { titulo, descripcion, justificacion, urgencia, proveedor_sugerido, items } = result.data;
+    const { titulo, descripcion, justificacion, urgencia, proveedor_sugerido, proveedor_id, items } = result.data;
 
     const montoTotal = items.reduce((acc, item) => {
       return acc + (item.precio_estimado ? Number(item.precio_estimado) * Number(item.cantidad) : 0);
@@ -128,6 +128,7 @@ export async function POST(request: NextRequest) {
           justificacion,
           urgencia,
           proveedor_sugerido: proveedor_sugerido ?? null,
+          proveedor_id: proveedor_id ?? null,
           solicitante_id: session.userId,
           area_id: session.areaId!,
           estado,
@@ -144,6 +145,7 @@ export async function POST(request: NextRequest) {
           cantidad: item.cantidad,
           unidad: item.unidad ?? 'unidades',
           precio_estimado: item.precio_estimado ?? null,
+          link_producto: item.link_producto || null,
         })),
       });
 

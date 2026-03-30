@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Form,
@@ -15,6 +15,9 @@ import {
   Typography,
 } from 'antd'
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons'
+import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
+import ProveedorSelect from '@/components/ProveedorSelect'
+import ProveedorInfoCard from '@/components/ProveedorInfoCard'
 
 const { TextArea } = Input
 const { Title } = Typography
@@ -24,6 +27,7 @@ interface ItemForm {
   cantidad: number
   unidad: string
   precio_estimado?: number
+  link_producto?: string
 }
 
 interface SolicitudFormValues {
@@ -31,7 +35,7 @@ interface SolicitudFormValues {
   descripcion: string
   justificacion: string
   urgencia: 'normal' | 'urgente' | 'critica'
-  proveedor_sugerido?: string
+  proveedor_id?: number | null
   monto_estimado_total?: number
   items: ItemForm[]
 }
@@ -40,6 +44,7 @@ export default function NuevaSolicitudPage() {
   const router = useRouter()
   const [form] = Form.useForm<SolicitudFormValues>()
   const [loading, setLoading] = useState<'borrador' | 'enviar' | null>(null)
+  const [selectedProveedor, setSelectedProveedor] = useState<any>(null)
 
   async function handleSubmit(accion: 'borrador' | 'enviar') {
     try {
@@ -62,6 +67,8 @@ export default function NuevaSolicitudPage() {
       message.success(
         accion === 'borrador' ? 'Borrador guardado correctamente' : 'Solicitud enviada correctamente'
       )
+      // Let the animated button finish before navigating
+      if (accion === 'enviar') await new Promise(r => setTimeout(r, 3500))
       router.push('/solicitudes')
     } catch (err: any) {
       if (err?.errorFields) return // antd validation errors — already shown
@@ -72,13 +79,13 @@ export default function NuevaSolicitudPage() {
   }
 
   return (
-    <div style={{ padding: 24, maxWidth: 900 }}>
-      <Title level={3} style={{ marginBottom: 24 }}>
+    <div className="page-content" style={{ padding: '32px 24px', maxWidth: 880, margin: '0 auto' }}>
+      <Title level={3} style={{ marginBottom: 32, fontWeight: 700 }}>
         Nueva Solicitud de Compra
       </Title>
 
-      <Form form={form} layout="vertical" initialValues={{ urgencia: 'normal', items: [{ unidad: 'unidades', cantidad: 1 }] }}>
-        <Card title="Información General" style={{ marginBottom: 24 }}>
+      <Form form={form} layout="vertical" initialValues={{ urgencia: 'normal', items: [{ unidad: 'unidades', cantidad: 1 }] }} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <Card title={<span style={{ fontWeight: 600, fontSize: 15 }}>Información General</span>} style={{ borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           <Form.Item
             label="Título"
             name="titulo"
@@ -118,9 +125,22 @@ export default function NuevaSolicitudPage() {
             />
           </Form.Item>
 
-          <Form.Item label="Proveedor Sugerido (opcional)" name="proveedor_sugerido">
-            <Input placeholder="Nombre del proveedor" maxLength={200} />
+          <Form.Item label="Proveedor (opcional)" name="proveedor_id">
+            <ProveedorSelect
+              onChange={(id, prov) => {
+                form.setFieldValue('proveedor_id', id)
+                setSelectedProveedor(prov ? { ...prov, id } : null)
+                // Fetch full proveedor details if selected
+                if (id) {
+                  fetch(`/api/proveedores/${id}`).then(r => r.json()).then(setSelectedProveedor).catch(() => {})
+                }
+              }}
+            />
           </Form.Item>
+
+          {selectedProveedor && selectedProveedor.id && (
+            <ProveedorInfoCard proveedor={selectedProveedor} style={{ marginBottom: 16 }} />
+          )}
 
           <Form.Item label="Monto Estimado Total (opcional)" name="monto_estimado_total">
             <InputNumber
@@ -133,7 +153,7 @@ export default function NuevaSolicitudPage() {
           </Form.Item>
         </Card>
 
-        <Card title="Items Solicitados" style={{ marginBottom: 24 }}>
+        <Card title={<span style={{ fontWeight: 600, fontSize: 15 }}>Items Solicitados</span>} style={{ borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           <Form.List
             name="items"
             rules={[
@@ -152,11 +172,11 @@ export default function NuevaSolicitudPage() {
                   <div
                     key={key}
                     style={{
-                      border: '1px solid #f0f0f0',
-                      borderRadius: 8,
-                      padding: 16,
-                      marginBottom: 12,
-                      background: '#fafafa',
+                      border: '1px solid #e8e8e8',
+                      borderRadius: 10,
+                      padding: '20px 20px 12px',
+                      marginBottom: 16,
+                      background: '#fafbfc',
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -213,6 +233,15 @@ export default function NuevaSolicitudPage() {
                         <InputNumber min={0} precision={2} prefix="$" style={{ width: 160 }} placeholder="0.00" />
                       </Form.Item>
                     </Space>
+
+                    <Form.Item
+                      {...restField}
+                      label="Link del producto (opcional)"
+                      name={[name, 'link_producto']}
+                      style={{ marginTop: 12, marginBottom: 0 }}
+                    >
+                      <Input placeholder="https://pagina.com/producto" maxLength={500} />
+                    </Form.Item>
                   </div>
                 ))}
 
@@ -232,7 +261,7 @@ export default function NuevaSolicitudPage() {
           </Form.List>
         </Card>
 
-        <Space>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', paddingTop: 8 }}>
           <Button
             size="large"
             onClick={() => handleSubmit('borrador')}
@@ -241,19 +270,17 @@ export default function NuevaSolicitudPage() {
           >
             Guardar Borrador
           </Button>
-          <Button
-            type="primary"
-            size="large"
+          <AnimatedSubmitButton
+            variant="send"
             onClick={() => handleSubmit('enviar')}
-            loading={loading === 'enviar'}
             disabled={loading === 'borrador'}
           >
             Enviar Solicitud
-          </Button>
+          </AnimatedSubmitButton>
           <Button size="large" onClick={() => router.push('/solicitudes')} disabled={!!loading}>
             Cancelar
           </Button>
-        </Space>
+        </div>
       </Form>
     </div>
   )

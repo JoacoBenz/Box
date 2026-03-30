@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 * {
   box-sizing: border-box;
@@ -14,7 +14,17 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Smooth transitions for interactive elements */
+/* ── Page content fade-in ── */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-content {
+  animation: fadeSlideUp 0.3s ease-out;
+}
+
+/* ── Smooth transitions ── */
 .ant-btn,
 .ant-card,
 .ant-tag,
@@ -22,44 +32,68 @@ body {
   transition: all 0.2s ease !important;
 }
 
+.ant-btn:hover {
+  transform: scale(1.02);
+}
+
 .ant-card:hover {
-  box-shadow: 0 4px 12px rgb(0 0 0 / 0.08) !important;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.08) !important;
 }
 
-/* Sidebar refinement */
+/* ── Sidebar ── */
 .ant-layout-sider {
-  box-shadow: 1px 0 8px rgb(0 0 0 / 0.04) !important;
+  box-shadow: 1px 0 12px rgb(0 0 0 / 0.05) !important;
 }
 
-/* Table row hover */
+/* Active menu item left accent */
+.ant-menu-item-selected {
+  border-left: 3px solid #4f46e5 !important;
+}
+
+/* ── Table enhancements ── */
+.ant-table-thead > tr > th {
+  text-transform: uppercase !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em !important;
+  color: #64748b !important;
+  background: #f8fafc !important;
+}
+
 .ant-table-tbody > tr:hover > td {
   background: #f1f5f9 !important;
 }
 
-/* Progress bar smoothness */
-.ant-progress-bg {
-  transition: width 0.4s ease !important;
+.ant-table-tbody > tr {
+  transition: background 0.15s ease !important;
 }
 
-/* Tag subtle shadow */
+/* ── Progress bar ── */
+.ant-progress-bg {
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* ── Tags: pill-shaped, pastel ── */
 .ant-tag {
   border: none !important;
   font-weight: 500 !important;
+  border-radius: 20px !important;
+  padding: 2px 10px !important;
 }
 
-/* Descriptions modern look */
+/* ── Descriptions modern look ── */
 .ant-descriptions-bordered .ant-descriptions-item-label {
   background: #f8fafc !important;
   font-weight: 500 !important;
   color: #64748b !important;
 }
 
-/* Timeline polish */
+/* ── Timeline polish ── */
 .ant-timeline-item-content {
   padding-bottom: 16px !important;
 }
 
-/* Scrollbar styling */
+/* ── Scrollbar ── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -78,7 +112,7 @@ body {
   background: #94a3b8;
 }
 
-/* Primary gradient button */
+/* ── Primary gradient button ── */
 .btn-primary-gradient {
   background: linear-gradient(135deg, #4f46e5, #7c3aed);
   color: #fff;
@@ -95,4 +129,158 @@ body {
 .btn-primary-gradient:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+}
+
+/* ── Glassmorphism stat cards ── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  border-radius: 16px !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.glass-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.1) !important;
+}
+
+.glass-card.glass-blue {
+  border-left: 3px solid #3b82f6 !important;
+}
+
+.glass-card.glass-green {
+  border-left: 3px solid #22c55e !important;
+}
+
+.glass-card.glass-orange {
+  border-left: 3px solid #f59e0b !important;
+}
+
+.glass-card.glass-purple {
+  border-left: 3px solid #8b5cf6 !important;
+}
+
+.glass-card.glass-red {
+  border-left: 3px solid #ef4444 !important;
+}
+
+.glass-card.glass-cyan {
+  border-left: 3px solid #06b6d4 !important;
+}
+
+/* ── Icon containers for stat cards ── */
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.stat-icon.icon-blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.stat-icon.icon-green { background: linear-gradient(135deg, #22c55e, #16a34a); }
+.stat-icon.icon-orange { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.stat-icon.icon-purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+.stat-icon.icon-red { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.stat-icon.icon-cyan { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+
+/* ── Solicitud card list ── */
+.solicitud-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+  border: 1px solid #e2e8f0;
+}
+
+.solicitud-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.08);
+}
+
+.solicitud-card.urgencia-normal { border-left: 4px solid #3b82f6; }
+.solicitud-card.urgencia-urgente { border-left: 4px solid #f59e0b; }
+.solicitud-card.urgencia-critica { border-left: 4px solid #ef4444; }
+
+/* ── Count-up animation ── */
+@keyframes countFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.count-up {
+  animation: countFadeIn 0.4s ease-out both;
+}
+
+/* ── Stagger fade-in for lists ── */
+@keyframes staggerIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Empty state ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  color: #94a3b8;
+}
+
+.empty-state svg {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+/* ── Urgencia row highlights ── */
+.urgencia-row-urgente td {
+  background: #fff7ed !important;
+}
+
+.urgencia-row-critica td {
+  background: #fef2f2 !important;
+}
+
+.urgencia-row-critica td:first-child {
+  position: relative;
+}
+
+.urgencia-row-critica td:first-child::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: urgenciaPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes urgenciaPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+  50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

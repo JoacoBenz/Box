@@ -26,6 +26,7 @@ export default async function RegistrarCompraPage({ params }: PageProps) {
     include: {
       area: { select: { nombre: true } },
       solicitante: { select: { nombre: true } },
+      proveedor: true,
     },
   })
 

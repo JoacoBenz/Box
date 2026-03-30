@@ -122,6 +122,10 @@ export default function SolicitudesTable({ solicitudes, estadoFilter, urgenciaFi
         dataSource={solicitudes}
         pagination={{ pageSize: 20, showSizeChanger: false }}
         size="middle"
+        rowClassName={(record: any) =>
+          record.urgencia === 'critica' ? 'urgencia-row-critica' :
+          record.urgencia === 'urgente' ? 'urgencia-row-urgente' : ''
+        }
       />
     </div>
   )

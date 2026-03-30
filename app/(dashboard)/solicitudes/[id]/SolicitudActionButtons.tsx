@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, Space, Modal, Form, Input, Radio, Select, Typography, Tag } from 'antd'
 import Link from 'next/link'
+import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
 
 const { TextArea } = Input
 
@@ -135,20 +136,15 @@ export default function SolicitudActionButtons({
         )}
 
         {canEnviar && (
-          <Button type="primary" loading={loading} onClick={handleEnviar}>
+          <AnimatedSubmitButton variant="send" onClick={handleEnviar}>
             Enviar
-          </Button>
+          </AnimatedSubmitButton>
         )}
 
         {canValidar && (
-          <Button
-            type="primary"
-            style={{ background: '#13c2c2', borderColor: '#13c2c2' }}
-            loading={loading}
-            onClick={handleValidar}
-          >
+          <AnimatedSubmitButton variant="approve" onClick={handleValidar}>
             Validar
-          </Button>
+          </AnimatedSubmitButton>
         )}
 
         {canDevolver && (
@@ -158,14 +154,9 @@ export default function SolicitudActionButtons({
         )}
 
         {canAprobar && (
-          <Button
-            type="primary"
-            style={{ background: '#52c41a', borderColor: '#52c41a' }}
-            loading={loading}
-            onClick={handleAprobar}
-          >
+          <AnimatedSubmitButton variant="approve" onClick={handleAprobar}>
             Aprobar
-          </Button>
+          </AnimatedSubmitButton>
         )}
 
         {canRechazar && (

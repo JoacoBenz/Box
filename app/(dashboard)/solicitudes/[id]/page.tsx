@@ -28,6 +28,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
     include: {
       area: true,
       solicitante: true,
+      proveedor: true,
       validado_por: true,
       aprobado_por: true,
       rechazado_por: true,
@@ -61,6 +62,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
     cantidad: Number(item.cantidad),
     unidad: item.unidad,
     precio_estimado: item.precio_estimado != null ? Number(item.precio_estimado) : null,
+    link_producto: item.link_producto ?? null,
   }))
 
   // Build timeline from audit log for full traceability
@@ -140,47 +142,66 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
     })
   }
 
+  const STATUS_BG: Record<string, string> = {
+    borrador: '#f1f5f9',
+    enviada: '#eff6ff',
+    devuelta_resp: '#fffbeb',
+    devuelta_dir: '#fffbeb',
+    validada: '#ecfeff',
+    aprobada: '#f0fdf4',
+    rechazada: '#fef2f2',
+    comprada: '#faf5ff',
+    recibida: '#f7fee7',
+    recibida_con_obs: '#fff7ed',
+    cerrada: '#f1f5f9',
+  }
+
   return (
-    <div style={{ maxWidth: 960, margin: '0 auto' }}>
-      {/* Header */}
-      <div
-        style={{
+    <div className="page-content" style={{ maxWidth: 960, margin: '0 auto' }}>
+      {/* Hero Header with status color strip */}
+      <div style={{
+        background: STATUS_BG[estado] ?? '#f1f5f9',
+        borderRadius: 16,
+        padding: '24px 28px',
+        marginBottom: 24,
+        border: '1px solid rgba(0,0,0,0.04)',
+      }}>
+        <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-          marginBottom: 24,
           gap: 16,
-        }}
-      >
-        <div>
-          <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 6 }}>
-            <Link href="/solicitudes" style={{ color: '#4f46e5', fontWeight: 500 }}>
-              &larr; Volver a Solicitudes
-            </Link>
+        }}>
+          <div>
+            <div style={{ fontSize: 13, marginBottom: 8 }}>
+              <Link href="/solicitudes" style={{ color: '#4f46e5', fontWeight: 500, textDecoration: 'none' }}>
+                &larr; Volver a Solicitudes
+              </Link>
+            </div>
+            <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: '#1e293b', letterSpacing: '-0.5px' }}>{solicitud.titulo}</h1>
+            <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: '#64748b', fontSize: 13, fontWeight: 600 }}>{solicitud.numero}</span>
+              {estadoInfo && <Tag color={estadoInfo.color}>{estadoInfo.label}</Tag>}
+              {urgenciaInfo && <Tag color={urgenciaInfo.color}>{urgenciaInfo.label}</Tag>}
+            </div>
           </div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#1e293b', letterSpacing: '-0.3px' }}>{solicitud.titulo}</h1>
-          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ color: '#94a3b8', fontSize: 13, fontWeight: 500 }}>{solicitud.numero}</span>
-            {estadoInfo && <Tag color={estadoInfo.color}>{estadoInfo.label}</Tag>}
-            {urgenciaInfo && <Tag color={urgenciaInfo.color}>{urgenciaInfo.label}</Tag>}
-          </div>
-        </div>
 
-        {/* Action buttons — client component */}
-        <SolicitudActionButtons
-          solicitudId={solicitud.id}
-          estado={estado}
-          solicitanteId={solicitud.solicitante_id}
-          solicitudAreaId={solicitud.area_id ?? null}
-          sessionUserId={sessionUserId}
-          sessionRoles={sessionRoles}
-          sessionAreaId={sessionAreaId}
-          isAreaResponsable={isAreaResponsable}
-        />
+          {/* Action buttons — client component */}
+          <SolicitudActionButtons
+            solicitudId={solicitud.id}
+            estado={estado}
+            solicitanteId={solicitud.solicitante_id}
+            solicitudAreaId={solicitud.area_id ?? null}
+            sessionUserId={sessionUserId}
+            sessionRoles={sessionRoles}
+            sessionAreaId={sessionAreaId}
+            isAreaResponsable={isAreaResponsable}
+          />
+        </div>
       </div>
 
       {/* Main info */}
-      <Card title="Detalle de la Solicitud" style={{ marginBottom: 24 }}>
+      <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Detalle de la Solicitud</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
         <Descriptions column={2} bordered size="small">
           <Descriptions.Item label="Solicitante">{solicitud.solicitante.nombre}</Descriptions.Item>
           <Descriptions.Item label="Área">{solicitud.area?.nombre ?? '—'}</Descriptions.Item>
@@ -192,7 +213,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
               ? new Date(solicitud.fecha_envio).toLocaleDateString('es-AR')
               : '—'}
           </Descriptions.Item>
-          {solicitud.proveedor_sugerido && (
+          {!solicitud.proveedor && solicitud.proveedor_sugerido && (
             <Descriptions.Item label="Proveedor Sugerido" span={2}>
               {solicitud.proveedor_sugerido}
             </Descriptions.Item>
@@ -226,14 +247,50 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
         </Descriptions>
       </Card>
 
+      {/* Proveedor info (read-only) */}
+      {solicitud.proveedor && (
+        <Card
+          title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Proveedor</span>}
+          style={{ marginBottom: 24, borderRadius: 16 }}
+        >
+          <Descriptions column={2} bordered size="small">
+            <Descriptions.Item label="Nombre">{solicitud.proveedor.nombre}</Descriptions.Item>
+            {solicitud.proveedor.cuit && (
+              <Descriptions.Item label="CUIT">{solicitud.proveedor.cuit}</Descriptions.Item>
+            )}
+            {solicitud.proveedor.telefono && (
+              <Descriptions.Item label="Teléfono">{solicitud.proveedor.telefono}</Descriptions.Item>
+            )}
+            {solicitud.proveedor.email && (
+              <Descriptions.Item label="Email">{solicitud.proveedor.email}</Descriptions.Item>
+            )}
+            {solicitud.proveedor.direccion && (
+              <Descriptions.Item label="Dirección" span={2}>{solicitud.proveedor.direccion}</Descriptions.Item>
+            )}
+            {solicitud.proveedor.datos_bancarios && (
+              <Descriptions.Item label="Datos Bancarios" span={2}>
+                <span style={{ whiteSpace: 'pre-line' }}>{solicitud.proveedor.datos_bancarios}</span>
+              </Descriptions.Item>
+            )}
+            {solicitud.proveedor.link_pagina && (
+              <Descriptions.Item label="Web" span={2}>
+                <a href={solicitud.proveedor.link_pagina} target="_blank" rel="noopener noreferrer">
+                  {solicitud.proveedor.link_pagina}
+                </a>
+              </Descriptions.Item>
+            )}
+          </Descriptions>
+        </Card>
+      )}
+
       {/* Items */}
-      <Card title="Ítems Solicitados" style={{ marginBottom: 24 }}>
+      <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Ítems Solicitados</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
         <ItemsTable items={items} />
       </Card>
 
       {/* Compra info */}
       {solicitud.compras.length > 0 && (
-        <Card title="Información de Compra" style={{ marginBottom: 24 }}>
+        <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Información de Compra</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
           {solicitud.compras.map((compra) => (
             <Descriptions key={compra.id} column={2} bordered size="small">
               <Descriptions.Item label="Proveedor">{compra.proveedor_nombre}</Descriptions.Item>
@@ -269,7 +326,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
 
       {/* Recepciones */}
       {solicitud.recepciones.length > 0 && (
-        <Card title="Recepciones" style={{ marginBottom: 24 }}>
+        <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Recepciones</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
           {solicitud.recepciones.map((rec) => (
             <Descriptions key={rec.id} column={2} bordered size="small">
               <Descriptions.Item label="Confirmado por">
@@ -294,7 +351,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
       )}
 
       {/* Timeline */}
-      <Card title="Historial">
+      <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Historial</span>} style={{ borderRadius: 16 }}>
         <Timeline items={timelineItems} />
       </Card>
     </div>

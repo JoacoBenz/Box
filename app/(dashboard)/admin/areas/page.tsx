@@ -144,9 +144,9 @@ export default function AdminAreasPage() {
   ]
 
   return (
-    <div style={{ padding: 24 }}>
+    <div className="page-content" style={{ padding: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>Áreas</Title>
+        <Title level={3} style={{ margin: 0, fontWeight: 800, color: '#1e293b', letterSpacing: '-0.5px' }}>Áreas</Title>
         <Button type="primary" onClick={openCreate} style={{ fontWeight: 600 }}>+ Nueva &Aacute;rea</Button>
       </div>
 

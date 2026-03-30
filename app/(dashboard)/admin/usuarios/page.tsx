@@ -207,9 +207,9 @@ export default function AdminUsuariosPage() {
   ]
 
   return (
-    <div style={{ padding: 24 }}>
+    <div className="page-content" style={{ padding: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>Usuarios</Title>
+        <Title level={3} style={{ margin: 0, fontWeight: 800, color: '#1e293b', letterSpacing: '-0.5px' }}>Usuarios</Title>
         <Button type="primary" onClick={openCreate} style={{ fontWeight: 600 }}>+ Nuevo Usuario</Button>
       </div>
 

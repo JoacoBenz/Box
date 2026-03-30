@@ -44,7 +44,10 @@ export async function POST(request: NextRequest) {
     }
 
     const db = tenantPrisma(session.tenantId);
-    const solicitud = await db.solicitudes.findFirst({ where: { id: result.data.solicitud_id } });
+    const solicitud = await db.solicitudes.findFirst({
+      where: { id: result.data.solicitud_id },
+      include: { proveedor: true },
+    });
     if (!solicitud) return Response.json({ error: { code: 'NOT_FOUND', message: 'Solicitud no encontrada' } }, { status: 404 });
     if (solicitud.estado !== 'aprobada') {
       return Response.json({ error: { code: 'BAD_REQUEST', message: 'Solo se pueden comprar solicitudes aprobadas' } }, { status: 400 });
@@ -68,6 +71,7 @@ export async function POST(request: NextRequest) {
           tenant_id: session.tenantId,
           solicitud_id: result.data.solicitud_id,
           ejecutado_por_id: session.userId,
+          proveedor_id: result.data.proveedor_id ?? solicitud.proveedor_id ?? null,
           proveedor_nombre: result.data.proveedor_nombre,
           proveedor_detalle: result.data.proveedor_detalle ?? null,
           fecha_compra: new Date(result.data.fecha_compra),

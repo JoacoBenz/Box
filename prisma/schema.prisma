@@ -27,6 +27,7 @@ model tenants {
   notificaciones notificaciones[]
   log_auditoria  log_auditoria[]
   configuracion  configuracion[]
+  proveedores    proveedores[]
 }
 
 model roles {
@@ -116,10 +117,12 @@ model solicitudes {
   observaciones_director    String?
   motivo_rechazo            String?
   proveedor_sugerido        String?  @db.VarChar(255)
+  proveedor_id              Int?
   created_at                DateTime @default(now())
   updated_at                DateTime @updatedAt
 
-  tenant        tenants   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  tenant        tenants      @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  proveedor     proveedores? @relation(fields: [proveedor_id], references: [id])
   area          areas     @relation(fields: [area_id], references: [id])
   solicitante   usuarios  @relation("solicitud_solicitante", fields: [solicitante_id], references: [id])
   validado_por  usuarios? @relation("solicitud_validador", fields: [validado_por_id], references: [id])
@@ -147,6 +150,7 @@ model items_solicitud {
   cantidad        Decimal  @db.Decimal(10, 2)
   unidad          String   @default("unidades") @db.VarChar(50)
   precio_estimado Decimal? @db.Decimal(15, 2)
+  link_producto   String?  @db.VarChar(500)
 
   solicitud solicitudes @relation(fields: [solicitud_id], references: [id], onDelete: Cascade)
 }
@@ -156,6 +160,7 @@ model compras {
   tenant_id           Int
   solicitud_id        Int
   ejecutado_por_id    Int
+  proveedor_id        Int?
   proveedor_nombre    String   @db.VarChar(255)
   proveedor_detalle   String?
   fecha_compra        DateTime @db.Date
@@ -166,9 +171,10 @@ model compras {
   observaciones       String?
   created_at          DateTime @default(now())
 
-  tenant        tenants     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-  solicitud     solicitudes @relation(fields: [solicitud_id], references: [id])
-  ejecutado_por usuarios    @relation(fields: [ejecutado_por_id], references: [id])
+  tenant        tenants      @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  solicitud     solicitudes  @relation(fields: [solicitud_id], references: [id])
+  ejecutado_por usuarios     @relation(fields: [ejecutado_por_id], references: [id])
+  proveedor     proveedores? @relation(fields: [proveedor_id], references: [id])
 
   @@unique([tenant_id, id])
   @@index([tenant_id, solicitud_id])
@@ -249,4 +255,26 @@ model configuracion {
   tenant tenants @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
 
   @@id([tenant_id, clave])
+}
+
+model proveedores {
+  id              Int      @id @default(autoincrement())
+  tenant_id       Int
+  nombre          String   @db.VarChar(255)
+  cuit            String?  @db.VarChar(13)
+  datos_bancarios String?
+  link_pagina     String?  @db.VarChar(500)
+  telefono        String?  @db.VarChar(50)
+  email           String?  @db.VarChar(255)
+  direccion       String?  @db.VarChar(500)
+  activo          Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  tenant      tenants       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  solicitudes solicitudes[]
+  compras     compras[]
+
+  @@unique([tenant_id, cuit])
+  @@index([tenant_id, nombre])
 }

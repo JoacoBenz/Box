@@ -32,6 +32,7 @@ export const itemSolicitudSchema = z.object({
   cantidad: z.number().positive('Cantidad debe ser mayor a 0'),
   unidad: z.string().max(50).default('unidades'),
   precio_estimado: z.number().nonnegative().optional().nullable(),
+  link_producto: z.string().url('URL inválida').max(500).optional().nullable().or(z.literal('')),
 });
 
 export const solicitudSchema = z.object({
@@ -40,11 +41,23 @@ export const solicitudSchema = z.object({
   justificacion: z.string().min(10, 'Explicá por qué se necesita esta compra'),
   urgencia: z.enum(['normal', 'urgente', 'critica']),
   proveedor_sugerido: z.string().max(255).optional().nullable(),
+  proveedor_id: z.number().int().positive().optional().nullable(),
   items: z.array(itemSolicitudSchema).min(1, 'Agregá al menos un ítem'),
+});
+
+export const proveedorSchema = z.object({
+  nombre: z.string().min(2, 'Mínimo 2 caracteres').max(255),
+  cuit: z.string().max(13).optional().nullable().or(z.literal('')),
+  datos_bancarios: z.string().optional().nullable().or(z.literal('')),
+  link_pagina: z.string().url('URL inválida').max(500).optional().nullable().or(z.literal('')),
+  telefono: z.string().max(50).optional().nullable().or(z.literal('')),
+  email: z.string().email('Email inválido').max(255).optional().nullable().or(z.literal('')),
+  direccion: z.string().max(500).optional().nullable().or(z.literal('')),
 });
 
 export const compraSchema = z.object({
   solicitud_id: z.number().int().positive(),
+  proveedor_id: z.number().int().positive().optional().nullable(),
   proveedor_nombre: z.string().min(2, 'Nombre del proveedor requerido').max(255),
   proveedor_detalle: z.string().optional().nullable(),
   fecha_compra: z.string().refine((val) => !isNaN(Date.parse(val)), 'Fecha inválida'),
