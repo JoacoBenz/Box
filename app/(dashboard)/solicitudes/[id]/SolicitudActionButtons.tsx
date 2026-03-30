@@ -15,6 +15,7 @@ interface Props {
   sessionUserId: number
   sessionRoles: string[]
   sessionAreaId: number | null
+  isAreaResponsable: boolean
 }
 
 export default function SolicitudActionButtons({
@@ -25,6 +26,7 @@ export default function SolicitudActionButtons({
   sessionUserId,
   sessionRoles,
   sessionAreaId,
+  isAreaResponsable,
 }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -48,18 +50,19 @@ export default function SolicitudActionButtons({
   const isSameArea = isAdmin || (solicitudAreaId != null && sessionAreaId === solicitudAreaId)
 
   // Button visibility must match backend role checks exactly to avoid 403s
+  const canEditar = isSolicitante && isOwner && ['borrador', 'devuelta_resp', 'devuelta_dir'].includes(estado)
   const canEnviar = isSolicitante && isOwner && ['borrador', 'devuelta_resp', 'devuelta_dir'].includes(estado)
-  const canValidar = isResponsable && isSameArea && ['enviada', 'devuelta_dir'].includes(estado)
-  const canDevolver = (isResponsable && isSameArea && estado === 'enviada') || (isDirector && estado === 'validada')
+  const canValidar = isResponsable && isAreaResponsable && ['enviada', 'devuelta_dir'].includes(estado)
+  const canDevolver = (isResponsable && isAreaResponsable && estado === 'enviada') || (isDirector && estado === 'validada')
   const canAprobar = isDirector && estado === 'validada'
   const canRechazar = isDirector && estado === 'validada'
   const canRegistrarCompra = isTesoreria && estado === 'aprobada'
-  const canConfirmarRecepcion = (isSolicitante || isResponsable) && (isOwner || isSameArea) && estado === 'comprada'
+  const canConfirmarRecepcion = ((isSolicitante && isOwner) || (isResponsable && isAreaResponsable)) && estado === 'comprada'
   const canCerrar = (isTesoreria || isAdmin) && estado === 'recibida_con_obs'
   const isCerrada = estado === 'cerrada'
 
   const hasAnyAction =
-    canEnviar || canValidar || canDevolver || canAprobar ||
+    canEditar || canEnviar || canValidar || canDevolver || canAprobar ||
     canRechazar || canRegistrarCompra || canConfirmarRecepcion || canCerrar || isCerrada
 
   async function postAction(path: string, body?: Record<string, unknown>) {
@@ -120,12 +123,16 @@ export default function SolicitudActionButtons({
     recepcionForm.resetFields()
   }
 
-  if (!hasAnyAction) return null
-
   return (
     <>
-      <Space wrap>
+      {!hasAnyAction ? null : <Space wrap>
         {isCerrada && <Tag color="default">Cerrada</Tag>}
+
+        {canEditar && (
+          <Link href={`/solicitudes/${solicitudId}/editar`}>
+            <Button>Editar</Button>
+          </Link>
+        )}
 
         {canEnviar && (
           <Button type="primary" loading={loading} onClick={handleEnviar}>
@@ -182,7 +189,7 @@ export default function SolicitudActionButtons({
             Confirmar Recepción
           </Button>
         )}
-      </Space>
+      </Space>}
 
       {/* Modal: Devolver */}
       <Modal
@@ -193,7 +200,7 @@ export default function SolicitudActionButtons({
         okText="Devolver"
         okButtonProps={{ danger: true, loading }}
         cancelText="Cancelar"
-        destroyOnHidden
+        destroyOnHidden={false}
       >
         <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
           Ingrese el motivo por el cual se devuelve esta solicitud al solicitante.
@@ -218,7 +225,7 @@ export default function SolicitudActionButtons({
         okText="Rechazar"
         okButtonProps={{ danger: true, loading }}
         cancelText="Cancelar"
-        destroyOnHidden
+        destroyOnHidden={false}
       >
         <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
           Ingrese el motivo por el cual se rechaza esta solicitud.
@@ -243,7 +250,7 @@ export default function SolicitudActionButtons({
         okText="Confirmar"
         okButtonProps={{ loading }}
         cancelText="Cancelar"
-        destroyOnHidden
+        destroyOnHidden={false}
       >
         <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
           Confirme si los artículos fueron recibidos correctamente.

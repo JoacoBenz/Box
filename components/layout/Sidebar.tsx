@@ -75,16 +75,42 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
       collapsible
       collapsed={collapsed}
       trigger={null}
-      width={220}
-      style={{ background: '#fff', borderRight: '1px solid #f0f0f0' }}
+      width={240}
+      style={{
+        background: '#fff',
+        borderRight: 'none',
+      }}
     >
-      <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #f0f0f0' }}>
-        {!collapsed && <span style={{ fontWeight: 700, fontSize: 14, color: '#1677ff' }}>Gestión de Compras</span>}
+      <div style={{
+        height: 64,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        borderBottom: '1px solid #f1f5f9',
+      }}>
+        <div style={{
+          width: 32,
+          height: 32,
+          borderRadius: 10,
+          background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <path d="M16 10a4 4 0 01-8 0" />
+          </svg>
+        </div>
+        {!collapsed && <span style={{ fontWeight: 700, fontSize: 15, color: '#1e293b', letterSpacing: '-0.3px' }}>ComprasEdu</span>}
       </div>
       <Menu
         mode="inline"
         selectedKeys={selectedKey ? [selectedKey] : []}
-        style={{ border: 'none', paddingTop: 8 }}
+        style={{ border: 'none', padding: '12px 4px', background: 'transparent' }}
         items={items}
         onClick={({ key }) => router.push(key)}
       />

@@ -69,6 +69,10 @@ export async function POST(request: NextRequest) {
       await tx.usuarios_roles.createMany({
         data: rolesData.map(r => ({ usuario_id: newUser.id, rol_id: r.id })),
       });
+      // If user has responsable_area role, set them as the area's responsable
+      if (roleNames.includes('responsable_area') && area_id) {
+        await tx.areas.update({ where: { id: area_id }, data: { responsable_id: newUser.id } });
+      }
       return newUser;
     });
 

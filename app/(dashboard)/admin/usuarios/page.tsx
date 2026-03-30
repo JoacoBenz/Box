@@ -209,8 +209,8 @@ export default function AdminUsuariosPage() {
   return (
     <div style={{ padding: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={3} style={{ margin: 0 }}>Usuarios</Title>
-        <Button type="primary" onClick={openCreate}>+ Nuevo Usuario</Button>
+        <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>Usuarios</Title>
+        <Button type="primary" onClick={openCreate} style={{ fontWeight: 600 }}>+ Nuevo Usuario</Button>
       </div>
 
       <Table
@@ -230,7 +230,7 @@ export default function AdminUsuariosPage() {
         confirmLoading={saving}
         okText={editUser ? 'Guardar' : 'Crear'}
         cancelText="Cancelar"
-        destroyOnHidden
+        destroyOnHidden={false}
         width={520}
       >
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>

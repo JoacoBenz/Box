@@ -27,7 +27,7 @@ export function DashboardShell({ tenantNombre, userName, areaNombre, roles, chil
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sidebar roles={roles} collapsed={collapsed} />
-      <Layout>
+      <Layout style={{ background: '#f1f5f9' }}>
         <AppHeader
           tenantNombre={tenantNombre}
           userName={userName}
@@ -36,7 +36,7 @@ export function DashboardShell({ tenantNombre, userName, areaNombre, roles, chil
           collapsed={collapsed}
           onToggle={() => setCollapsed(!collapsed)}
         />
-        <Content style={{ margin: 24, minHeight: 280 }}>
+        <Content style={{ margin: '20px 24px 24px', minHeight: 280 }}>
           {children}
         </Content>
       </Layout>

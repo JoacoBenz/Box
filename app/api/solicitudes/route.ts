@@ -45,8 +45,22 @@ export async function GET(request: NextRequest) {
     // Role-based visibility filter
     if (session.roles.includes('director') || session.roles.includes('tesoreria') || session.roles.includes('admin')) {
       // sees all
-    } else if (session.roles.includes('responsable_area') && session.areaId) {
-      where.area_id = session.areaId;
+    } else if (session.roles.includes('responsable_area')) {
+      // Find all areas where this user is the designated responsable
+      const areasResponsable = await db.areas.findMany({
+        where: { responsable_id: session.userId, activo: true },
+        select: { id: true },
+      });
+      const areaIds = areasResponsable.map(a => a.id);
+      if (areaIds.length > 0) {
+        // Show requests from areas they're responsible for, plus their own
+        where.OR = [
+          { area_id: { in: areaIds } },
+          { solicitante_id: session.userId },
+        ];
+      } else {
+        where.solicitante_id = session.userId;
+      }
     } else {
       where.solicitante_id = session.userId;
     }
@@ -141,7 +155,7 @@ export async function POST(request: NextRequest) {
       const area = await prisma.areas.findFirst({ where: { id: session.areaId!, tenant_id: session.tenantId } });
       if (!area?.responsable_id) {
         // No responsable assigned: notify admins and keep as enviada (don't skip validation)
-        await notificarPorRol(session.tenantId, 'admin', 'Área sin responsable', `La solicitud "${titulo}" fue enviada pero el área no tiene responsable asignado. Asigná uno para que pueda ser validada.`, solicitud.id);
+        await notificarPorRol(session.tenantId, 'director', 'Área sin responsable', `La solicitud "${titulo}" fue enviada pero el área no tiene responsable asignado. Asigná uno para que pueda ser validada.`, solicitud.id);
       } else {
         await crearNotificacion({
           tenantId: session.tenantId,

@@ -28,7 +28,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const area = await prisma.areas.findFirst({ where: { id: solicitud.area_id, tenant_id: session.tenantId } });
     if (!area?.responsable_id) {
       // No responsable assigned: notify admins and keep as enviada (don't skip validation)
-      await notificarPorRol(session.tenantId, 'admin', 'Área sin responsable', `La solicitud "${solicitud.titulo}" fue enviada pero el área no tiene responsable asignado. Asigná uno para que pueda ser validada.`, solicitudId);
+      await notificarPorRol(session.tenantId, 'director', 'Área sin responsable', `La solicitud "${solicitud.titulo}" fue enviada pero el área no tiene responsable asignado. Asigná uno para que pueda ser validada.`, solicitudId);
     } else {
       await crearNotificacion({
         tenantId: session.tenantId,

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 * {
   box-sizing: border-box;
 }
@@ -7,4 +9,90 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth transitions for interactive elements */
+.ant-btn,
+.ant-card,
+.ant-tag,
+.ant-menu-item {
+  transition: all 0.2s ease !important;
+}
+
+.ant-card:hover {
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.08) !important;
+}
+
+/* Sidebar refinement */
+.ant-layout-sider {
+  box-shadow: 1px 0 8px rgb(0 0 0 / 0.04) !important;
+}
+
+/* Table row hover */
+.ant-table-tbody > tr:hover > td {
+  background: #f1f5f9 !important;
+}
+
+/* Progress bar smoothness */
+.ant-progress-bg {
+  transition: width 0.4s ease !important;
+}
+
+/* Tag subtle shadow */
+.ant-tag {
+  border: none !important;
+  font-weight: 500 !important;
+}
+
+/* Descriptions modern look */
+.ant-descriptions-bordered .ant-descriptions-item-label {
+  background: #f8fafc !important;
+  font-weight: 500 !important;
+  color: #64748b !important;
+}
+
+/* Timeline polish */
+.ant-timeline-item-content {
+  padding-bottom: 16px !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Primary gradient button */
+.btn-primary-gradient {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-primary-gradient:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
 }

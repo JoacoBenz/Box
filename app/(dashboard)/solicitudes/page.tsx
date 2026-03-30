@@ -43,23 +43,12 @@ export default async function SolicitudesPage({ searchParams }: PageProps) {
   const isSolicitante = user.roles.includes('solicitante')
 
   return (
-    <div style={{ padding: 24 }}>
+    <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600 }}>Solicitudes de Compra</h1>
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#1e293b', letterSpacing: '-0.3px' }}>Solicitudes de Compra</h1>
         {isSolicitante && (
           <Link href="/solicitudes/nueva">
-            <button
-              style={{
-                background: '#1677ff',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 6,
-                padding: '8px 16px',
-                cursor: 'pointer',
-                fontSize: 14,
-                fontWeight: 500,
-              }}
-            >
+            <button className="btn-primary-gradient">
               + Nueva Solicitud
             </button>
           </Link>

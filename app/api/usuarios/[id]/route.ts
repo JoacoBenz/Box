@@ -56,6 +56,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       await tx.usuarios.update({ where: { id: userId }, data: updateData });
       await tx.usuarios_roles.deleteMany({ where: { usuario_id: userId } });
       await tx.usuarios_roles.createMany({ data: rolesData.map(r => ({ usuario_id: userId, rol_id: r.id })) });
+      // If user has responsable_area role, set them as the area's responsable
+      if (roleNames.includes('responsable_area') && area_id) {
+        await tx.areas.update({ where: { id: area_id }, data: { responsable_id: userId } });
+      }
+      // If user lost responsable_area role, clear them from the area's responsable_id
+      if (!roleNames.includes('responsable_area') && area_id) {
+        const currentArea = await tx.areas.findFirst({ where: { id: area_id, responsable_id: userId } });
+        if (currentArea) {
+          await tx.areas.update({ where: { id: area_id }, data: { responsable_id: null } });
+        }
+      }
     });
 
     await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'editar_usuario', entidad: 'usuario', entidadId: userId });

@@ -47,6 +47,9 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
 
   if (!solicitud) notFound()
 
+  // Check if session user is the designated responsable of this solicitud's area
+  const isAreaResponsable = solicitud.area?.responsable_id === sessionUserId
+
   const estado = solicitud.estado as EstadoSolicitud
   const urgencia = solicitud.urgencia as UrgenciaSolicitud
   const estadoInfo = ESTADOS_SOLICITUD[estado]
@@ -60,9 +63,71 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
     precio_estimado: item.precio_estimado != null ? Number(item.precio_estimado) : null,
   }))
 
-  // Build timeline items
-  const timelineItems: { color: string; content: React.ReactNode }[] = [
-    {
+  // Build timeline from audit log for full traceability
+  const auditLogs = await prisma.log_auditoria.findMany({
+    where: { tenant_id: tenantId, entidad: 'solicitud', entidad_id: solicitud.id },
+    orderBy: { created_at: 'asc' },
+    include: { usuario: { select: { nombre: true } } },
+  })
+
+  // Also include compra and recepcion audit entries
+  const compraIds = solicitud.compras.map(c => c.id)
+  const recepcionAuditLogs = await prisma.log_auditoria.findMany({
+    where: {
+      tenant_id: tenantId,
+      OR: [
+        { entidad: 'compra', entidad_id: { in: compraIds.length > 0 ? compraIds : [-1] } },
+        { entidad: 'recepcion', entidad_id: solicitud.id },
+      ],
+    },
+    orderBy: { created_at: 'asc' },
+    include: { usuario: { select: { nombre: true } } },
+  })
+
+  const allLogs = [...auditLogs, ...recepcionAuditLogs].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  )
+
+  const ACCION_CONFIG: Record<string, { label: string; color: string }> = {
+    crear_borrador:       { label: 'Borrador creado',              color: 'gray' },
+    enviar_solicitud:     { label: 'Enviada',                      color: 'blue' },
+    editar_solicitud:     { label: 'Editada',                      color: 'orange' },
+    validar_solicitud:    { label: 'Validada por Responsable',     color: 'cyan' },
+    devolver_responsable: { label: 'Devuelta por Responsable',     color: 'orange' },
+    devolver_director:    { label: 'Devuelta por Dirección',       color: 'orange' },
+    aprobar_solicitud:    { label: 'Aprobada por Dirección',       color: 'green' },
+    rechazar_solicitud:   { label: 'Rechazada',                    color: 'red' },
+    registrar_compra:     { label: 'Compra registrada',            color: 'geekblue' },
+    confirmar_recepcion:  { label: 'Recepción confirmada',         color: 'lime' },
+    cerrar_solicitud:     { label: 'Cerrada',                      color: 'purple' },
+  }
+
+  const timelineItems = allLogs.map(log => {
+    const config = ACCION_CONFIG[log.accion] ?? { label: log.accion, color: 'default' }
+    const datos = log.datos_nuevos as Record<string, any> | null
+    const detalle = datos?.motivo || datos?.observaciones || datos?.resolucion || null
+
+    return {
+      color: config.color,
+      content: (
+        <>
+          <strong>{config.label}</strong>
+          <div style={{ fontSize: 12, color: '#888' }}>
+            {new Date(log.created_at).toLocaleString('es-AR')} — {log.usuario.nombre}
+          </div>
+          {detalle && (
+            <div style={{ marginTop: 4, fontSize: 12, color: config.color === 'red' ? '#c53030' : '#d46b08' }}>
+              {detalle}
+            </div>
+          )}
+        </>
+      ),
+    }
+  })
+
+  // If no audit logs exist yet (legacy data), show at least the creation
+  if (timelineItems.length === 0) {
+    timelineItems.push({
       color: 'blue',
       content: (
         <>
@@ -72,107 +137,11 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
           </div>
         </>
       ),
-    },
-  ]
-
-  if (solicitud.fecha_envio) {
-    timelineItems.push({
-      color: 'blue',
-      content: (
-        <>
-          <strong>Enviada</strong>
-          <div style={{ fontSize: 12, color: '#888' }}>
-            {new Date(solicitud.fecha_envio).toLocaleString('es-AR')}
-          </div>
-        </>
-      ),
-    })
-  }
-
-  if (solicitud.fecha_validacion) {
-    timelineItems.push({
-      color: 'cyan',
-      content: (
-        <>
-          <strong>Validada por Responsable</strong>
-          <div style={{ fontSize: 12, color: '#888' }}>
-            {new Date(solicitud.fecha_validacion).toLocaleString('es-AR')}
-            {solicitud.validado_por ? ` — ${solicitud.validado_por.nombre}` : ''}
-          </div>
-        </>
-      ),
-    })
-  }
-
-  if (solicitud.fecha_aprobacion) {
-    timelineItems.push({
-      color: 'green',
-      content: (
-        <>
-          <strong>Aprobada</strong>
-          <div style={{ fontSize: 12, color: '#888' }}>
-            {new Date(solicitud.fecha_aprobacion).toLocaleString('es-AR')}
-            {solicitud.aprobado_por ? ` — ${solicitud.aprobado_por.nombre}` : ''}
-          </div>
-        </>
-      ),
-    })
-  }
-
-  if (solicitud.fecha_rechazo) {
-    timelineItems.push({
-      color: 'red',
-      content: (
-        <>
-          <strong>Rechazada</strong>
-          <div style={{ fontSize: 12, color: '#888' }}>
-            {new Date(solicitud.fecha_rechazo).toLocaleString('es-AR')}
-            {solicitud.rechazado_por ? ` — ${solicitud.rechazado_por.nombre}` : ''}
-          </div>
-          {solicitud.motivo_rechazo && (
-            <div style={{ marginTop: 4, color: '#c53030', fontSize: 12 }}>
-              Motivo: {solicitud.motivo_rechazo}
-            </div>
-          )}
-        </>
-      ),
-    })
-  }
-
-  if (solicitud.compras.length > 0) {
-    const compra = solicitud.compras[0]
-    timelineItems.push({
-      color: 'geekblue',
-      content: (
-        <>
-          <strong>Compra Registrada</strong>
-          <div style={{ fontSize: 12, color: '#888' }}>
-            {new Date(compra.created_at).toLocaleString('es-AR')}
-            {compra.ejecutado_por ? ` — ${compra.ejecutado_por.nombre}` : ''}
-          </div>
-        </>
-      ),
-    })
-  }
-
-  if (solicitud.recepciones.length > 0) {
-    const rec = solicitud.recepciones[0]
-    timelineItems.push({
-      color: 'lime',
-      content: (
-        <>
-          <strong>Recepción Confirmada</strong>
-          <div style={{ fontSize: 12, color: '#888' }}>
-            {new Date(rec.created_at).toLocaleString('es-AR')}
-            {rec.receptor ? ` — ${rec.receptor.nombre}` : ''}
-          </div>
-        </>
-      ),
     })
   }
 
   return (
-    <div style={{ padding: 24, maxWidth: 1000 }}>
+    <div style={{ maxWidth: 960, margin: '0 auto' }}>
       {/* Header */}
       <div
         style={{
@@ -184,14 +153,14 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
         }}
       >
         <div>
-          <div style={{ fontSize: 13, color: '#888', marginBottom: 4 }}>
-            <Link href="/solicitudes" style={{ color: '#1677ff' }}>
-              ← Volver a Solicitudes
+          <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 6 }}>
+            <Link href="/solicitudes" style={{ color: '#4f46e5', fontWeight: 500 }}>
+              &larr; Volver a Solicitudes
             </Link>
           </div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>{solicitud.titulo}</h1>
-          <div style={{ marginTop: 8 }}>
-            <span style={{ color: '#888', marginRight: 8 }}>{solicitud.numero}</span>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#1e293b', letterSpacing: '-0.3px' }}>{solicitud.titulo}</h1>
+          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: '#94a3b8', fontSize: 13, fontWeight: 500 }}>{solicitud.numero}</span>
             {estadoInfo && <Tag color={estadoInfo.color}>{estadoInfo.label}</Tag>}
             {urgenciaInfo && <Tag color={urgenciaInfo.color}>{urgenciaInfo.label}</Tag>}
           </div>
@@ -206,6 +175,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
           sessionUserId={sessionUserId}
           sessionRoles={sessionRoles}
           sessionAreaId={sessionAreaId}
+          isAreaResponsable={isAreaResponsable}
         />
       </div>
 

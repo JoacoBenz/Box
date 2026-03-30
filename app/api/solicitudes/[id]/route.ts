@@ -62,32 +62,50 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const body = await request.json();
-    const result = solicitudSchema.safeParse(body);
+    const result = solicitudSchema.partial().safeParse(body);
     if (!result.success) {
       return Response.json({ error: { code: 'VALIDATION_ERROR', message: 'Datos inválidos', details: result.error.issues.map(i => ({ field: i.path.join('.'), message: i.message })) } }, { status: 400 });
     }
 
+    // Validate items array individually if provided
+    if (result.data.items !== undefined && result.data.items.length === 0) {
+      return Response.json({ error: { code: 'VALIDATION_ERROR', message: 'Datos inválidos', details: [{ field: 'items', message: 'Agregá al menos un ítem' }] } }, { status: 400 });
+    }
+
     const { titulo, descripcion, justificacion, urgencia, proveedor_sugerido, items } = result.data;
-    const montoTotal = items.reduce((acc, item) => acc + (item.precio_estimado ? Number(item.precio_estimado) * Number(item.cantidad) : 0), 0);
 
     const anterior = { ...solicitud };
 
     await prisma.$transaction(async (tx) => {
-      await tx.solicitudes.update({
-        where: { id: solicitudId },
-        data: { titulo, descripcion, justificacion, urgencia, proveedor_sugerido: proveedor_sugerido ?? null, monto_estimado_total: montoTotal > 0 ? montoTotal : null },
-      });
-      await tx.items_solicitud.deleteMany({ where: { solicitud_id: solicitudId } });
-      await tx.items_solicitud.createMany({
-        data: items.map(item => ({
-          tenant_id: session.tenantId,
-          solicitud_id: solicitudId,
-          descripcion: item.descripcion,
-          cantidad: item.cantidad,
-          unidad: item.unidad ?? 'unidades',
-          precio_estimado: item.precio_estimado ?? null,
-        })),
-      });
+      const updateData: Record<string, any> = {};
+      if (titulo !== undefined) updateData.titulo = titulo;
+      if (descripcion !== undefined) updateData.descripcion = descripcion;
+      if (justificacion !== undefined) updateData.justificacion = justificacion;
+      if (urgencia !== undefined) updateData.urgencia = urgencia;
+      if (proveedor_sugerido !== undefined) updateData.proveedor_sugerido = proveedor_sugerido ?? null;
+
+      if (items !== undefined) {
+        const montoTotal = items.reduce((acc, item) => acc + (item.precio_estimado ? Number(item.precio_estimado) * Number(item.cantidad) : 0), 0);
+        updateData.monto_estimado_total = montoTotal > 0 ? montoTotal : null;
+      }
+
+      if (Object.keys(updateData).length > 0) {
+        await tx.solicitudes.update({ where: { id: solicitudId }, data: updateData });
+      }
+
+      if (items !== undefined) {
+        await tx.items_solicitud.deleteMany({ where: { solicitud_id: solicitudId } });
+        await tx.items_solicitud.createMany({
+          data: items.map(item => ({
+            tenant_id: session.tenantId,
+            solicitud_id: solicitudId,
+            descripcion: item.descripcion,
+            cantidad: item.cantidad,
+            unidad: item.unidad ?? 'unidades',
+            precio_estimado: item.precio_estimado ?? null,
+          })),
+        });
+      }
     });
 
     await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'editar_solicitud', entidad: 'solicitud', entidadId: solicitudId, datosAnteriores: anterior });
