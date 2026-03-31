@@ -46,7 +46,7 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
   const items = [
     { key: '/', icon: <DashboardOutlined />, label: 'Dashboard', visible: true },
     { key: '/solicitudes/nueva', icon: <PlusCircleOutlined />, label: 'Nueva Solicitud', visible: roles.includes('solicitante') },
-    { key: '/solicitudes', icon: <FileTextOutlined />, label: 'Mis Solicitudes', visible: roles.includes('solicitante') },
+    { key: '/solicitudes', icon: <FileTextOutlined />, label: roles.includes('director') || roles.includes('admin') || roles.includes('tesoreria') ? 'Solicitudes' : 'Mis Solicitudes', visible: roles.includes('solicitante') || roles.includes('director') || roles.includes('admin') || roles.includes('tesoreria') || roles.includes('responsable_area') || roles.includes('compras') },
     {
       key: '/validaciones',
       icon: <CheckCircleOutlined />,

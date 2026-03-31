@@ -1,4 +1,5 @@
 import { getServerSession } from '@/lib/auth';
+import { Prisma } from '@/app/generated/prisma/client';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { getEffectiveTenantId } from '@/lib/tenant-override';
 
@@ -299,15 +300,32 @@ export async function GET(request: Request) {
     // ── Analytics (director, tesoreria, compras, admin) ──
     const hasAnalytics = roles.includes('director') || roles.includes('tesoreria') || roles.includes('compras') || roles.includes('admin');
     if (hasAnalytics) {
+      // Area filter for director — applied to analytics queries
+      const areaJoinFilter = directorAreaId
+        ? Prisma.sql`JOIN solicitudes sf ON c.solicitud_id = sf.id AND c.tenant_id = sf.tenant_id AND sf.area_id = ${directorAreaId}`
+        : Prisma.empty;
+      const areaWhereFilter = directorAreaId
+        ? Prisma.sql`AND s.area_id = ${directorAreaId}`
+        : Prisma.empty;
+      // For tendencia query (no s alias, needs join)
+      const tendenciaAreaJoin = directorAreaId
+        ? Prisma.sql`JOIN solicitudes s ON c.solicitud_id = s.id AND c.tenant_id = s.tenant_id`
+        : Prisma.empty;
+      const tendenciaAreaWhere = directorAreaId
+        ? Prisma.sql`AND s.area_id = ${directorAreaId}`
+        : Prisma.empty;
+
       const [gastoAnual, gastoMensual, gastoPorArea, tendenciaMensual, gastoPorMedioPago, topProveedores, solicitudesPorEstado, solicitudesPorUrgencia] = await Promise.all([
         prisma.$queryRaw<{ total: string | null }[]>`
           SELECT COALESCE(SUM(c.monto_total), 0)::text AS total
           FROM compras c
+          ${areaJoinFilter}
           WHERE c.tenant_id = ${tenantId} AND c.fecha_compra >= ${inicioAño}
         `,
         prisma.$queryRaw<{ total: string | null }[]>`
           SELECT COALESCE(SUM(c.monto_total), 0)::text AS total
           FROM compras c
+          ${areaJoinFilter}
           WHERE c.tenant_id = ${tenantId} AND c.fecha_compra >= ${inicioMes}
         `,
         prisma.$queryRaw<{ area_nombre: string; total: string; cantidad: string }[]>`
@@ -316,6 +334,7 @@ export async function GET(request: Request) {
           JOIN solicitudes s ON c.solicitud_id = s.id AND c.tenant_id = s.tenant_id
           JOIN areas a ON s.area_id = a.id AND s.tenant_id = a.tenant_id
           WHERE c.tenant_id = ${tenantId} AND c.fecha_compra >= ${inicioAño}
+          ${areaWhereFilter}
           GROUP BY a.nombre
           ORDER BY SUM(c.monto_total) DESC
         `,
@@ -324,8 +343,10 @@ export async function GET(request: Request) {
                  COALESCE(SUM(c.monto_total), 0)::text AS total,
                  COUNT(c.id)::text AS cantidad
           FROM compras c
+          ${tendenciaAreaJoin}
           WHERE c.tenant_id = ${tenantId}
             AND c.fecha_compra >= (CURRENT_DATE - INTERVAL '6 months')
+            ${tendenciaAreaWhere}
           GROUP BY TO_CHAR(c.fecha_compra, 'YYYY-MM')
           ORDER BY mes ASC
         `,

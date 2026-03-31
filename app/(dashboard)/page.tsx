@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { Button, Card, Col, Row, Tag, Typography, Empty, Progress, Table, Select } from 'antd'
+import { Button, Card, Col, Row, Tag, Typography, Empty, Progress, Table } from 'antd'
 import {
   DollarOutlined,
   FileTextOutlined,
@@ -19,9 +19,9 @@ import {
   ThunderboltOutlined,
   FieldTimeOutlined,
   AlertOutlined,
-  FilterOutlined,
 } from '@ant-design/icons'
 import Link from 'next/link'
+import DirectorDashboard from './components/DirectorDashboard'
 
 const { Title, Text } = Typography
 
@@ -273,7 +273,6 @@ export default function DashboardPage() {
 
   const handleDirectorAreaChange = (value: number | null) => {
     setDirectorAreaId(value)
-    setLoading(true)
     fetchDashboard(value)
   }
 
@@ -295,11 +294,11 @@ export default function DashboardPage() {
   const maxMesTrend = Math.max(...(data.tendenciaMensual ?? []).map((m: any) => m.total), 1)
 
   // Determine which analytics charts to show per role
-  const showGastoPorArea = hasDirector || hasTesoreria || hasAdmin
-  const showTendenciaMensual = hasAnalytics
+  const showGastoPorArea = (!hasDirector) && (hasTesoreria || hasAdmin)
+  const showTendenciaMensual = hasAnalytics && !hasDirector
   const showGastoPorMedioPago = hasCompras || hasTesoreria || hasAdmin
   const showTopProveedores = hasCompras || hasTesoreria || hasAdmin
-  const showSolicitudesPorEstado = hasDirector || hasAdmin
+  const showSolicitudesPorEstado = (!hasDirector) && hasAdmin
   const showSolicitudesPorUrgencia = hasAdmin
 
   // Check if any pending actions exist
@@ -384,11 +383,12 @@ export default function DashboardPage() {
       {/* ═══════════════════════════════════════════════════ */}
       {/* ── 2. MIS MÉTRICAS ────────────────────────────── */}
       {/* ═══════════════════════════════════════════════════ */}
+      {(hasSolicitante || hasResponsable || hasCompras || hasTesoreria || hasAdmin || (hasAnalytics && !hasDirector)) && (
       <div style={{ marginBottom: 28 }}>
         <SectionTitle>Mis Métricas</SectionTitle>
         <Row gutter={[16, 16]}>
-          {/* === Gasto Año / Mes (shared by analytics roles) === */}
-          {hasAnalytics && (
+          {/* === Gasto Año / Mes (shared by analytics roles, director has its own) === */}
+          {hasAnalytics && !hasDirector && (
             <>
               <Col xs={24} sm={12} lg={6}>
                 <StatCard title="Gasto del Año" value={data.gastoAnual} icon={<DollarOutlined />} color="blue" format="money" />
@@ -417,8 +417,8 @@ export default function DashboardPage() {
             </>
           )}
 
-          {/* === RESPONSABLE metrics === */}
-          {hasResponsable && (
+          {/* === RESPONSABLE metrics (hidden for director) === */}
+          {hasResponsable && !hasDirector && (
             <>
               <Col xs={12} sm={8} lg={4}>
                 <MiniStatCard title="Área: Este Mes" value={data.solicitudesAreaMes} icon={<FileTextOutlined />} color="blue" />
@@ -435,50 +435,7 @@ export default function DashboardPage() {
             </>
           )}
 
-          {/* === DIRECTOR metrics with area selector === */}
-          {hasDirector && (
-            <>
-              <Col xs={24}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: '8px 0 4px',
-                }}>
-                  <FilterOutlined style={{ color: '#64748b', fontSize: 13 }} />
-                  <Text type="secondary" style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Aprobaciones
-                  </Text>
-                  <Select
-                    value={directorAreaId}
-                    onChange={handleDirectorAreaChange}
-                    placeholder="Todas las áreas"
-                    allowClear
-                    size="small"
-                    style={{ minWidth: 180 }}
-                    options={[
-                      ...(data.areasDisponibles ?? []).map((a: any) => ({
-                        value: a.id,
-                        label: a.nombre,
-                      })),
-                    ]}
-                  />
-                </div>
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Aprobadas (semana)" value={data.aprobadasSemana} icon={<CheckCircleOutlined />} color="green" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Rechazadas (semana)" value={data.rechazadasSemana} icon={<CloseCircleOutlined />} color="red" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Monto Pend. Aprob." value={data.montoPendienteAprobar} icon={<DollarOutlined />} color="orange" format="money" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Urgentes Pendientes" value={data.urgentesPendientesDir} icon={<ThunderboltOutlined />} color={data.urgentesPendientesDir > 0 ? 'red' : 'green'} />
-              </Col>
-            </>
-          )}
+          {/* === DIRECTOR metrics are rendered below via DirectorDashboard === */}
 
           {/* === COMPRAS metrics === */}
           {hasCompras && (
@@ -547,6 +504,18 @@ export default function DashboardPage() {
           )}
         </Row>
       </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════ */}
+      {/* ── 2.5 DIRECTOR DASHBOARD (charts + analytics) ── */}
+      {/* ═══════════════════════════════════════════════════ */}
+      {hasDirector && (
+        <DirectorDashboard
+          data={data}
+          directorAreaId={directorAreaId}
+          onAreaChange={handleDirectorAreaChange}
+        />
+      )}
 
       {/* ═══════════════════════════════════════════════════ */}
       {/* ── 3. ROLE-SPECIFIC TABLES ────────────────────── */}
@@ -600,8 +569,8 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Responsable: Solicitudes del Área */}
-      {hasResponsable && (
+      {/* Responsable: Solicitudes del Área (hidden for director) */}
+      {hasResponsable && !hasDirector && (
         <div style={{ marginBottom: 28 }}>
           {data.solicitudesAreaPorEstado?.length > 0 && (
             <Card

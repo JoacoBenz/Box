@@ -73,7 +73,21 @@ export async function GET(request: NextRequest) {
     }
     if (urgencia) where.urgencia = urgencia;
     if (areaId) where.area_id = areaId;
-    if (busqueda) where.OR = [{ titulo: { contains: busqueda, mode: 'insensitive' } }, { descripcion: { contains: busqueda, mode: 'insensitive' } }];
+    if (busqueda) {
+      const busquedaCondition = [
+        { titulo: { contains: busqueda, mode: 'insensitive' } },
+        { descripcion: { contains: busqueda, mode: 'insensitive' } },
+        { numero: { contains: busqueda, mode: 'insensitive' } },
+      ];
+      if (where.OR) {
+        // Wrap existing role-based OR with AND to preserve both conditions
+        const roleFilter = { OR: where.OR };
+        delete where.OR;
+        where.AND = [roleFilter, { OR: busquedaCondition }];
+      } else {
+        where.OR = busquedaCondition;
+      }
+    }
 
     const [data, total] = await Promise.all([
       db.solicitudes.findMany({
