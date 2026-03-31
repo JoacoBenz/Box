@@ -44,18 +44,28 @@ export async function POST(request: NextRequest) {
     }
 
     const db = tenantPrisma(session.tenantId);
+
+    // Duplicate numero_factura check (per tenant)
+    if (result.data.numero_factura) {
+      const facturaExistente = await db.compras.findFirst({
+        where: { numero_factura: result.data.numero_factura },
+        include: { solicitud: { select: { numero: true } } },
+      });
+      if (facturaExistente) {
+        return Response.json({
+          error: {
+            code: 'DUPLICATE',
+            message: `Ya existe una compra registrada con la factura ${result.data.numero_factura} (solicitud ${facturaExistente.solicitud?.numero ?? facturaExistente.solicitud_id})`,
+          },
+        }, { status: 409 });
+      }
+    }
+
     const solicitud = await db.solicitudes.findFirst({
       where: { id: result.data.solicitud_id },
       include: { proveedor: true },
     });
     if (!solicitud) return Response.json({ error: { code: 'NOT_FOUND', message: 'Solicitud no encontrada' } }, { status: 404 });
-    // Solicitante can only register caja chica purchases
-    if (verificarRol(session.roles, ['solicitante']) && !verificarRol(session.roles, ['tesoreria', 'compras'])) {
-      if (solicitud.tipo !== 'caja_chica') {
-        return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo podés registrar compras de caja chica' } }, { status: 403 });
-      }
-    }
-
     const estadosPermitidos = ['aprobada', 'pago_programado', 'en_compras'];
     if (!estadosPermitidos.includes(solicitud.estado)) {
       return Response.json({ error: { code: 'BAD_REQUEST', message: 'Esta solicitud no está lista para registrar la compra' } }, { status: 400 });

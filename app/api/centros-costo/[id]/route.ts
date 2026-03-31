@@ -20,8 +20,20 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const db = tenantPrisma(session.tenantId);
-    const centro = await db.centros_costo.findFirst({ where: { id: parseInt(id) } });
+    const centroId = parseInt(id);
+    const centro = await db.centros_costo.findFirst({ where: { id: centroId } });
     if (!centro) return Response.json({ error: { code: 'NOT_FOUND', message: 'No encontrado' } }, { status: 404 });
+
+    // Duplicate checks on edit (exclude self)
+    if (result.data.codigo) {
+      const codigoUpper = result.data.codigo.toUpperCase();
+      const dup = await db.centros_costo.findFirst({ where: { codigo: codigoUpper, id: { not: centroId } } });
+      if (dup) return Response.json({ error: { code: 'CONFLICT', message: `Ya existe un centro de costo con el código "${codigoUpper}"` } }, { status: 409 });
+    }
+    if (result.data.nombre) {
+      const dup = await db.centros_costo.findFirst({ where: { nombre: { equals: result.data.nombre, mode: 'insensitive' }, activo: true, id: { not: centroId } } });
+      if (dup) return Response.json({ error: { code: 'CONFLICT', message: `Ya existe un centro de costo con el nombre "${result.data.nombre}"` } }, { status: 409 });
+    }
 
     const updated = await db.centros_costo.update({
       where: { id: parseInt(id) },

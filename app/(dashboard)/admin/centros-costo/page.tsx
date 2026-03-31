@@ -135,13 +135,37 @@ export default function CentrosCostoPage() {
         okText={editItem ? 'Guardar' : 'Crear'}
         okButtonProps={{ loading: saving }}
         cancelText="Cancelar"
-        destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={handleSave}>
-          <Form.Item name="codigo" label="Código" rules={[{ required: true, message: 'Requerido' }, { max: 20 }]}>
+          <Form.Item
+            name="codigo"
+            label="Código"
+            rules={[
+              { required: true, message: 'Requerido' },
+              { max: 20, message: 'Máximo 20 caracteres' },
+              { pattern: /^[A-Z0-9_-]+$/i, message: 'Solo letras, números, guiones y guiones bajos' },
+              { whitespace: false, message: 'Sin espacios' },
+              () => ({
+                validator(_, value) {
+                  if (value && value !== value.trim()) return Promise.reject('Sin espacios al inicio o al final');
+                  return Promise.resolve();
+                },
+              }),
+            ]}
+            extra="Ej: ADM, FIN-01, OP_NORTE"
+          >
             <Input placeholder="ADM, FIN, OP..." maxLength={20} style={{ textTransform: 'uppercase' }} />
           </Form.Item>
-          <Form.Item name="nombre" label="Nombre" rules={[{ required: true, min: 2, message: 'Mínimo 2 caracteres' }]}>
+          <Form.Item
+            name="nombre"
+            label="Nombre"
+            rules={[
+              { required: true, message: 'El nombre es obligatorio' },
+              { min: 2, message: 'Mínimo 2 caracteres' },
+              { max: 150, message: 'Máximo 150 caracteres' },
+              { whitespace: true, message: 'El nombre no puede estar vacío' },
+            ]}
+          >
             <Input placeholder="Administración, Operaciones..." maxLength={150} />
           </Form.Item>
         </Form>

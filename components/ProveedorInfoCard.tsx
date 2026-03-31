@@ -31,7 +31,7 @@ export default function ProveedorInfoCard({ proveedor, style }: Props) {
       }
       style={{ borderRadius: 10, background: '#f8fafc', ...style }}
     >
-      <Descriptions column={2} size="small" colon={false}>
+      <Descriptions column={1} size="small" colon={false}>
         {proveedor.cuit && (
           <Descriptions.Item label="CUIT">{proveedor.cuit}</Descriptions.Item>
         )}
@@ -45,12 +45,12 @@ export default function ProveedorInfoCard({ proveedor, style }: Props) {
           <Descriptions.Item label="Dirección">{proveedor.direccion}</Descriptions.Item>
         )}
         {proveedor.datos_bancarios && (
-          <Descriptions.Item label="Datos Bancarios" span={2}>
+          <Descriptions.Item label="Datos Bancarios">
             <Typography.Text style={{ whiteSpace: 'pre-line' }}>{proveedor.datos_bancarios}</Typography.Text>
           </Descriptions.Item>
         )}
         {proveedor.link_pagina && (
-          <Descriptions.Item label="Web" span={2}>
+          <Descriptions.Item label="Web">
             <a href={proveedor.link_pagina} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <LinkOutlined /> {proveedor.link_pagina}
             </a>

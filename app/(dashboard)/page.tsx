@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { Card, Col, Row, Tag, Typography, Empty, Progress, Table } from 'antd'
+import { Button, Card, Col, Row, Tag, Typography, Empty, Progress, Table } from 'antd'
 import {
   DollarOutlined,
   FileTextOutlined,
@@ -70,7 +70,8 @@ function formatMoney(amount: number): string {
 }
 
 // ── Count-up hook ──
-function useCountUp(target: number, duration = 800) {
+function useCountUp(target: number | undefined | null, duration = 800) {
+  target = target ?? 0
   const [value, setValue] = useState(0)
   const ref = useRef<number | null>(null)
 
@@ -92,7 +93,7 @@ function useCountUp(target: number, duration = 800) {
 
 // ── Stat Card Component ──
 function StatCard({ title, value, icon, color, format, delay = 0 }: {
-  title: string; value: number; icon: React.ReactNode; color: string; format?: 'money'; delay?: number
+  title: string; value: number | undefined | null; icon: React.ReactNode; color: string; format?: 'money'; delay?: number
 }) {
   const count = useCountUp(value)
   return (
@@ -112,7 +113,7 @@ function StatCard({ title, value, icon, color, format, delay = 0 }: {
 
 // ── Mini Stat Card ──
 function MiniStatCard({ title, value, icon, color }: {
-  title: string; value: number; icon: React.ReactNode; color: string
+  title: string; value: number | undefined | null; icon: React.ReactNode; color: string
 }) {
   const count = useCountUp(value)
   return (
@@ -188,7 +189,7 @@ export default function DashboardPage() {
   const hasSolicitante = data.misSolicitudes !== undefined
   const hasResponsable = data.pendientesValidar !== undefined
   const hasDirector = data.pendientesAprobar !== undefined
-  const hasCompras = data.pendientesEnCompras !== undefined
+  const hasCompras = data.solicitudesAprobadas !== undefined || data.solicitudesEnCompras !== undefined
   const hasTesoreria = data.pendientesComprar !== undefined
   const hasAdmin = data.totalUsuarios !== undefined
 
@@ -200,29 +201,80 @@ export default function DashboardPage() {
     <div className="page-content">
       <Greeting />
 
-      {/* ── Analytics Cards (director/tesoreria/admin) ── */}
-      {hasAnalytics && (
-        <>
-          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+      {/* ── MIS ACCIONES PENDIENTES ── */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 16, letterSpacing: '-0.5px' }}>Mis Acciones Pendientes</div>
+        <Row gutter={[16, 16]}>
+          {hasResponsable && (
             <Col xs={24} sm={12} lg={6}>
-              <StatCard title="Gasto del Año" value={data.gastoAnual} icon={<DollarOutlined />} color="blue" format="money" />
+              <Card style={{ borderRadius: 16, borderColor: data.pendientesValidar > 0 ? '#ff7a45' : '#22c55e', borderWidth: 2 }} styles={{ body: { padding: '20px' } }}>
+                <div style={{ textAlign: 'center', marginBottom: 12 }}>
+                  <div style={{ fontSize: 32, fontWeight: 800, color: '#1e293b' }}>{data.pendientesValidar}</div>
+                  <Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 500 }}>Pendientes de Validar</Text>
+                </div>
+                <Link href="/solicitudes?estado=enviada" style={{ textDecoration: 'none' }}>
+                  <Button block type="primary" size="large" style={{ fontWeight: 600 }}>Ir a Solicitudes</Button>
+                </Link>
+              </Card>
             </Col>
+          )}
+          {hasDirector && (
             <Col xs={24} sm={12} lg={6}>
-              <StatCard title="Gasto del Mes" value={data.gastoMensual} icon={<DollarOutlined />} color="green" format="money" delay={50} />
+              <Card style={{ borderRadius: 16, borderColor: data.pendientesAprobar > 0 ? '#ff7a45' : '#22c55e', borderWidth: 2 }} styles={{ body: { padding: '20px' } }}>
+                <div style={{ textAlign: 'center', marginBottom: 12 }}>
+                  <div style={{ fontSize: 32, fontWeight: 800, color: '#1e293b' }}>{data.pendientesAprobar}</div>
+                  <Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 500 }}>Pendientes de Aprobar</Text>
+                </div>
+                <Link href="/aprobaciones" style={{ textDecoration: 'none' }}>
+                  <Button block type="primary" size="large" style={{ fontWeight: 600 }}>Ir a Aprobaciones</Button>
+                </Link>
+              </Card>
             </Col>
-            {hasDirector && (
-              <Col xs={24} sm={12} lg={6}>
-                <StatCard title="Pendientes de Aprobar" value={data.pendientesAprobar} icon={<ClockCircleOutlined />} color={data.pendientesAprobar > 0 ? 'orange' : 'green'} delay={100} />
-              </Col>
-            )}
-            {hasTesoreria && (
-              <Col xs={24} sm={12} lg={6}>
-                <StatCard title="Pendientes de Compra" value={data.pendientesComprar} icon={<ShoppingCartOutlined />} color={data.pendientesComprar > 0 ? 'orange' : 'green'} delay={150} />
-              </Col>
-            )}
-          </Row>
+          )}
+          {hasCompras && (
+            <Col xs={24} sm={12} lg={6}>
+              <Card style={{ borderRadius: 16, borderColor: (data.solicitudesAprobadas ?? 0) + (data.solicitudesEnCompras ?? 0) > 0 ? '#ff7a45' : '#22c55e', borderWidth: 2 }} styles={{ body: { padding: '20px' } }}>
+                <div style={{ textAlign: 'center', marginBottom: 12 }}>
+                  <div style={{ fontSize: 32, fontWeight: 800, color: '#1e293b' }}>{(data.solicitudesAprobadas ?? 0) + (data.solicitudesEnCompras ?? 0)}</div>
+                  <Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 500 }}>Pendientes en Compras</Text>
+                </div>
+                <Link href="/gestion-compras" style={{ textDecoration: 'none' }}>
+                  <Button block type="primary" size="large" style={{ fontWeight: 600 }}>Ir a Gestión Compras</Button>
+                </Link>
+              </Card>
+            </Col>
+          )}
+          {hasTesoreria && (
+            <Col xs={24} sm={12} lg={6}>
+              <Card style={{ borderRadius: 16, borderColor: data.pendientesComprar > 0 ? '#ff7a45' : '#22c55e', borderWidth: 2 }} styles={{ body: { padding: '20px' } }}>
+                <div style={{ textAlign: 'center', marginBottom: 12 }}>
+                  <div style={{ fontSize: 32, fontWeight: 800, color: '#1e293b' }}>{data.pendientesComprar}</div>
+                  <Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 500 }}>Pendientes de Compra</Text>
+                </div>
+                <Link href="/compras" style={{ textDecoration: 'none' }}>
+                  <Button block type="primary" size="large" style={{ fontWeight: 600 }}>Ir a Compras</Button>
+                </Link>
+              </Card>
+            </Col>
+          )}
+        </Row>
+      </div>
 
+      {/* ── Mis Métricas (visible para todos los roles con datos) ── */}
+      {(hasDirector || hasCompras || hasTesoreria || hasAdmin) && (
+        <>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 16, letterSpacing: '-0.5px' }}>Mis Métricas</div>
           <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            {hasAnalytics && (
+              <>
+                <Col xs={24} sm={12} lg={6}>
+                  <StatCard title="Gasto del Año" value={data.gastoAnual} icon={<DollarOutlined />} color="blue" format="money" />
+                </Col>
+                <Col xs={24} sm={12} lg={6}>
+                  <StatCard title="Gasto del Mes" value={data.gastoMensual} icon={<DollarOutlined />} color="green" format="money" delay={50} />
+                </Col>
+              </>
+            )}
             {hasDirector && (
               <>
                 <Col xs={12} sm={8} lg={4}>
@@ -231,12 +283,33 @@ export default function DashboardPage() {
                 <Col xs={12} sm={8} lg={4}>
                   <MiniStatCard title="Rechazadas (semana)" value={data.rechazadasSemana} icon={<CloseCircleOutlined />} color="red" />
                 </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard title="Aprobadas Pendientes" value={data.solicitudesAprobadas} icon={<ClockCircleOutlined />} color="orange" />
+                </Col>
+              </>
+            )}
+            {hasCompras && (
+              <>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard title="En Compras" value={data.solicitudesEnCompras ?? 0} icon={<ShoppingCartOutlined />} color="blue" />
+                </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard title="Pago Programado" value={data.pagoProgramado} icon={<ClockCircleOutlined />} color="purple" />
+                </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard title="Caja Chica (mes)" value={data.cajaChicaMes} icon={<DollarOutlined />} color="cyan" />
+                </Col>
               </>
             )}
             {hasTesoreria && (
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Recepciones c/obs" value={data.recepcionesConObs} icon={<WarningOutlined />} color={data.recepcionesConObs > 0 ? 'orange' : 'green'} />
-              </Col>
+              <>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard title="Recepciones c/obs" value={data.recepcionesConObs} icon={<WarningOutlined />} color={data.recepcionesConObs > 0 ? 'orange' : 'green'} />
+                </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard title="Pagos Próximos (7d)" value={data.pagoProgramadoProximo} icon={<ClockCircleOutlined />} color="orange" />
+                </Col>
+              </>
             )}
             {hasAdmin && (
               <>
@@ -252,7 +325,12 @@ export default function DashboardPage() {
               </>
             )}
           </Row>
+        </>
+      )}
 
+      {/* ── Analytics Charts (director/tesoreria/admin) ── */}
+      {hasAnalytics && (
+        <>
           {/* ── Spending by Area + Monthly Trend ── */}
           <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
             <Col xs={24} lg={12}>
@@ -385,10 +463,10 @@ export default function DashboardPage() {
       {/* ── Solicitante: My recent requests as cards ── */}
       {hasSolicitante && (
         <div style={{ marginBottom: 24 }}>
-          {data.recepcionesPendientes > 0 && (
+          {data.solicitudesEnEjecucion > 0 && (
             <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
               <Col xs={24} sm={8} lg={6}>
-                <StatCard title="Recepciones pendientes" value={data.recepcionesPendientes} icon={<WarningOutlined />} color="orange" />
+                <StatCard title="Solicitudes en ejecución" value={data.solicitudesEnEjecucion} icon={<ShoppingCartOutlined />} color="blue" />
               </Col>
             </Row>
           )}
@@ -431,11 +509,6 @@ export default function DashboardPage() {
       {/* ── Responsable: Area requests ── */}
       {hasResponsable && (
         <div style={{ marginBottom: 24 }}>
-          <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-            <Col xs={24} sm={8} lg={6}>
-              <StatCard title="Pendientes de Validar" value={data.pendientesValidar} icon={<ClockCircleOutlined />} color={data.pendientesValidar > 0 ? 'orange' : 'green'} />
-            </Col>
-          </Row>
           <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Solicitudes del Área</span>} style={{ borderRadius: 16 }}>
             {data.solicitudesArea.length === 0 ? <Empty description="Sin solicitudes en el área" image={Empty.PRESENTED_IMAGE_SIMPLE} /> : (
               <Table
@@ -464,13 +537,13 @@ export default function DashboardPage() {
         >
           <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
             <Col xs={12} sm={8}>
-              <MiniStatCard title="En Compras" value={data.pendientesEnCompras} icon={<ShoppingCartOutlined />} color="blue" />
+              <MiniStatCard title="Aprobadas" value={data.solicitudesAprobadas ?? 0} icon={<CheckCircleOutlined />} color="green" />
+            </Col>
+            <Col xs={12} sm={8}>
+              <MiniStatCard title="En Compras" value={data.solicitudesEnCompras ?? 0} icon={<ShoppingCartOutlined />} color="blue" />
             </Col>
             <Col xs={12} sm={8}>
               <MiniStatCard title="Pago Programado" value={data.pagoProgramado} icon={<ClockCircleOutlined />} color="purple" />
-            </Col>
-            <Col xs={12} sm={8}>
-              <MiniStatCard title="Caja Chica (mes)" value={data.cajaChicaMes} icon={<DollarOutlined />} color="cyan" />
             </Col>
           </Row>
           {data.pipeline?.length > 0 && (

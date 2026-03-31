@@ -15,7 +15,6 @@ export type EstadoSolicitud =
   | 'pago_programado'
   | 'cerrada';
 
-export type TipoSolicitud = 'formal' | 'caja_chica';
 export type PrioridadCompra = 'urgente' | 'normal' | 'programado';
 
 export type UrgenciaSolicitud = 'normal' | 'urgente' | 'critica';

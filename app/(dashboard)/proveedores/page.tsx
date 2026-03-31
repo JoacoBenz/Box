@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Table, Button, Input, Space, Tag, message, Popconfirm, Modal, Form } from 'antd'
+import { App, Table, Button, Input, Space, Tag, Popconfirm, Modal, Form } from 'antd'
 import { PlusOutlined, SearchOutlined, EditOutlined, StopOutlined } from '@ant-design/icons'
 import ProveedorCreateModal from '@/components/ProveedorCreateModal'
+import CuitInput from '@/components/CuitInput'
+import PhoneInput from '@/components/PhoneInput'
 
 interface Proveedor {
   id: number
@@ -18,6 +20,7 @@ interface Proveedor {
 }
 
 export default function ProveedoresPage() {
+  const { message } = App.useApp()
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -78,11 +81,14 @@ export default function ProveedoresPage() {
   const handleDeactivate = async (id: number) => {
     try {
       const res = await fetch(`/api/proveedores/${id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Error al desactivar')
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err?.error?.message ?? 'Error al desactivar')
+      }
       message.success('Proveedor desactivado')
       fetchProveedores()
-    } catch {
-      message.error('Error al desactivar proveedor')
+    } catch (err: any) {
+      message.error(err?.message ?? 'Error al desactivar proveedor')
     }
   }
 
@@ -101,14 +107,14 @@ export default function ProveedoresPage() {
     {
       title: 'Acciones',
       key: 'acciones',
-      width: 160,
+      width: 200,
       render: (_: unknown, record: Proveedor) => (
-        <Space size={4}>
-          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+        <Space size={4} wrap={false}>
+          <Button type="default" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
             Editar
           </Button>
           <Popconfirm title="¿Desactivar este proveedor?" onConfirm={() => handleDeactivate(record.id)} okText="Sí" cancelText="No">
-            <Button type="text" size="small" danger icon={<StopOutlined />}>
+            <Button type="default" size="small" danger icon={<StopOutlined />}>
               Desactivar
             </Button>
           </Popconfirm>
@@ -155,14 +161,17 @@ export default function ProveedoresPage() {
         cancelText="Cancelar"
         confirmLoading={saving}
         width={520}
-        destroyOnHidden
       >
         <Form form={editForm} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item label="Nombre" name="nombre" rules={[{ required: true, message: 'Obligatorio' }]}>
             <Input maxLength={255} />
           </Form.Item>
-          <Form.Item label="CUIT" name="cuit">
-            <Input maxLength={13} />
+          <Form.Item
+            label="CUIT"
+            name="cuit"
+            rules={[{ pattern: /^\d{2}-\d{8}-\d{1}$/, message: 'Formato inválido. Usá: XX-XXXXXXXX-X' }]}
+          >
+            <CuitInput />
           </Form.Item>
           <Form.Item label="Datos Bancarios" name="datos_bancarios">
             <Input.TextArea rows={2} maxLength={500} />
@@ -171,7 +180,7 @@ export default function ProveedoresPage() {
             <Input maxLength={500} />
           </Form.Item>
           <Form.Item label="Teléfono" name="telefono">
-            <Input maxLength={50} />
+            <PhoneInput />
           </Form.Item>
           <Form.Item label="Email" name="email">
             <Input maxLength={255} />

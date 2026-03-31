@@ -1,6 +1,6 @@
 'use client'
 
-import { Table, Tag, Button, Select, Space } from 'antd'
+import { Table, Tag, Select, Space } from 'antd'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types'
 import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types'
@@ -12,7 +12,6 @@ interface Solicitud {
   titulo: string
   urgencia: string
   estado: string
-  tipo?: string
   fecha_envio: string | null
   created_at: string
   area: { nombre: string } | null
@@ -44,6 +43,11 @@ export default function SolicitudesTable({ solicitudes, estadoFilter, urgenciaFi
       dataIndex: 'numero',
       key: 'numero',
       width: 130,
+      render: (val: string, r: Solicitud) => (
+        <a onClick={() => router.push(`/solicitudes/${r.id}`)} style={{ cursor: 'pointer' }}>
+          {val}
+        </a>
+      ),
     },
     {
       title: 'Título',
@@ -77,7 +81,6 @@ export default function SolicitudesTable({ solicitudes, estadoFilter, urgenciaFi
         return (
           <Space size={4} wrap>
             {e ? <Tag color={e.color}>{e.label}</Tag> : <Tag>{val}</Tag>}
-            {row.tipo === 'caja_chica' && <Tag color="cyan">Caja Chica</Tag>}
           </Space>
         )
       },
@@ -89,16 +92,6 @@ export default function SolicitudesTable({ solicitudes, estadoFilter, urgenciaFi
       width: 130,
       render: (val: string | null) =>
         val ? new Date(val).toLocaleDateString('es-AR') : '—',
-    },
-    {
-      title: 'Acciones',
-      key: 'actions',
-      width: 100,
-      render: (_, r) => (
-        <Button size="small" type="link" onClick={() => router.push(`/solicitudes/${r.id}`)}>
-          Ver
-        </Button>
-      ),
     },
   ]
 
@@ -130,7 +123,8 @@ export default function SolicitudesTable({ solicitudes, estadoFilter, urgenciaFi
         size="middle"
         rowClassName={(record: any) =>
           record.urgencia === 'critica' ? 'urgencia-row-critica' :
-          record.urgencia === 'urgente' ? 'urgencia-row-urgente' : ''
+          record.urgencia === 'urgente' ? 'urgencia-row-urgente' :
+          'urgencia-row-normal'
         }
       />
     </div>

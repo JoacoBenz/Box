@@ -121,7 +121,6 @@ model solicitudes {
   proveedor_sugerido        String?  @db.VarChar(255)
   proveedor_id              Int?
   centro_costo_id           Int?
-  tipo                      String   @default("formal") @db.VarChar(20)
   procesado_por_id          Int?
   fecha_procesamiento       DateTime?
   dia_pago_programado       DateTime? @db.Date

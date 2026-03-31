@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
+  App,
   Form,
   Input,
   InputNumber,
@@ -11,9 +12,7 @@ import {
   Card,
   Space,
   Divider,
-  message,
   Typography,
-  Alert,
 } from 'antd'
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons'
 import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
@@ -43,14 +42,12 @@ interface SolicitudFormValues {
 }
 
 export default function NuevaSolicitudPage() {
+  const { message } = App.useApp()
   const router = useRouter()
   const [form] = Form.useForm<SolicitudFormValues>()
   const [loading, setLoading] = useState<'borrador' | 'enviar' | null>(null)
   const [selectedProveedor, setSelectedProveedor] = useState<any>(null)
   const [centrosCosto, setCentrosCosto] = useState<{ id: number; nombre: string; codigo: string }[]>([])
-  const [montoEstimado, setMontoEstimado] = useState<number | null>(null)
-  const [umbralCajaChica] = useState<number>(50000)
-
   useEffect(() => {
     fetch('/api/centros-costo').then(r => r.ok ? r.json() : []).then(setCentrosCosto).catch(() => {})
   }, [])
@@ -158,18 +155,8 @@ export default function NuevaSolicitudPage() {
               prefix="$"
               style={{ width: 200 }}
               placeholder="0.00"
-              onChange={(val) => setMontoEstimado(val as number | null)}
             />
           </Form.Item>
-
-          {montoEstimado != null && montoEstimado > 0 && montoEstimado <= umbralCajaChica && (
-            <Alert
-              type="info"
-              showIcon
-              message={`Esta solicitud califica como Caja Chica (≤ $${umbralCajaChica.toLocaleString('es-AR')}). Seguirá un flujo simplificado.`}
-              style={{ marginBottom: 16 }}
-            />
-          )}
 
           {centrosCosto.length > 0 && (
             <Form.Item label="Centro de Costo (opcional)" name="centro_costo_id">

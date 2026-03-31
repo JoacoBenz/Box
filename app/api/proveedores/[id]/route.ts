@@ -24,8 +24,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession();
-    if (!verificarRol(session.roles, ['tesoreria', 'admin'])) {
-      return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo tesorería o admin pueden editar proveedores' } }, { status: 403 });
+    if (!verificarRol(session.roles, ['tesoreria', 'compras', 'director', 'admin'])) {
+      return Response.json({ error: { code: 'FORBIDDEN', message: 'No tenés permisos para editar proveedores' } }, { status: 403 });
     }
 
     const { id } = await params;
@@ -65,8 +65,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession();
-    if (!verificarRol(session.roles, ['tesoreria', 'admin'])) {
-      return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo tesorería o admin pueden desactivar proveedores' } }, { status: 403 });
+    if (!verificarRol(session.roles, ['tesoreria', 'compras', 'director', 'admin'])) {
+      return Response.json({ error: { code: 'FORBIDDEN', message: 'No tenés permisos para desactivar proveedores' } }, { status: 403 });
     }
 
     const { id } = await params;

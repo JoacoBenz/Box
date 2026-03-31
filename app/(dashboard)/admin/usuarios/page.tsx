@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import {
+  App,
   Table,
   Tag,
   Button,
@@ -10,7 +11,6 @@ import {
   Input,
   Select,
   Space,
-  message,
   Popconfirm,
   Typography,
 } from 'antd'
@@ -52,6 +52,7 @@ interface Usuario {
 }
 
 export default function AdminUsuariosPage() {
+  const { message } = App.useApp()
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [areas, setAreas] = useState<Area[]>([])
   const [loading, setLoading] = useState(true)

@@ -220,7 +220,6 @@ export default function GestionComprasPage() {
         okText="Procesar"
         okButtonProps={{ loading: actionLoading }}
         cancelText="Cancelar"
-        destroyOnHidden
       >
         <Form form={procesarForm} layout="vertical" onFinish={handleProcesar}>
           <Form.Item name="prioridad_compra" label="Prioridad" rules={[{ required: true, message: 'Seleccioná la prioridad' }]}>
@@ -245,7 +244,6 @@ export default function GestionComprasPage() {
         okText="Programar"
         okButtonProps={{ loading: actionLoading }}
         cancelText="Cancelar"
-        destroyOnHidden
       >
         <Form form={programarForm} layout="vertical" onFinish={handleProgramar}>
           <Form.Item

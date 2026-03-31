@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
+  App,
   Form,
   Input,
   InputNumber,
@@ -11,7 +12,6 @@ import {
   DatePicker,
   Upload,
   Space,
-  message,
   Divider,
   Typography,
   Card,
@@ -23,6 +23,7 @@ import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
 import ProveedorInfoCard from '@/components/ProveedorInfoCard'
 import type { UploadFile } from 'antd/es/upload'
 import type { Dayjs } from 'dayjs'
+import dayjs from 'dayjs'
 import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types'
 import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types'
 
@@ -69,6 +70,7 @@ interface FormValues {
 }
 
 export default function RegistrarCompraForm({ solicitud }: Props) {
+  const { message } = App.useApp()
   const router = useRouter()
   const [form] = Form.useForm<FormValues>()
   const [loading, setLoading] = useState(false)
@@ -181,9 +183,13 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
           <Form.Item
             label="Proveedor"
             name="proveedor_nombre"
-            rules={[{ required: true, message: 'El proveedor es obligatorio' }]}
+            rules={[
+              { required: true, message: 'El proveedor es obligatorio' },
+              { min: 2, message: 'Mínimo 2 caracteres' },
+              { whitespace: true, message: 'El nombre no puede estar vacío' },
+            ]}
           >
-            <Input placeholder="Nombre del proveedor" maxLength={200} />
+            <Input placeholder="Nombre del proveedor" maxLength={255} />
           </Form.Item>
 
           <Form.Item label="Detalle del Proveedor (opcional)" name="proveedor_detalle">
@@ -194,17 +200,44 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
             <Form.Item
               label="Fecha de Compra"
               name="fecha_compra"
-              rules={[{ required: true, message: 'La fecha es obligatoria' }]}
+              rules={[
+                { required: true, message: 'La fecha es obligatoria' },
+                {
+                  validator: (_, value: Dayjs | null) => {
+                    if (!value) return Promise.resolve();
+                    if (value.isAfter(dayjs(), 'day'))
+                      return Promise.reject('La fecha no puede ser futura');
+                    if (value.isBefore(dayjs().subtract(5, 'year'), 'day'))
+                      return Promise.reject('La fecha es demasiado antigua');
+                    return Promise.resolve();
+                  },
+                },
+              ]}
             >
-              <DatePicker format="DD/MM/YYYY" style={{ width: 180 }} />
+              <DatePicker format="DD/MM/YYYY" style={{ width: 180 }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
 
             <Form.Item
               label="Monto Total"
               name="monto_total"
-              rules={[{ required: true, message: 'El monto es obligatorio' }]}
+              rules={[
+                { required: true, message: 'El monto es obligatorio' },
+                { type: 'number', min: 0.01, message: 'El monto debe ser mayor a 0' },
+                { type: 'number', max: 999_999_999, message: 'Monto excesivo' },
+                ...(solicitud.monto_estimado_total
+                  ? [{
+                      validator: (_: any, value: number) => {
+                        if (!value) return Promise.resolve();
+                        const estimado = Number(solicitud.monto_estimado_total);
+                        if (value > estimado * 3)
+                          return Promise.reject(`El monto ($${value.toFixed(2)}) supera 3x el estimado ($${estimado.toFixed(2)}). Verificá si es correcto.`);
+                        return Promise.resolve();
+                      },
+                    }]
+                  : []),
+              ]}
             >
-              <InputNumber min={0} precision={2} prefix="$" style={{ width: 180 }} placeholder="0.00" />
+              <InputNumber min={0.01} precision={2} prefix="$" style={{ width: 180 }} placeholder="0.00" />
             </Form.Item>
           </Space>
 
@@ -238,8 +271,18 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
             )}
           </Space>
 
-          <Form.Item label="Número de Factura (opcional)" name="numero_factura">
-            <Input placeholder="Ej: A-0001-00012345" style={{ width: 240 }} />
+          <Form.Item
+            label="Número de Factura (opcional)"
+            name="numero_factura"
+            rules={[
+              {
+                pattern: /^[A-Z]-\d{4}-\d{8}$/,
+                message: 'Formato inválido. Usá: A-0001-00012345',
+              },
+            ]}
+            extra="Formato: A-0001-00012345"
+          >
+            <Input placeholder="A-0001-00012345" style={{ width: 240 }} maxLength={20} />
           </Form.Item>
 
           <Form.Item label="Observaciones (opcional)" name="observaciones">

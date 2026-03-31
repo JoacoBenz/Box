@@ -34,9 +34,16 @@ export async function POST(request: NextRequest) {
     }
 
     const db = tenantPrisma(session.tenantId);
-    const existing = await db.centros_costo.findFirst({ where: { codigo: result.data.codigo } });
-    if (existing) {
-      return Response.json({ error: { code: 'CONFLICT', message: 'Ya existe un centro de costo con ese código' } }, { status: 409 });
+    const codigoUpper = result.data.codigo.toUpperCase();
+    const [byCode, byName] = await Promise.all([
+      db.centros_costo.findFirst({ where: { codigo: codigoUpper } }),
+      db.centros_costo.findFirst({ where: { nombre: { equals: result.data.nombre, mode: 'insensitive' }, activo: true } }),
+    ]);
+    if (byCode) {
+      return Response.json({ error: { code: 'CONFLICT', message: `Ya existe un centro de costo con el código "${codigoUpper}"` } }, { status: 409 });
+    }
+    if (byName) {
+      return Response.json({ error: { code: 'CONFLICT', message: `Ya existe un centro de costo con el nombre "${result.data.nombre}"` } }, { status: 409 });
     }
 
     const centro = await db.centros_costo.create({

@@ -19,8 +19,8 @@ export async function GET() {
         take: 5,
         select: { id: true, numero: true, titulo: true, estado: true, urgencia: true, created_at: true },
       });
-      result.recepcionesPendientes = await db.solicitudes.count({
-        where: { solicitante_id: userId, estado: 'comprada' },
+      result.solicitudesEnEjecucion = await db.solicitudes.count({
+        where: { solicitante_id: userId, estado: { in: ['aprobada', 'en_compras', 'pago_programado', 'comprada'] } },
       });
     }
 
@@ -39,41 +39,49 @@ export async function GET() {
 
     // ── Director section ──
     if (roles.includes('director')) {
-      const [pendientesAprobar, aprobadasSemana, rechazadasSemana] = await Promise.all([
-        db.solicitudes.count({ where: { estado: 'validada' } }),
-        db.solicitudes.count({ where: { estado: 'aprobada', fecha_aprobacion: { gte: semanaAtras } } }),
-        db.solicitudes.count({ where: { estado: 'rechazada', fecha_rechazo: { gte: semanaAtras } } }),
+      const areaFilter = areaId ? { area_id: areaId } : {};
+      const [pendientesAprobar, aprobadasSemana, rechazadasSemana, solicitudesAprobadas] = await Promise.all([
+        db.solicitudes.count({ where: { estado: 'validada', ...areaFilter } }),
+        db.solicitudes.count({ where: { estado: 'aprobada', fecha_aprobacion: { gte: semanaAtras }, ...areaFilter } }),
+        db.solicitudes.count({ where: { estado: 'rechazada', fecha_rechazo: { gte: semanaAtras }, ...areaFilter } }),
+        db.solicitudes.count({ where: { estado: 'aprobada', ...areaFilter } }),
       ]);
       result.pendientesAprobar = pendientesAprobar;
       result.aprobadasSemana = aprobadasSemana;
       result.rechazadasSemana = rechazadasSemana;
+      result.solicitudesAprobadas = solicitudesAprobadas;
     }
 
     // ── Compras section ──
     if (roles.includes('compras')) {
-      const [pendientesEnCompras, pagoProgramado, cajaChicaMes] = await Promise.all([
-        db.solicitudes.count({ where: { estado: { in: ['aprobada', 'en_compras'] } } }),
-        db.solicitudes.count({ where: { estado: 'pago_programado' } }),
-        db.solicitudes.count({ where: { tipo: 'caja_chica', created_at: { gte: inicioMes } } }),
+      const areaFilter = areaId ? { area_id: areaId } : {};
+      const [solicitudesAprobadas, solicitudesEnCompras, pagoProgramado] = await Promise.all([
+        db.solicitudes.count({ where: { estado: 'aprobada', ...areaFilter } }),
+        db.solicitudes.count({ where: { estado: 'en_compras', ...areaFilter } }),
+        db.solicitudes.count({ where: { estado: 'pago_programado', ...areaFilter } }),
       ]);
       const pipeline = await db.solicitudes.findMany({
-        where: { estado: { in: ['aprobada', 'en_compras', 'pago_programado'] } },
+        where: { estado: { in: ['aprobada', 'en_compras', 'pago_programado'] }, ...areaFilter },
         orderBy: { created_at: 'desc' },
         take: 10,
         select: { id: true, numero: true, titulo: true, estado: true, urgencia: true, prioridad_compra: true, dia_pago_programado: true, monto_estimado_total: true },
       });
-      result.pendientesEnCompras = pendientesEnCompras;
+      result.solicitudesAprobadas = solicitudesAprobadas;
+      result.solicitudesEnCompras = solicitudesEnCompras;
       result.pagoProgramado = pagoProgramado;
-      result.cajaChicaMes = cajaChicaMes;
       result.pipeline = pipeline;
     }
 
     // ── Tesorería section ──
     if (roles.includes('tesoreria')) {
-      const [pendientesComprar, recepcionesConObs, ultimasCompras] = await Promise.all([
-        db.solicitudes.count({ where: { estado: { in: ['aprobada', 'pago_programado'] } } }),
-        db.solicitudes.count({ where: { estado: 'recibida_con_obs' } }),
+      const areaFilter = areaId ? { area_id: areaId } : {};
+      const proximaSemanaDias = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const [pendientesComprar, recepcionesConObs, pagoProgramadoProximo, ultimasCompras] = await Promise.all([
+        db.solicitudes.count({ where: { estado: { in: ['aprobada', 'pago_programado'] }, ...areaFilter } }),
+        db.solicitudes.count({ where: { estado: 'recibida_con_obs', ...areaFilter } }),
+        db.solicitudes.count({ where: { estado: 'pago_programado', dia_pago_programado: { gte: new Date(), lte: proximaSemanaDias }, ...areaFilter } }),
         db.compras.findMany({
+          where: areaId ? { solicitud: { area_id: areaId } } : {},
           orderBy: { created_at: 'desc' },
           take: 5,
           include: { solicitud: { select: { numero: true, titulo: true } } },
@@ -81,6 +89,7 @@ export async function GET() {
       ]);
       result.pendientesComprar = pendientesComprar;
       result.recepcionesConObs = recepcionesConObs;
+      result.pagoProgramadoProximo = pagoProgramadoProximo;
       result.ultimasCompras = ultimasCompras;
     }
 

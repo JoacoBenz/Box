@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Layout } from 'antd';
+import { App, Layout } from 'antd';
 import { Sidebar } from './Sidebar';
 import { AppHeader } from './Header';
 import type { RolNombre } from '@/types';
@@ -25,21 +25,23 @@ export function DashboardShell({ tenantNombre, userName, areaNombre, roles, chil
     : 'solicitante';
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sidebar roles={roles} collapsed={collapsed} />
-      <Layout style={{ background: '#f1f5f9' }}>
-        <AppHeader
-          tenantNombre={tenantNombre}
-          userName={userName}
-          areaNombre={areaNombre}
-          rolPrincipal={rolPrincipal}
-          collapsed={collapsed}
-          onToggle={() => setCollapsed(!collapsed)}
-        />
-        <Content style={{ margin: '20px 24px 24px', minHeight: 280 }}>
-          {children}
-        </Content>
+    <App>
+      <Layout style={{ minHeight: '100vh' }}>
+        <Sidebar roles={roles} collapsed={collapsed} />
+        <Layout style={{ background: '#f1f5f9' }}>
+          <AppHeader
+            tenantNombre={tenantNombre}
+            userName={userName}
+            areaNombre={areaNombre}
+            rolPrincipal={rolPrincipal}
+            collapsed={collapsed}
+            onToggle={() => setCollapsed(!collapsed)}
+          />
+          <Content style={{ margin: '20px 24px 24px', minHeight: 280 }}>
+            {children}
+          </Content>
+        </Layout>
       </Layout>
-    </Layout>
+    </App>
   );
 }

@@ -79,7 +79,7 @@ export default function ProveedorSelect({ value, onChange, disabled, placeholder
           value: p.id,
           label: p.cuit ? `${p.nombre} (${p.cuit})` : p.nombre,
         }))}
-        dropdownRender={(menu) => (
+        popupRender={(menu) => (
           <>
             {menu}
             <Divider style={{ margin: '8px 0' }} />

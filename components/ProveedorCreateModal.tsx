@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Modal, Form, Input, message } from 'antd'
+import { App, Modal, Form, Input } from 'antd'
+import CuitInput from './CuitInput'
+import PhoneInput from './PhoneInput'
 
 interface Props {
   open: boolean
@@ -10,6 +12,7 @@ interface Props {
 }
 
 export default function ProveedorCreateModal({ open, onClose, onCreated }: Props) {
+  const { message } = App.useApp()
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
 
@@ -62,8 +65,17 @@ export default function ProveedorCreateModal({ open, onClose, onCreated }: Props
           <Input placeholder="Nombre del proveedor" maxLength={255} />
         </Form.Item>
 
-        <Form.Item label="CUIT" name="cuit">
-          <Input placeholder="XX-XXXXXXXX-X" maxLength={13} />
+        <Form.Item
+          label="CUIT"
+          name="cuit"
+          rules={[
+            {
+              pattern: /^\d{2}-\d{8}-\d{1}$/,
+              message: 'Formato inválido. Usá: XX-XXXXXXXX-X',
+            },
+          ]}
+        >
+          <CuitInput />
         </Form.Item>
 
         <Form.Item label="Datos Bancarios (CBU / Alias / Banco)" name="datos_bancarios">
@@ -75,7 +87,7 @@ export default function ProveedorCreateModal({ open, onClose, onCreated }: Props
         </Form.Item>
 
         <Form.Item label="Teléfono" name="telefono">
-          <Input placeholder="Teléfono de contacto" maxLength={50} />
+          <PhoneInput />
         </Form.Item>
 
         <Form.Item label="Email" name="email">

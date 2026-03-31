@@ -5,7 +5,7 @@ import { verificarRol } from '@/lib/permissions';
 import { registrarAuditoria } from '@/lib/audit';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { solicitudSchema } from '@/lib/validators';
-import { getTenantConfigBool, getTenantConfigNumber } from '@/lib/tenant-config';
+import { getTenantConfigBool } from '@/lib/tenant-config';
 
 async function generarNumeroSolicitud(tenantId: number): Promise<string> {
   const año = new Date().getFullYear();
@@ -119,9 +119,6 @@ export async function POST(request: NextRequest) {
       return acc + (item.precio_estimado ? Number(item.precio_estimado) * Number(item.cantidad) : 0);
     }, 0);
 
-    const umbralCajaChica = await getTenantConfigNumber(session.tenantId, 'umbral_caja_chica', 50000);
-    const tipo = montoTotal > 0 && montoTotal <= umbralCajaChica ? 'caja_chica' : 'formal';
-
     const solicitud = await prisma.$transaction(async (tx) => {
       const numero = await generarNumeroSolicitud(session.tenantId);
       const estado = enviar ? 'enviada' : 'borrador';
@@ -137,7 +134,6 @@ export async function POST(request: NextRequest) {
           proveedor_sugerido: proveedor_sugerido ?? null,
           proveedor_id: proveedor_id ?? null,
           centro_costo_id: centro_costo_id ?? null,
-          tipo,
           solicitante_id: session.userId,
           area_id: session.areaId!,
           estado,
@@ -180,6 +176,26 @@ export async function POST(request: NextRequest) {
           });
         }
       }
+    }
+
+    if (enviar && (urgencia === 'critica' || urgencia === 'urgente')) {
+      const esCritica = urgencia === 'critica'
+      const tituloUrgencia = esCritica ? '🚨 Solicitud CRÍTICA enviada' : '⚠️ Solicitud urgente enviada'
+      const mensajeUrgencia = `${session.nombre} marcó como ${urgencia}: "${titulo}". Requiere atención prioritaria.`
+
+      const areaUrgencia = await prisma.areas.findFirst({ where: { id: session.areaId!, tenant_id: session.tenantId } })
+      if (areaUrgencia?.responsable_id) {
+        await crearNotificacion({
+          tenantId: session.tenantId,
+          destinatarioId: areaUrgencia.responsable_id,
+          tipo: `solicitud_${urgencia}`,
+          titulo: tituloUrgencia,
+          mensaje: mensajeUrgencia,
+          solicitudId: solicitud.id,
+        })
+      }
+      await notificarPorRol(session.tenantId, 'tesoreria', tituloUrgencia, mensajeUrgencia, solicitud.id)
+      await notificarPorRol(session.tenantId, 'compras', tituloUrgencia, mensajeUrgencia, solicitud.id)
     }
 
     await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: enviar ? 'enviar_solicitud' : 'crear_borrador', entidad: 'solicitud', entidadId: solicitud.id });

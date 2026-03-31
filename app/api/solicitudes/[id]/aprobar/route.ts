@@ -29,12 +29,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const seg = verificarSegregacion(solicitud, session.userId, 'aprobar');
     if (!seg.permitido) return Response.json({ error: { code: 'FORBIDDEN', message: seg.motivo } }, { status: 403 });
 
-    // Caja chica always bypasses Compras role
-    const esCajaChica = solicitud.tipo === 'caja_chica';
-
     // Check if tenant has users with 'compras' role to route there
     const comprasRole = await prisma.roles.findUnique({ where: { nombre: 'compras' } });
-    const hasComprasUsers = !esCajaChica && comprasRole ? await prisma.usuarios_roles.count({
+    const hasComprasUsers = comprasRole ? await prisma.usuarios_roles.count({
       where: { rol_id: comprasRole.id, usuario: { tenant_id: session.tenantId, activo: true } },
     }) > 0 : false;
 
