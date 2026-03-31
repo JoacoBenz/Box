@@ -31,6 +31,7 @@ model tenants {
   proveedores    proveedores[]
   centros_costo  centros_costo[]
   delegaciones   delegaciones[]
+  comentarios    comentarios[]
 }
 
 model roles {
@@ -85,6 +86,7 @@ model usuarios {
   log_auditoria            log_auditoria[]
   delegaciones_otorgadas   delegaciones[] @relation("delegaciones_delegante")
   delegaciones_recibidas   delegaciones[] @relation("delegaciones_delegado")
+  comentarios              comentarios[]
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, email])
@@ -147,6 +149,7 @@ model solicitudes {
   compras         compras[]
   recepciones     recepciones[]
   notificaciones  notificaciones[]
+  comentarios     comentarios[]
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, numero])
@@ -343,4 +346,19 @@ model delegaciones {
 
   @@unique([tenant_id, delegante_id, delegado_id, rol_delegado, fecha_inicio])
   @@index([tenant_id, delegado_id, activo])
+}
+
+model comentarios {
+  id            Int      @id @default(autoincrement())
+  tenant_id     Int
+  solicitud_id  Int
+  usuario_id    Int
+  mensaje       String
+  created_at    DateTime @default(now())
+
+  tenant    tenants     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  solicitud solicitudes @relation(fields: [solicitud_id], references: [id], onDelete: Cascade)
+  usuario   usuarios    @relation(fields: [usuario_id], references: [id])
+
+  @@index([tenant_id, solicitud_id])
 }

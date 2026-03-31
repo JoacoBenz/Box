@@ -58,6 +58,7 @@ export default async function SolicitudesPage({ searchParams }: PageProps) {
         solicitudes={JSON.parse(JSON.stringify(solicitudes))}
         estadoFilter={estado}
         urgenciaFilter={urgencia}
+        roles={user.roles as string[]}
       />
     </div>
   )

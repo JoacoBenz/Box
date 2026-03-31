@@ -1,6 +1,7 @@
 'use client'
 
-import { Table, Tag, Select, Space } from 'antd'
+import { Table, Tag, Select, Space, Button } from 'antd'
+import { DownloadOutlined } from '@ant-design/icons'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types'
 import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types'
@@ -22,9 +23,11 @@ interface Props {
   solicitudes: Solicitud[]
   estadoFilter?: string
   urgenciaFilter?: string
+  roles?: string[]
 }
 
-export default function SolicitudesTable({ solicitudes, estadoFilter, urgenciaFilter }: Props) {
+export default function SolicitudesTable({ solicitudes, estadoFilter, urgenciaFilter, roles = [] }: Props) {
+  const canExport = ['director', 'tesoreria', 'compras', 'admin'].some(r => roles.includes(r))
   const router = useRouter()
   const pathname = usePathname()
 
@@ -114,6 +117,18 @@ export default function SolicitudesTable({ solicitudes, estadoFilter, urgenciaFi
           onChange={(v) => updateFilter('urgencia', v)}
           options={Object.entries(URGENCIAS).map(([k, v]) => ({ value: k, label: v.label }))}
         />
+        {canExport && (
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={() => {
+              const params = new URLSearchParams();
+              if (estadoFilter) params.set('estado', estadoFilter);
+              window.open(`/api/solicitudes/export?${params.toString()}`);
+            }}
+          >
+            Exportar CSV
+          </Button>
+        )}
       </Space>
       <Table
         rowKey="id"

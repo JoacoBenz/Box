@@ -1,10 +1,13 @@
 import { prisma } from './prisma';
+import { cached } from './cache';
 
 export async function getTenantConfig(tenantId: number, clave: string): Promise<string | null> {
-  const config = await prisma.configuracion.findUnique({
-    where: { tenant_id_clave: { tenant_id: tenantId, clave } },
+  return cached(`t:${tenantId}:config:${clave}`, 5 * 60 * 1000, async () => {
+    const config = await prisma.configuracion.findUnique({
+      where: { tenant_id_clave: { tenant_id: tenantId, clave } },
+    });
+    return config?.valor ?? null;
   });
-  return config?.valor ?? null;
 }
 
 export async function getTenantConfigBool(tenantId: number, clave: string, defaultVal: boolean): Promise<boolean> {

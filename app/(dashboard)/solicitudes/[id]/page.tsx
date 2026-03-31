@@ -4,10 +4,12 @@ import { getTenantConfigBool } from '@/lib/tenant-config'
 import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types'
 import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types'
 import { redirect, notFound } from 'next/navigation'
-import { Card, Tag, Descriptions, Timeline } from 'antd'
+import { Card, Tag, Descriptions } from 'antd'
 import Link from 'next/link'
 import SolicitudActionButtons from './SolicitudActionButtons'
 import ItemsTable from './ItemsTable'
+import TimelineSection from './TimelineSection'
+import ComentariosSection from './ComentariosSection'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -66,83 +68,6 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
     precio_estimado: item.precio_estimado != null ? Number(item.precio_estimado) : null,
     link_producto: item.link_producto ?? null,
   }))
-
-  // Build timeline from audit log for full traceability
-  const auditLogs = await prisma.log_auditoria.findMany({
-    where: { tenant_id: tenantId, entidad: 'solicitud', entidad_id: solicitud.id },
-    orderBy: { created_at: 'asc' },
-    include: { usuario: { select: { nombre: true } } },
-  })
-
-  // Also include compra and recepcion audit entries
-  const compraIds = solicitud.compras.map(c => c.id)
-  const recepcionAuditLogs = await prisma.log_auditoria.findMany({
-    where: {
-      tenant_id: tenantId,
-      OR: [
-        { entidad: 'compra', entidad_id: { in: compraIds.length > 0 ? compraIds : [-1] } },
-        { entidad: 'recepcion', entidad_id: solicitud.id },
-      ],
-    },
-    orderBy: { created_at: 'asc' },
-    include: { usuario: { select: { nombre: true } } },
-  })
-
-  const allLogs = [...auditLogs, ...recepcionAuditLogs].sort(
-    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-  )
-
-  const ACCION_CONFIG: Record<string, { label: string; color: string }> = {
-    crear_borrador:       { label: 'Borrador creado',              color: 'gray' },
-    enviar_solicitud:     { label: 'Enviada',                      color: 'blue' },
-    editar_solicitud:     { label: 'Editada',                      color: 'orange' },
-    validar_solicitud:    { label: 'Validada por Responsable',     color: 'cyan' },
-    devolver_responsable: { label: 'Devuelta por Responsable',     color: 'orange' },
-    devolver_director:    { label: 'Devuelta por Dirección',       color: 'orange' },
-    aprobar_solicitud:    { label: 'Aprobada por Dirección',       color: 'green' },
-    rechazar_solicitud:   { label: 'Rechazada',                    color: 'red' },
-    registrar_compra:     { label: 'Compra registrada',            color: 'geekblue' },
-    confirmar_recepcion:  { label: 'Recepción confirmada',         color: 'lime' },
-    cerrar_solicitud:     { label: 'Cerrada',                      color: 'purple' },
-  }
-
-  const timelineItems = allLogs.map(log => {
-    const config = ACCION_CONFIG[log.accion] ?? { label: log.accion, color: 'default' }
-    const datos = log.datos_nuevos as Record<string, any> | null
-    const detalle = datos?.motivo || datos?.observaciones || datos?.resolucion || null
-
-    return {
-      color: config.color,
-      content: (
-        <>
-          <strong>{config.label}</strong>
-          <div style={{ fontSize: 12, color: '#888' }}>
-            {new Date(log.created_at).toLocaleString('es-AR')} — {log.usuario.nombre}
-          </div>
-          {detalle && (
-            <div style={{ marginTop: 4, fontSize: 12, color: config.color === 'red' ? '#c53030' : '#d46b08' }}>
-              {detalle}
-            </div>
-          )}
-        </>
-      ),
-    }
-  })
-
-  // If no audit logs exist yet (legacy data), show at least the creation
-  if (timelineItems.length === 0) {
-    timelineItems.push({
-      color: 'blue',
-      content: (
-        <>
-          <strong>Creada</strong>
-          <div style={{ fontSize: 12, color: '#888' }}>
-            {new Date(solicitud.created_at).toLocaleString('es-AR')} — {solicitud.solicitante.nombre}
-          </div>
-        </>
-      ),
-    })
-  }
 
   const STATUS_BG: Record<string, string> = {
     borrador: '#f1f5f9',
@@ -355,9 +280,10 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
       )}
 
       {/* Timeline */}
-      <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Historial</span>} style={{ borderRadius: 16 }}>
-        <Timeline items={timelineItems} />
-      </Card>
+      <TimelineSection solicitudId={solicitud.id} />
+
+      {/* Comentarios */}
+      <ComentariosSection solicitudId={solicitud.id} />
     </div>
   )
 }
