@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { tenantPrisma } from '@/lib/prisma';
 import { verificarRol } from '@/lib/permissions';
-import { registrarAuditoria } from '@/lib/audit';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { crearNotificacion } from '@/lib/notifications';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await db.solicitudes.update({ where: { id: solicitudId }, data: { estado: 'cerrada' } });
     await crearNotificacion({ tenantId: session.tenantId, destinatarioId: solicitud.solicitante_id, tipo: 'solicitud_cerrada', titulo: 'Tu solicitud fue cerrada', mensaje: `Resolución: ${resolucion}`, solicitudId });
 
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'cerrar_solicitud', entidad: 'solicitud', entidadId: solicitudId, datosNuevos: { resolucion } });
+    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'cerrar_solicitud', entidad: 'solicitud', entidadId: solicitudId, datosNuevos: { resolucion }, ipAddress: getClientIp(request) });
     return Response.json({ message: 'Solicitud cerrada' });
   } catch (error: any) {
     if (error.message === 'No autenticado') return Response.json({ error: { code: 'UNAUTHORIZED', message: 'No autenticado' } }, { status: 401 });

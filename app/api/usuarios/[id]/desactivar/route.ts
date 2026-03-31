@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { verificarRol } from '@/lib/permissions';
-import { registrarAuditoria } from '@/lib/audit';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -36,7 +36,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     await db.usuarios.update({ where: { id: userId }, data: { activo: nuevoActivo } });
     const accion = nuevoActivo ? 'activar_usuario' : 'desactivar_usuario';
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion, entidad: 'usuario', entidadId: userId });
+    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion, entidad: 'usuario', entidadId: userId, ipAddress: getClientIp(request) });
 
     return Response.json({ message: nuevoActivo ? 'Usuario activado' : 'Usuario desactivado' });
   } catch (error: any) {

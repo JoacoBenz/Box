@@ -4,6 +4,15 @@ import { z } from 'zod';
 const nonBlank = (min: number, msg: string) =>
   z.string().min(min, msg).refine((v) => v.trim().length >= min, msg);
 
+// Shared strong password policy
+const passwordSchema = z
+  .string()
+  .min(10, 'Mínimo 10 caracteres')
+  .regex(/[A-Z]/, 'Debe contener al menos una mayúscula')
+  .regex(/[a-z]/, 'Debe contener al menos una minúscula')
+  .regex(/[0-9]/, 'Debe contener al menos un número')
+  .regex(/[^A-Za-z0-9]/, 'Debe contener al menos un carácter especial (!@#$%...)');
+
 // CUIT argentino: XX-XXXXXXXX-X (con o sin guiones)
 const cuitRegex = /^\d{2}-\d{8}-\d{1}$/;
 const cuitSchema = z
@@ -21,7 +30,7 @@ export const registroSchema = z.object({
   nombreOrganizacion: nonBlank(3, 'Mínimo 3 caracteres').max(255),
   nombreUsuario: nonBlank(2, 'Mínimo 2 caracteres').max(150),
   email: z.string().email('Email inválido'),
-  password: z.string().min(8, 'Mínimo 8 caracteres'),
+  password: passwordSchema,
 });
 
 export const loginSchema = z.object({
@@ -37,7 +46,7 @@ export const areaSchema = z.object({
 export const usuarioSchema = z.object({
   nombre: nonBlank(2, 'El nombre no puede estar vacío').max(150),
   email: z.string().email('Email inválido'),
-  password: z.string().min(8, 'Mínimo 8 caracteres').max(128).optional(),
+  password: passwordSchema.optional(),
   area_id: z.number().int().positive(),
   roles: z
     .array(z.enum(['solicitante', 'responsable_area', 'director', 'tesoreria', 'compras', 'admin']))

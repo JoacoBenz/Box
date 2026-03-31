@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { getServerSession } from '@/lib/auth';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { verificarRol } from '@/lib/permissions';
-import { registrarAuditoria } from '@/lib/audit';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { usuarioSchema } from '@/lib/validators';
 
 export async function GET() {
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       return newUser;
     });
 
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'crear_usuario', entidad: 'usuario', entidadId: usuario.id, datosNuevos: { nombre, email, roles: roleNames } });
+    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'crear_usuario', entidad: 'usuario', entidadId: usuario.id, datosNuevos: { nombre, email, roles: roleNames }, ipAddress: getClientIp(request) });
 
     return Response.json({ ...usuario, password_hash: undefined }, { status: 201 });
   } catch (error: any) {

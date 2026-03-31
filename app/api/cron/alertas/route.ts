@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   const secret = request.headers.get('x-cron-secret');
   if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });

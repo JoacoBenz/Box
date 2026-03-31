@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { tenantPrisma } from '@/lib/prisma';
 import { verificarRol } from '@/lib/permissions';
-import { registrarAuditoria } from '@/lib/audit';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { z } from 'zod';
 
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     });
     await notificarPorRol(session.tenantId, 'tesoreria', 'Pago programado para ejecutar', `Pago de "${solicitud.titulo}" programado para el ${fechaStr}`, solicitudId);
 
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'programar_pago', entidad: 'solicitud', entidadId: solicitudId, datosNuevos: { dia_pago_programado: result.data.dia_pago_programado } });
+    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'programar_pago', entidad: 'solicitud', entidadId: solicitudId, datosNuevos: { dia_pago_programado: result.data.dia_pago_programado }, ipAddress: getClientIp(request) });
     return Response.json({ message: 'Pago programado' });
   } catch (error: any) {
     if (error.message === 'No autenticado') return Response.json({ error: { code: 'UNAUTHORIZED', message: 'No autenticado' } }, { status: 401 });

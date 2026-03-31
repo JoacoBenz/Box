@@ -2,7 +2,8 @@ import { NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { registroSchema } from '@/lib/validators';
-import { registrarAuditoria } from '@/lib/audit';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 function slugify(text: string): string {
   return text
@@ -17,6 +18,15 @@ function slugify(text: string): string {
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ?? 'unknown';
+    const rateLimit = checkRateLimit(`registro:${ip}`, 3, 3_600_000);
+    if (!rateLimit.allowed) {
+      return Response.json(
+        { error: { code: 'RATE_LIMITED', message: 'Demasiados intentos. Intentá de nuevo más tarde.' } },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const result = registroSchema.safeParse(body);
     if (!result.success) {
@@ -108,6 +118,7 @@ export async function POST(request: NextRequest) {
       accion: 'registro_organizacion',
       entidad: 'tenant',
       entidadId: txResult.tenant.id,
+      ipAddress: getClientIp(request),
     });
 
     return Response.json({ message: 'Organización registrada exitosamente' }, { status: 201 });

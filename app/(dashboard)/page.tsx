@@ -70,8 +70,8 @@ function formatMoney(amount: number): string {
 }
 
 // ── Count-up hook ──
-function useCountUp(target: number | undefined | null, duration = 800) {
-  target = target ?? 0
+function useCountUp(rawTarget: number | undefined | null, duration = 800) {
+  const target = rawTarget ?? 0
   const [value, setValue] = useState(0)
   const ref = useRef<number | null>(null)
 

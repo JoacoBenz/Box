@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { verificarRol } from '@/lib/permissions';
-import { registrarAuditoria } from '@/lib/audit';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { areaSchema } from '@/lib/validators';
 
 export async function GET() {
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     const area = await db.areas.create({ data: { tenant_id: session.tenantId, nombre, responsable_id: responsable_id ?? null } });
 
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'crear_area', entidad: 'area', entidadId: area.id, datosNuevos: { nombre } });
+    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'crear_area', entidad: 'area', entidadId: area.id, datosNuevos: { nombre }, ipAddress: getClientIp(request) });
 
     return Response.json(area, { status: 201 });
   } catch (error: any) {

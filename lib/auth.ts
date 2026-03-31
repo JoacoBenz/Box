@@ -3,6 +3,8 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
 import type { RolNombre } from '@/types';
+import { checkRateLimit } from './rate-limit';
+import { isAccountLocked, recordFailedLogin, clearFailedAttempts } from './account-lockout';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -15,21 +17,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        // DEV BYPASS — remove before production
-        if (process.env.NODE_ENV === 'development' && credentials.email === 'dev@test.com' && credentials.password === 'dev') {
-          return {
-            id: '1',
-            name: 'Admin Dev',
-            email: 'dev@test.com',
-            tenantId: 1,
-            tenantName: 'Org Dev',
-            areaId: 1,
-            areaNombre: 'Administración',
-            roles: ['admin', 'director'] as RolNombre[],
-          };
-        }
+        const email = credentials.email as string;
 
-        const usuario = await prisma.usuarios.findFirst({
+        // Check account lockout
+        const lockout = isAccountLocked(email);
+        if (lockout.locked) return null;
+
+        // Check rate limit
+        const rateLimit = checkRateLimit(`login:${email}`, 10, 60_000);
+        if (!rateLimit.allowed) return null;
+
+const usuario = await prisma.usuarios.findFirst({
           where: {
             email: credentials.email as string,
             activo: true,
@@ -43,13 +41,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           },
         });
 
-        if (!usuario) return null;
+        if (!usuario) {
+          recordFailedLogin(email);
+          return null;
+        }
 
         const passwordMatch = await bcrypt.compare(
           credentials.password as string,
           usuario.password_hash
         );
-        if (!passwordMatch) return null;
+        if (!passwordMatch) {
+          recordFailedLogin(email);
+          return null;
+        }
+
+        clearFailedAttempts(email);
 
         return {
           id: String(usuario.id),

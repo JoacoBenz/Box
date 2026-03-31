@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { tenantPrisma, prisma } from '@/lib/prisma';
-import { registrarAuditoria } from '@/lib/audit';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { getTenantConfigBool } from '@/lib/tenant-config';
 
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
     }
 
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'enviar_solicitud', entidad: 'solicitud', entidadId: solicitudId });
+    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'enviar_solicitud', entidad: 'solicitud', entidadId: solicitudId, ipAddress: getClientIp(request) });
     return Response.json({ message: 'Solicitud enviada' });
   } catch (error: any) {
     if (error.message === 'No autenticado') return Response.json({ error: { code: 'UNAUTHORIZED', message: 'No autenticado' } }, { status: 401 });

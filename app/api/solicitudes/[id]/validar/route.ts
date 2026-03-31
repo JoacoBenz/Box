@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { tenantPrisma } from '@/lib/prisma';
 import { verificarRol, verificarSegregacion, verificarResponsableDeArea } from '@/lib/permissions';
-import { registrarAuditoria } from '@/lib/audit';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await notificarPorRol(session.tenantId, 'director', 'Solicitud lista para aprobar', `${session.nombre} validó: ${solicitud.titulo}`, solicitudId);
     await crearNotificacion({ tenantId: session.tenantId, destinatarioId: solicitud.solicitante_id, tipo: 'solicitud_validada', titulo: 'Tu solicitud fue validada', mensaje: `Tu solicitud "${solicitud.titulo}" pasó a aprobación de Dirección`, solicitudId });
 
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'validar_solicitud', entidad: 'solicitud', entidadId: solicitudId });
+    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'validar_solicitud', entidad: 'solicitud', entidadId: solicitudId, ipAddress: getClientIp(request) });
     return Response.json({ message: 'Solicitud validada' });
   } catch (error: any) {
     if (error.message === 'No autenticado') return Response.json({ error: { code: 'UNAUTHORIZED', message: 'No autenticado' } }, { status: 401 });

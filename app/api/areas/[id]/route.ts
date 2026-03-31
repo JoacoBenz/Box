@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { tenantPrisma } from '@/lib/prisma';
 import { verificarRol } from '@/lib/permissions';
-import { registrarAuditoria } from '@/lib/audit';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { areaSchema } from '@/lib/validators';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -42,7 +42,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       data: { nombre, responsable_id: responsable_id ?? null },
     });
 
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'editar_area', entidad: 'area', entidadId: areaId, datosAnteriores: area, datosNuevos: updated });
+    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'editar_area', entidad: 'area', entidadId: areaId, datosAnteriores: area, datosNuevos: updated, ipAddress: getClientIp(request) });
 
     return Response.json(updated);
   } catch (error: any) {
@@ -74,7 +74,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     }
 
     await db.areas.update({ where: { id: areaId }, data: { activo: false } });
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'desactivar_area', entidad: 'area', entidadId: areaId });
+    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'desactivar_area', entidad: 'area', entidadId: areaId, ipAddress: getClientIp(request) });
 
     return Response.json({ message: 'Área desactivada' });
   } catch (error: any) {

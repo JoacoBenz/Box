@@ -3,7 +3,7 @@ import { getServerSession } from '@/lib/auth';
 import { tenantPrisma } from '@/lib/prisma';
 import { verificarRol } from '@/lib/permissions';
 import { proveedorSchema } from '@/lib/validators';
-import { registrarAuditoria } from '@/lib/audit';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -53,7 +53,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const updated = await db.proveedores.update({ where: { id: proveedorId }, data: updateData });
 
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'editar_proveedor', entidad: 'proveedor', entidadId: proveedorId, datosAnteriores: existing });
+    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'editar_proveedor', entidad: 'proveedor', entidadId: proveedorId, datosAnteriores: existing, ipAddress: getClientIp(request) });
 
     return Response.json(updated);
   } catch (error: any) {
@@ -78,7 +78,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     await db.proveedores.update({ where: { id: proveedorId }, data: { activo: false } });
 
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'desactivar_proveedor', entidad: 'proveedor', entidadId: proveedorId });
+    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'desactivar_proveedor', entidad: 'proveedor', entidadId: proveedorId, ipAddress: getClientIp(request) });
 
     return Response.json({ message: 'Proveedor desactivado' });
   } catch (error: any) {

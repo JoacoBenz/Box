@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { getServerSession } from '@/lib/auth';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { verificarRol } from '@/lib/permissions';
-import { registrarAuditoria } from '@/lib/audit';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { usuarioSchema } from '@/lib/validators';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -69,7 +69,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       }
     });
 
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'editar_usuario', entidad: 'usuario', entidadId: userId });
+    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'editar_usuario', entidad: 'usuario', entidadId: userId, ipAddress: getClientIp(request) });
 
     return Response.json({ message: 'Usuario actualizado' });
   } catch (error: any) {

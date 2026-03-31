@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { verificarRol, verificarSegregacion } from '@/lib/permissions';
-import { registrarAuditoria } from '@/lib/audit';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { crearNotificacion } from '@/lib/notifications';
 import { compraSchema } from '@/lib/validators';
 import { uploadFile } from '@/lib/supabase';
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
       await crearNotificacion({ tenantId: session.tenantId, destinatarioId: area.responsable_id, tipo: 'compra_registrada', titulo: 'Compra ejecutada', mensaje: `"${solicitud.titulo}" fue comprado. Pendiente de recepción.`, solicitudId: solicitud.id });
     }
 
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'registrar_compra', entidad: 'compra', entidadId: compra.id });
+    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'registrar_compra', entidad: 'compra', entidadId: compra.id, ipAddress: getClientIp(request) });
     return Response.json(compra, { status: 201 });
   } catch (error: any) {
     if (error.message === 'No autenticado') return Response.json({ error: { code: 'UNAUTHORIZED', message: 'No autenticado' } }, { status: 401 });

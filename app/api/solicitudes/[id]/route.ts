@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { solicitudSchema } from '@/lib/validators';
-import { registrarAuditoria } from '@/lib/audit';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -111,7 +111,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       }
     });
 
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'editar_solicitud', entidad: 'solicitud', entidadId: solicitudId, datosAnteriores: anterior });
+    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'editar_solicitud', entidad: 'solicitud', entidadId: solicitudId, datosAnteriores: anterior, ipAddress: getClientIp(request) });
 
     return Response.json({ message: 'Solicitud actualizada' });
   } catch (error: any) {

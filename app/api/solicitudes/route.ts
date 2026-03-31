@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { verificarRol } from '@/lib/permissions';
-import { registrarAuditoria } from '@/lib/audit';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { solicitudSchema } from '@/lib/validators';
 import { getTenantConfigBool } from '@/lib/tenant-config';
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
       await notificarPorRol(session.tenantId, 'compras', tituloUrgencia, mensajeUrgencia, solicitud.id)
     }
 
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: enviar ? 'enviar_solicitud' : 'crear_borrador', entidad: 'solicitud', entidadId: solicitud.id });
+    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: enviar ? 'enviar_solicitud' : 'crear_borrador', entidad: 'solicitud', entidadId: solicitud.id, ipAddress: getClientIp(request) });
 
     return Response.json(solicitud, { status: 201 });
   } catch (error: any) {

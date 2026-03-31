@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { tenantPrisma } from '@/lib/prisma';
 import { proveedorSchema } from '@/lib/validators';
-import { registrarAuditoria } from '@/lib/audit';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 
 export async function GET(request: NextRequest) {
   try {
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'crear_proveedor', entidad: 'proveedor', entidadId: proveedor.id });
+    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'crear_proveedor', entidad: 'proveedor', entidadId: proveedor.id, ipAddress: getClientIp(request) });
 
     return Response.json(proveedor, { status: 201 });
   } catch (error: any) {

@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { verificarRol, verificarSegregacion } from '@/lib/permissions';
-import { registrarAuditoria } from '@/lib/audit';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { crearNotificacion } from '@/lib/notifications';
 import { rechazoSchema } from '@/lib/validators';
 
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       await crearNotificacion({ tenantId: session.tenantId, destinatarioId: area.responsable_id, tipo: 'solicitud_rechazada', titulo: 'Solicitud rechazada', mensaje: `"${solicitud.titulo}" fue rechazada. Motivo: ${result.data.motivo}`, solicitudId });
     }
 
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'rechazar_solicitud', entidad: 'solicitud', entidadId: solicitudId, datosNuevos: { motivo: result.data.motivo } });
+    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'rechazar_solicitud', entidad: 'solicitud', entidadId: solicitudId, datosNuevos: { motivo: result.data.motivo }, ipAddress: getClientIp(request) });
     return Response.json({ message: 'Solicitud rechazada' });
   } catch (error: any) {
     if (error.message === 'No autenticado') return Response.json({ error: { code: 'UNAUTHORIZED', message: 'No autenticado' } }, { status: 401 });

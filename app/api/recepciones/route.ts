@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { verificarRol } from '@/lib/permissions';
-import { registrarAuditoria } from '@/lib/audit';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { recepcionSchema } from '@/lib/validators';
 import { uploadFile } from '@/lib/supabase';
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
       await notificarPorRol(session.tenantId, 'tesoreria', 'Recepción con problemas', `${session.nombre} reportó problema (${tipo_problema}) con "${solicitud.titulo}": ${observaciones}`, solicitud_id);
     }
 
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'confirmar_recepcion', entidad: 'recepcion', entidadId: solicitud_id, datosNuevos: { conforme, tipo_problema } });
+    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'confirmar_recepcion', entidad: 'recepcion', entidadId: solicitud_id, datosNuevos: { conforme, tipo_problema }, ipAddress: getClientIp(request) });
     return Response.json({ message: conforme ? 'Recepción confirmada y solicitud cerrada' : 'Recepción registrada con observaciones' }, { status: 201 });
   } catch (error: any) {
     if (error.message === 'No autenticado') return Response.json({ error: { code: 'UNAUTHORIZED', message: 'No autenticado' } }, { status: 401 });

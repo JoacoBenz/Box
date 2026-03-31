@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { verificarRol, verificarSegregacion, verificarResponsableDeArea } from '@/lib/permissions';
-import { registrarAuditoria } from '@/lib/audit';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { crearNotificacion } from '@/lib/notifications';
 import { devolucionSchema } from '@/lib/validators';
 
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return Response.json({ error: { code: 'BAD_REQUEST', message: 'origen debe ser responsable o director' } }, { status: 400 });
     }
 
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: `devolver_${origen}`, entidad: 'solicitud', entidadId: solicitudId, datosNuevos: { observaciones: result.data.observaciones } });
+    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: `devolver_${origen}`, entidad: 'solicitud', entidadId: solicitudId, datosNuevos: { observaciones: result.data.observaciones }, ipAddress: getClientIp(request) });
     return Response.json({ message: 'Solicitud devuelta' });
   } catch (error: any) {
     if (error.message === 'No autenticado') return Response.json({ error: { code: 'UNAUTHORIZED', message: 'No autenticado' } }, { status: 401 });
