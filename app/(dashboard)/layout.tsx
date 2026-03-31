@@ -10,7 +10,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <DashboardShell
-      tenantNombre={user.tenantName ?? user.tenantNombre ?? 'Mi Colegio'}
+      tenantNombre={user.tenantName ?? user.tenantNombre ?? 'Mi Organización'}
       userName={user.name ?? ''}
       areaNombre={user.areaNombre ?? null}
       roles={user.roles ?? []}

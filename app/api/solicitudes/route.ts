@@ -5,6 +5,7 @@ import { verificarRol } from '@/lib/permissions';
 import { registrarAuditoria } from '@/lib/audit';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { solicitudSchema } from '@/lib/validators';
+import { getTenantConfigBool, getTenantConfigNumber } from '@/lib/tenant-config';
 
 async function generarNumeroSolicitud(tenantId: number): Promise<string> {
   const año = new Date().getFullYear();
@@ -65,7 +66,10 @@ export async function GET(request: NextRequest) {
       where.solicitante_id = session.userId;
     }
 
-    if (estado) where.estado = estado;
+    if (estado) {
+      const estados = estado.split(',').map(e => e.trim()).filter(Boolean);
+      where.estado = estados.length === 1 ? estados[0] : { in: estados };
+    }
     if (urgencia) where.urgencia = urgencia;
     if (areaId) where.area_id = areaId;
     if (busqueda) where.OR = [{ titulo: { contains: busqueda, mode: 'insensitive' } }, { descripcion: { contains: busqueda, mode: 'insensitive' } }];
@@ -109,11 +113,14 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: { code: 'VALIDATION_ERROR', message: 'Datos inválidos', details: result.error.issues.map(i => ({ field: i.path.join('.'), message: i.message })) } }, { status: 400 });
     }
 
-    const { titulo, descripcion, justificacion, urgencia, proveedor_sugerido, proveedor_id, items } = result.data;
+    const { titulo, descripcion, justificacion, urgencia, proveedor_sugerido, proveedor_id, centro_costo_id, items } = result.data;
 
     const montoTotal = items.reduce((acc, item) => {
       return acc + (item.precio_estimado ? Number(item.precio_estimado) * Number(item.cantidad) : 0);
     }, 0);
+
+    const umbralCajaChica = await getTenantConfigNumber(session.tenantId, 'umbral_caja_chica', 50000);
+    const tipo = montoTotal > 0 && montoTotal <= umbralCajaChica ? 'caja_chica' : 'formal';
 
     const solicitud = await prisma.$transaction(async (tx) => {
       const numero = await generarNumeroSolicitud(session.tenantId);
@@ -129,6 +136,8 @@ export async function POST(request: NextRequest) {
           urgencia,
           proveedor_sugerido: proveedor_sugerido ?? null,
           proveedor_id: proveedor_id ?? null,
+          centro_costo_id: centro_costo_id ?? null,
+          tipo,
           solicitante_id: session.userId,
           area_id: session.areaId!,
           estado,
@@ -153,20 +162,23 @@ export async function POST(request: NextRequest) {
     });
 
     if (enviar) {
-      // Find area responsable — require one to exist
-      const area = await prisma.areas.findFirst({ where: { id: session.areaId!, tenant_id: session.tenantId } });
-      if (!area?.responsable_id) {
-        // No responsable assigned: notify admins and keep as enviada (don't skip validation)
-        await notificarPorRol(session.tenantId, 'director', 'Área sin responsable', `La solicitud "${titulo}" fue enviada pero el área no tiene responsable asignado. Asigná uno para que pueda ser validada.`, solicitud.id);
+      const requiereValidacion = await getTenantConfigBool(session.tenantId, 'requiere_validacion_responsable', true);
+      if (!requiereValidacion) {
+        await notificarPorRol(session.tenantId, 'director', 'Nueva solicitud para aprobar', `${session.nombre} solicita: ${titulo}`, solicitud.id);
       } else {
-        await crearNotificacion({
-          tenantId: session.tenantId,
-          destinatarioId: area.responsable_id,
-          tipo: 'solicitud_enviada',
-          titulo: `Nueva solicitud de validar`,
-          mensaje: `${session.nombre} solicita: ${titulo}`,
-          solicitudId: solicitud.id,
-        });
+        const area = await prisma.areas.findFirst({ where: { id: session.areaId!, tenant_id: session.tenantId } });
+        if (!area?.responsable_id) {
+          await notificarPorRol(session.tenantId, 'director', 'Área sin responsable', `La solicitud "${titulo}" fue enviada pero el área no tiene responsable asignado. Asigná uno para que pueda ser validada.`, solicitud.id);
+        } else {
+          await crearNotificacion({
+            tenantId: session.tenantId,
+            destinatarioId: area.responsable_id,
+            tipo: 'solicitud_enviada',
+            titulo: `Nueva solicitud para validar`,
+            mensaje: `${session.nombre} solicita: ${titulo}`,
+            solicitudId: solicitud.id,
+          });
+        }
       }
     }
 

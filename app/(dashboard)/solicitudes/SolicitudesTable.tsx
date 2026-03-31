@@ -12,6 +12,7 @@ interface Solicitud {
   titulo: string
   urgencia: string
   estado: string
+  tipo?: string
   fecha_envio: string | null
   created_at: string
   area: { nombre: string } | null
@@ -70,10 +71,15 @@ export default function SolicitudesTable({ solicitudes, estadoFilter, urgenciaFi
       title: 'Estado',
       dataIndex: 'estado',
       key: 'estado',
-      width: 180,
-      render: (val: string) => {
+      width: 200,
+      render: (val: string, row: Solicitud) => {
         const e = ESTADOS_SOLICITUD[val as EstadoSolicitud]
-        return e ? <Tag color={e.color}>{e.label}</Tag> : <Tag>{val}</Tag>
+        return (
+          <Space size={4} wrap>
+            {e ? <Tag color={e.color}>{e.label}</Tag> : <Tag>{val}</Tag>}
+            {row.tipo === 'caja_chica' && <Tag color="cyan">Caja Chica</Tag>}
+          </Space>
+        )
       },
     },
     {

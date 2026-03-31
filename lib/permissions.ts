@@ -12,7 +12,7 @@ export function verificarSegregacion(
     aprobado_por_id?: number | null;
   },
   usuarioId: number,
-  accion: 'validar' | 'aprobar' | 'comprar'
+  accion: 'validar' | 'aprobar' | 'comprar' | 'procesar_compras'
 ): { permitido: boolean; motivo?: string } {
   switch (accion) {
     case 'validar':
@@ -26,6 +26,11 @@ export function verificarSegregacion(
       }
       if (solicitud.validado_por_id != null && solicitud.validado_por_id === usuarioId) {
         return { permitido: false, motivo: 'No podés aprobar una solicitud que vos mismo validaste' };
+      }
+      break;
+    case 'procesar_compras':
+      if (solicitud.aprobado_por_id != null && solicitud.aprobado_por_id === usuarioId) {
+        return { permitido: false, motivo: 'No podés procesar una solicitud que vos aprobaste' };
       }
       break;
     case 'comprar':

@@ -49,10 +49,29 @@ export async function GET() {
       result.rechazadasSemana = rechazadasSemana;
     }
 
+    // ── Compras section ──
+    if (roles.includes('compras')) {
+      const [pendientesEnCompras, pagoProgramado, cajaChicaMes] = await Promise.all([
+        db.solicitudes.count({ where: { estado: { in: ['aprobada', 'en_compras'] } } }),
+        db.solicitudes.count({ where: { estado: 'pago_programado' } }),
+        db.solicitudes.count({ where: { tipo: 'caja_chica', created_at: { gte: inicioMes } } }),
+      ]);
+      const pipeline = await db.solicitudes.findMany({
+        where: { estado: { in: ['aprobada', 'en_compras', 'pago_programado'] } },
+        orderBy: { created_at: 'desc' },
+        take: 10,
+        select: { id: true, numero: true, titulo: true, estado: true, urgencia: true, prioridad_compra: true, dia_pago_programado: true, monto_estimado_total: true },
+      });
+      result.pendientesEnCompras = pendientesEnCompras;
+      result.pagoProgramado = pagoProgramado;
+      result.cajaChicaMes = cajaChicaMes;
+      result.pipeline = pipeline;
+    }
+
     // ── Tesorería section ──
     if (roles.includes('tesoreria')) {
       const [pendientesComprar, recepcionesConObs, ultimasCompras] = await Promise.all([
-        db.solicitudes.count({ where: { estado: 'aprobada' } }),
+        db.solicitudes.count({ where: { estado: { in: ['aprobada', 'pago_programado'] } } }),
         db.solicitudes.count({ where: { estado: 'recibida_con_obs' } }),
         db.compras.findMany({
           orderBy: { created_at: 'desc' },

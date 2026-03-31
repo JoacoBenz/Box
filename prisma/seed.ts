@@ -12,7 +12,7 @@ async function main() {
     { nombre: 'responsable_area', descripcion: 'Valida solicitudes de su área' },
     { nombre: 'director', descripcion: 'Aprueba o rechaza gastos' },
     { nombre: 'tesoreria', descripcion: 'Ejecuta compras y registra pagos' },
-    { nombre: 'admin', descripcion: 'Configura el sistema del colegio' },
+    { nombre: 'admin', descripcion: 'Administrador del sistema' },
   ];
 
   for (const role of roleNames) {
@@ -27,12 +27,12 @@ async function main() {
 
   // Seed a test tenant
   const testTenant = await prisma.tenants.upsert({
-    where: { slug: 'colegio-demo' },
+    where: { slug: 'org-demo' },
     update: {},
     create: {
-      nombre: 'Colegio Demo',
-      slug: 'colegio-demo',
-      email_contacto: 'admin@demo.edu.ar',
+      nombre: 'Organización Demo',
+      slug: 'org-demo',
+      email_contacto: 'admin@demo.com',
       moneda: 'ARS',
     },
   });
@@ -44,20 +44,20 @@ async function main() {
 
   // Create default area
   const areaDir = await prisma.areas.upsert({
-    where: { tenant_id_nombre: { tenant_id: testTenant.id, nombre: 'Dirección' } },
+    where: { tenant_id_nombre: { tenant_id: testTenant.id, nombre: 'Administración' } },
     update: {},
-    create: { tenant_id: testTenant.id, nombre: 'Dirección' },
+    create: { tenant_id: testTenant.id, nombre: 'Administración' },
   });
 
   // Create admin user
   const passwordHash = await bcrypt.hash('admin1234', 12);
   const adminUser = await prisma.usuarios.upsert({
-    where: { tenant_id_email: { tenant_id: testTenant.id, email: 'admin@demo.edu.ar' } },
+    where: { tenant_id_email: { tenant_id: testTenant.id, email: 'admin@demo.com' } },
     update: {},
     create: {
       tenant_id: testTenant.id,
       nombre: 'Admin Demo',
-      email: 'admin@demo.edu.ar',
+      email: 'admin@demo.com',
       password_hash: passwordHash,
       area_id: areaDir.id,
     },
@@ -81,7 +81,7 @@ async function main() {
     data: { responsable_id: adminUser.id },
   });
 
-  console.log('Test tenant seeded. Login: admin@demo.edu.ar / admin1234');
+  console.log('Test tenant seeded. Login: admin@demo.com / admin1234');
 }
 
 main()

@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { auth, getServerSession } from '@/lib/auth'
+import { getTenantConfigBool } from '@/lib/tenant-config'
 import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types'
 import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types'
 import { redirect, notFound } from 'next/navigation'
@@ -50,6 +51,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
 
   // Check if session user is the designated responsable of this solicitud's area
   const isAreaResponsable = solicitud.area?.responsable_id === sessionUserId
+  const skipValidacion = !(await getTenantConfigBool(tenantId, 'requiere_validacion_responsable', true))
 
   const estado = solicitud.estado as EstadoSolicitud
   const urgencia = solicitud.urgencia as UrgenciaSolicitud
@@ -196,6 +198,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
             sessionRoles={sessionRoles}
             sessionAreaId={sessionAreaId}
             isAreaResponsable={isAreaResponsable}
+            skipValidacion={skipValidacion}
           />
         </div>
       </div>

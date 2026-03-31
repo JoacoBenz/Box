@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Form,
@@ -13,6 +13,7 @@ import {
   Divider,
   message,
   Typography,
+  Alert,
 } from 'antd'
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons'
 import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
@@ -36,6 +37,7 @@ interface SolicitudFormValues {
   justificacion: string
   urgencia: 'normal' | 'urgente' | 'critica'
   proveedor_id?: number | null
+  centro_costo_id?: number | null
   monto_estimado_total?: number
   items: ItemForm[]
 }
@@ -45,6 +47,13 @@ export default function NuevaSolicitudPage() {
   const [form] = Form.useForm<SolicitudFormValues>()
   const [loading, setLoading] = useState<'borrador' | 'enviar' | null>(null)
   const [selectedProveedor, setSelectedProveedor] = useState<any>(null)
+  const [centrosCosto, setCentrosCosto] = useState<{ id: number; nombre: string; codigo: string }[]>([])
+  const [montoEstimado, setMontoEstimado] = useState<number | null>(null)
+  const [umbralCajaChica] = useState<number>(50000)
+
+  useEffect(() => {
+    fetch('/api/centros-costo').then(r => r.ok ? r.json() : []).then(setCentrosCosto).catch(() => {})
+  }, [])
 
   async function handleSubmit(accion: 'borrador' | 'enviar') {
     try {
@@ -149,8 +158,29 @@ export default function NuevaSolicitudPage() {
               prefix="$"
               style={{ width: 200 }}
               placeholder="0.00"
+              onChange={(val) => setMontoEstimado(val as number | null)}
             />
           </Form.Item>
+
+          {montoEstimado != null && montoEstimado > 0 && montoEstimado <= umbralCajaChica && (
+            <Alert
+              type="info"
+              showIcon
+              message={`Esta solicitud califica como Caja Chica (≤ $${umbralCajaChica.toLocaleString('es-AR')}). Seguirá un flujo simplificado.`}
+              style={{ marginBottom: 16 }}
+            />
+          )}
+
+          {centrosCosto.length > 0 && (
+            <Form.Item label="Centro de Costo (opcional)" name="centro_costo_id">
+              <Select
+                allowClear
+                placeholder="Seleccionar centro de costo"
+                style={{ width: 300 }}
+                options={centrosCosto.map(c => ({ value: c.id, label: `${c.codigo} — ${c.nombre}` }))}
+              />
+            </Form.Item>
+          )}
         </Card>
 
         <Card title={<span style={{ fontWeight: 600, fontSize: 15 }}>Items Solicitados</span>} style={{ borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>

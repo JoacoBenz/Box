@@ -13,6 +13,8 @@ import {
   TeamOutlined,
   ApartmentOutlined,
   ShopOutlined,
+  ShoppingCartOutlined,
+  BankOutlined,
 } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
 import type { RolNombre } from '@/types';
@@ -68,6 +70,12 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
       label: pendientes.recepciones ? `Recepciones (${pendientes.recepciones})` : 'Recepciones',
       visible: roles.includes('solicitante') || roles.includes('responsable_area'),
     },
+    {
+      key: '/gestion-compras',
+      icon: <ShoppingCartOutlined />,
+      label: pendientes.compras ? `Gestión Compras (${pendientes.compras})` : 'Gestión Compras',
+      visible: roles.includes('compras'),
+    },
     { key: '/proveedores', icon: <ShopOutlined />, label: 'Proveedores', visible: true },
     {
       type: 'group' as const,
@@ -76,6 +84,7 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
       children: [
         { key: '/admin/usuarios', icon: <TeamOutlined />, label: 'Usuarios' },
         { key: '/admin/areas', icon: <ApartmentOutlined />, label: 'Áreas' },
+        { key: '/admin/centros-costo', icon: <BankOutlined />, label: 'Centros de Costo' },
       ],
     },
   ]
@@ -140,7 +149,7 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
               <path d="M16 10a4 4 0 01-8 0" />
             </svg>
           </div>
-          {!collapsed && <span style={{ fontWeight: 700, fontSize: 15, color: '#1e293b', letterSpacing: '-0.3px' }}>ComprasEdu</span>}
+          {!collapsed && <span style={{ fontWeight: 700, fontSize: 15, color: '#1e293b', letterSpacing: '-0.3px' }}>BoxZenj</span>}
         </div>
         <Menu
           className="sidebar-menu"

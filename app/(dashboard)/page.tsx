@@ -25,6 +25,8 @@ const ESTADO_COLOR: Record<string, string> = {
   devuelta_dir: 'warning',
   validada: 'cyan',
   aprobada: 'green',
+  en_compras: 'processing',
+  pago_programado: 'purple',
   rechazada: 'red',
   comprada: 'purple',
   recibida: 'lime',
@@ -36,9 +38,11 @@ const ESTADO_LABEL: Record<string, string> = {
   borrador: 'Borrador',
   enviada: 'Enviada',
   devuelta_resp: 'Devuelta (Resp.)',
-  devuelta_dir: 'Devuelta (Dir.)',
+  devuelta_dir: 'Devuelta (Aprob.)',
   validada: 'Validada',
   aprobada: 'Aprobada',
+  en_compras: 'En Compras',
+  pago_programado: 'Pago Programado',
   rechazada: 'Rechazada',
   comprada: 'Comprada',
   recibida: 'Recibida',
@@ -184,6 +188,7 @@ export default function DashboardPage() {
   const hasSolicitante = data.misSolicitudes !== undefined
   const hasResponsable = data.pendientesValidar !== undefined
   const hasDirector = data.pendientesAprobar !== undefined
+  const hasCompras = data.pendientesEnCompras !== undefined
   const hasTesoreria = data.pendientesComprar !== undefined
   const hasAdmin = data.totalUsuarios !== undefined
 
@@ -448,6 +453,42 @@ export default function DashboardPage() {
             )}
           </Card>
         </div>
+      )}
+
+      {/* ── Compras: Pipeline ── */}
+      {hasCompras && (
+        <Card
+          title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Pipeline de Compras</span>}
+          style={{ borderRadius: 16, marginBottom: 24 }}
+          extra={<Link href="/gestion-compras" style={{ color: '#4f46e5', fontWeight: 600 }}>Ver todo <ArrowRightOutlined /></Link>}
+        >
+          <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+            <Col xs={12} sm={8}>
+              <MiniStatCard title="En Compras" value={data.pendientesEnCompras} icon={<ShoppingCartOutlined />} color="blue" />
+            </Col>
+            <Col xs={12} sm={8}>
+              <MiniStatCard title="Pago Programado" value={data.pagoProgramado} icon={<ClockCircleOutlined />} color="purple" />
+            </Col>
+            <Col xs={12} sm={8}>
+              <MiniStatCard title="Caja Chica (mes)" value={data.cajaChicaMes} icon={<DollarOutlined />} color="cyan" />
+            </Col>
+          </Row>
+          {data.pipeline?.length > 0 && (
+            <Table
+              dataSource={data.pipeline}
+              rowKey="id"
+              pagination={false}
+              size="small"
+              columns={[
+                { title: 'N°', dataIndex: 'numero', width: 120, render: (v: string, r: any) => <Link href={`/solicitudes/${r.id}`} style={{ color: '#4f46e5', fontWeight: 600 }}>{v}</Link> },
+                { title: 'Título', dataIndex: 'titulo', ellipsis: true },
+                { title: 'Estado', dataIndex: 'estado', width: 140, render: (v: string) => <Tag color={ESTADO_COLOR[v] ?? 'default'}>{ESTADO_LABEL[v] ?? v}</Tag> },
+                { title: 'Pago', dataIndex: 'dia_pago_programado', width: 110, render: (v: string | null) => v ? new Date(v).toLocaleDateString('es-AR') : '—' },
+                { title: 'Monto', dataIndex: 'monto_estimado_total', width: 120, align: 'right' as const, render: (v: any) => v != null ? formatMoney(Number(v)) : '—' },
+              ]}
+            />
+          )}
+        </Card>
       )}
 
       {/* ── Tesorería: Recent purchases ── */}

@@ -14,9 +14,9 @@ import {
 // ─── registroSchema ───────────────────────────────────────────────────────────
 describe('registroSchema', () => {
   const valid = {
-    nombreColegio: 'Colegio San Martín',
+    nombreOrganizacion: 'Mi Empresa S.A.',
     nombreUsuario: 'Admin',
-    email: 'admin@colegio.edu',
+    email: 'admin@empresa.com',
     password: 'segura123',
   };
 
@@ -24,8 +24,8 @@ describe('registroSchema', () => {
     expect(registroSchema.safeParse(valid).success).toBe(true);
   });
 
-  it('rejects short school name', () => {
-    expect(registroSchema.safeParse({ ...valid, nombreColegio: 'AB' }).success).toBe(false);
+  it('rejects short organization name', () => {
+    expect(registroSchema.safeParse({ ...valid, nombreOrganizacion: 'AB' }).success).toBe(false);
   });
 
   it('rejects invalid email', () => {
@@ -67,7 +67,7 @@ describe('areaSchema', () => {
 describe('usuarioSchema', () => {
   const valid = {
     nombre: 'María García',
-    email: 'maria@colegio.edu',
+    email: 'maria@empresa.com',
     area_id: 1,
     roles: ['solicitante'],
   };

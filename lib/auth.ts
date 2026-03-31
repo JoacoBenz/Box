@@ -22,7 +22,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             name: 'Admin Dev',
             email: 'dev@test.com',
             tenantId: 1,
-            tenantName: 'Colegio Dev',
+            tenantName: 'Org Dev',
             areaId: null,
             areaNombre: null,
             roles: ['admin', 'director'] as RolNombre[],

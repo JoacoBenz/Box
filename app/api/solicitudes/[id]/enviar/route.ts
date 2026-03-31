@@ -3,6 +3,7 @@ import { getServerSession } from '@/lib/auth';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { registrarAuditoria } from '@/lib/audit';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
+import { getTenantConfigBool } from '@/lib/tenant-config';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -25,19 +26,25 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     await db.solicitudes.update({ where: { id: solicitudId }, data: { estado: 'enviada', fecha_envio: new Date() } });
 
-    const area = await prisma.areas.findFirst({ where: { id: solicitud.area_id, tenant_id: session.tenantId } });
-    if (!area?.responsable_id) {
-      // No responsable assigned: notify admins and keep as enviada (don't skip validation)
-      await notificarPorRol(session.tenantId, 'director', 'Área sin responsable', `La solicitud "${solicitud.titulo}" fue enviada pero el área no tiene responsable asignado. Asigná uno para que pueda ser validada.`, solicitudId);
+    const requiereValidacion = await getTenantConfigBool(session.tenantId, 'requiere_validacion_responsable', true);
+
+    if (!requiereValidacion) {
+      // Skip responsable validation — notify directors directly
+      await notificarPorRol(session.tenantId, 'director', 'Nueva solicitud para aprobar', `${session.nombre} solicita: ${solicitud.titulo}`, solicitudId);
     } else {
-      await crearNotificacion({
-        tenantId: session.tenantId,
-        destinatarioId: area.responsable_id,
-        tipo: 'solicitud_enviada',
-        titulo: 'Nueva solicitud para validar',
-        mensaje: `${session.nombre} solicita: ${solicitud.titulo}`,
-        solicitudId: solicitudId,
-      });
+      const area = await prisma.areas.findFirst({ where: { id: solicitud.area_id, tenant_id: session.tenantId } });
+      if (!area?.responsable_id) {
+        await notificarPorRol(session.tenantId, 'director', 'Área sin responsable', `La solicitud "${solicitud.titulo}" fue enviada pero el área no tiene responsable asignado. Asigná uno para que pueda ser validada.`, solicitudId);
+      } else {
+        await crearNotificacion({
+          tenantId: session.tenantId,
+          destinatarioId: area.responsable_id,
+          tipo: 'solicitud_enviada',
+          titulo: 'Nueva solicitud para validar',
+          mensaje: `${session.nombre} solicita: ${solicitud.titulo}`,
+          solicitudId: solicitudId,
+        });
+      }
     }
 
     await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'enviar_solicitud', entidad: 'solicitud', entidadId: solicitudId });

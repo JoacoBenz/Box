@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button, Space, Modal, Form, Input, Radio, Select, Typography, Tag } from 'antd'
+import { Button, Space, Modal, Form, Input, Radio, Select, Typography, Tag, DatePicker, Upload } from 'antd'
+import { UploadOutlined } from '@ant-design/icons'
+import dayjs from 'dayjs'
 import Link from 'next/link'
 import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
 
@@ -17,6 +19,7 @@ interface Props {
   sessionRoles: string[]
   sessionAreaId: number | null
   isAreaResponsable: boolean
+  skipValidacion?: boolean
 }
 
 export default function SolicitudActionButtons({
@@ -28,6 +31,7 @@ export default function SolicitudActionButtons({
   sessionRoles,
   sessionAreaId,
   isAreaResponsable,
+  skipValidacion = false,
 }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -41,12 +45,19 @@ export default function SolicitudActionButtons({
   const [recepcionOpen, setRecepcionOpen] = useState(false)
   const [recepcionForm] = Form.useForm<{ conforme: 'si' | 'no'; tipo_problema?: string; observaciones?: string }>()
 
+  const [procesarOpen, setProcesarOpen] = useState(false)
+  const [procesarForm] = Form.useForm<{ prioridad_compra: string; observaciones?: string }>()
+
+  const [programarOpen, setProgramarOpen] = useState(false)
+  const [programarForm] = Form.useForm<{ dia_pago_programado: any }>()
+
   const roles = sessionRoles
   const isOwner = solicitanteId === sessionUserId
   const isSolicitante = roles.includes('solicitante')
   const isResponsable = roles.includes('responsable_area')
   const isDirector = roles.includes('director')
   const isTesoreria = roles.includes('tesoreria')
+  const isCompras = roles.includes('compras')
   const isAdmin = roles.includes('admin')
   const isSameArea = isAdmin || (solicitudAreaId != null && sessionAreaId === solicitudAreaId)
 
@@ -55,16 +66,18 @@ export default function SolicitudActionButtons({
   const canEnviar = isSolicitante && isOwner && ['borrador', 'devuelta_resp', 'devuelta_dir'].includes(estado)
   const canValidar = isResponsable && isAreaResponsable && ['enviada', 'devuelta_dir'].includes(estado)
   const canDevolver = (isResponsable && isAreaResponsable && estado === 'enviada') || (isDirector && estado === 'validada')
-  const canAprobar = isDirector && estado === 'validada'
-  const canRechazar = isDirector && estado === 'validada'
-  const canRegistrarCompra = isTesoreria && estado === 'aprobada'
+  const canAprobar = isDirector && (estado === 'validada' || (skipValidacion && estado === 'enviada'))
+  const canRechazar = isDirector && (estado === 'validada' || (skipValidacion && estado === 'enviada'))
+  const canProcesarCompras = isCompras && ['aprobada', 'en_compras'].includes(estado)
+  const canProgramarPago = isCompras && estado === 'en_compras'
+  const canRegistrarCompra = (isTesoreria || isCompras) && ['aprobada', 'pago_programado', 'en_compras'].includes(estado)
   const canConfirmarRecepcion = ((isSolicitante && isOwner) || (isResponsable && isAreaResponsable)) && estado === 'comprada'
   const canCerrar = (isTesoreria || isAdmin) && estado === 'recibida_con_obs'
   const isCerrada = estado === 'cerrada'
 
   const hasAnyAction =
     canEditar || canEnviar || canValidar || canDevolver || canAprobar ||
-    canRechazar || canRegistrarCompra || canConfirmarRecepcion || canCerrar || isCerrada
+    canRechazar || canProcesarCompras || canProgramarPago || canRegistrarCompra || canConfirmarRecepcion || canCerrar || isCerrada
 
   async function postAction(path: string, body?: Record<string, unknown>) {
     setLoading(true)
@@ -113,13 +126,58 @@ export default function SolicitudActionButtons({
     rechazarForm.resetFields()
   }
 
-  async function handleConfirmarRecepcion(values: { conforme: 'si' | 'no'; tipo_problema?: string; observaciones?: string }) {
-    await postAction(`/api/recepciones`, {
-      solicitud_id: solicitudId,
-      conforme: values.conforme === 'si',
-      tipo_problema: values.conforme === 'no' ? (values.tipo_problema ?? null) : null,
-      observaciones: values.observaciones ?? null,
-    })
+  async function handleProcesarCompras(values: { prioridad_compra: string; observaciones?: string }) {
+    await postAction(`/api/solicitudes/${solicitudId}/procesar-compras`, values)
+    setProcesarOpen(false)
+    procesarForm.resetFields()
+  }
+
+  async function handleProgramarPago(values: { dia_pago_programado: any }) {
+    await postAction(`/api/solicitudes/${solicitudId}/programar-pago`, { dia_pago_programado: values.dia_pago_programado.toISOString() })
+    setProgramarOpen(false)
+    programarForm.resetFields()
+  }
+
+  async function handleConfirmarRecepcion(values: { conforme: 'si' | 'no'; tipo_problema?: string; observaciones?: string; remito?: any }) {
+    setLoading(true)
+    try {
+      const remitoFile = values.remito?.fileList?.[0]?.originFileObj ?? null
+      let res: Response
+
+      if (remitoFile) {
+        const fd = new FormData()
+        fd.append('solicitud_id', String(solicitudId))
+        fd.append('conforme', values.conforme === 'si' ? 'true' : 'false')
+        if (values.conforme === 'no') {
+          fd.append('tipo_problema', values.tipo_problema ?? '')
+          fd.append('observaciones', values.observaciones ?? '')
+        }
+        fd.append('remito', remitoFile)
+        res = await fetch('/api/recepciones', { method: 'POST', body: fd })
+      } else {
+        res = await fetch('/api/recepciones', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            solicitud_id: solicitudId,
+            conforme: values.conforme === 'si',
+            tipo_problema: values.conforme === 'no' ? (values.tipo_problema ?? null) : null,
+            observaciones: values.observaciones ?? null,
+          }),
+        })
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        Modal.error({ title: 'Error', content: data?.error?.message ?? `Error ${res.status}` })
+      } else {
+        router.refresh()
+      }
+    } catch {
+      Modal.error({ title: 'Error', content: 'Error de red. Intente nuevamente.' })
+    } finally {
+      setLoading(false)
+    }
     setRecepcionOpen(false)
     recepcionForm.resetFields()
   }
@@ -162,6 +220,21 @@ export default function SolicitudActionButtons({
         {canRechazar && (
           <Button danger onClick={() => setRechazarOpen(true)}>
             Rechazar
+          </Button>
+        )}
+
+        {canProcesarCompras && (
+          <Button type="primary" onClick={() => setProcesarOpen(true)}>
+            Procesar
+          </Button>
+        )}
+
+        {canProgramarPago && (
+          <Button
+            style={{ background: '#7c3aed', borderColor: '#7c3aed', color: '#fff' }}
+            onClick={() => setProgramarOpen(true)}
+          >
+            Programar Pago
           </Button>
         )}
 
@@ -232,6 +305,57 @@ export default function SolicitudActionButtons({
         </Form>
       </Modal>
 
+      {/* Modal: Procesar Compras */}
+      <Modal
+        title="Procesar Solicitud"
+        open={procesarOpen}
+        onCancel={() => { setProcesarOpen(false); procesarForm.resetFields() }}
+        onOk={() => procesarForm.submit()}
+        okText="Procesar"
+        okButtonProps={{ loading }}
+        cancelText="Cancelar"
+        destroyOnHidden={false}
+      >
+        <Form form={procesarForm} layout="vertical" onFinish={handleProcesarCompras}>
+          <Form.Item name="prioridad_compra" label="Prioridad" rules={[{ required: true, message: 'Seleccioná la prioridad' }]}>
+            <Select placeholder="Seleccionar prioridad" options={[
+              { value: 'urgente', label: 'Urgente' },
+              { value: 'normal', label: 'Normal' },
+              { value: 'programado', label: 'Programado' },
+            ]} />
+          </Form.Item>
+          <Form.Item name="observaciones" label="Observaciones (opcional)">
+            <TextArea rows={3} maxLength={500} showCount />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal: Programar Pago */}
+      <Modal
+        title="Programar Pago"
+        open={programarOpen}
+        onCancel={() => { setProgramarOpen(false); programarForm.resetFields() }}
+        onOk={() => programarForm.submit()}
+        okText="Programar"
+        okButtonProps={{ loading }}
+        cancelText="Cancelar"
+        destroyOnHidden={false}
+      >
+        <Form form={programarForm} layout="vertical" onFinish={handleProgramarPago}>
+          <Form.Item
+            name="dia_pago_programado"
+            label="Fecha de pago"
+            rules={[{ required: true, message: 'Seleccioná la fecha' }]}
+          >
+            <DatePicker
+              style={{ width: '100%' }}
+              format="DD/MM/YYYY"
+              disabledDate={(d) => d && d < dayjs().startOf('day')}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+
       {/* Modal: Confirmar Recepción */}
       <Modal
         title="Confirmar Recepción"
@@ -282,6 +406,15 @@ export default function SolicitudActionButtons({
           </Form.Item>
           <Form.Item name="observaciones" label="Observaciones (opcional)">
             <TextArea rows={3} placeholder="Ingrese observaciones si las hubiera..." maxLength={500} showCount />
+          </Form.Item>
+          <Form.Item name="remito" label="Remito / comprobante (opcional)">
+            <Upload
+              beforeUpload={() => false}
+              maxCount={1}
+              accept=".pdf,.jpg,.jpeg,.png"
+            >
+              <Button icon={<UploadOutlined />}>Adjuntar remito</Button>
+            </Upload>
           </Form.Item>
         </Form>
       </Modal>

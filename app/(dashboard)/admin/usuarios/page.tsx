@@ -24,6 +24,7 @@ const ROL_COLORS: Record<RolNombre, string> = {
   responsable_area: 'cyan',
   director: 'purple',
   tesoreria: 'gold',
+  compras: 'orange',
   admin: 'red',
 }
 
@@ -32,6 +33,7 @@ const ROL_LABELS: Record<RolNombre, string> = {
   responsable_area: 'Responsable de Área',
   director: 'Director/a',
   tesoreria: 'Tesorería',
+  compras: 'Compras',
   admin: 'Administrador',
 }
 
@@ -250,7 +252,7 @@ export default function AdminUsuariosPage() {
               { type: 'email', message: 'Ingrese un email válido' },
             ]}
           >
-            <Input placeholder="usuario@colegio.edu.ar" />
+            <Input placeholder="usuario@empresa.com" />
           </Form.Item>
 
           {!editUser && (

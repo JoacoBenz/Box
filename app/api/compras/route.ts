@@ -10,8 +10,8 @@ import { uploadFile } from '@/lib/supabase';
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
-    if (!verificarRol(session.roles, ['tesoreria'])) {
-      return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo tesorería puede registrar compras' } }, { status: 403 });
+    if (!verificarRol(session.roles, ['tesoreria', 'compras', 'solicitante'])) {
+      return Response.json({ error: { code: 'FORBIDDEN', message: 'No tenés permiso para registrar compras' } }, { status: 403 });
     }
 
     const formData = await request.formData();
@@ -49,8 +49,16 @@ export async function POST(request: NextRequest) {
       include: { proveedor: true },
     });
     if (!solicitud) return Response.json({ error: { code: 'NOT_FOUND', message: 'Solicitud no encontrada' } }, { status: 404 });
-    if (solicitud.estado !== 'aprobada') {
-      return Response.json({ error: { code: 'BAD_REQUEST', message: 'Solo se pueden comprar solicitudes aprobadas' } }, { status: 400 });
+    // Solicitante can only register caja chica purchases
+    if (verificarRol(session.roles, ['solicitante']) && !verificarRol(session.roles, ['tesoreria', 'compras'])) {
+      if (solicitud.tipo !== 'caja_chica') {
+        return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo podés registrar compras de caja chica' } }, { status: 403 });
+      }
+    }
+
+    const estadosPermitidos = ['aprobada', 'pago_programado', 'en_compras'];
+    if (!estadosPermitidos.includes(solicitud.estado)) {
+      return Response.json({ error: { code: 'BAD_REQUEST', message: 'Esta solicitud no está lista para registrar la compra' } }, { status: 400 });
     }
 
     const seg = verificarSegregacion(solicitud, session.userId, 'comprar');

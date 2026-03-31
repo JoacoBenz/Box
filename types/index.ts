@@ -1,4 +1,4 @@
-export type RolNombre = 'solicitante' | 'responsable_area' | 'director' | 'tesoreria' | 'admin';
+export type RolNombre = 'solicitante' | 'responsable_area' | 'director' | 'tesoreria' | 'compras' | 'admin';
 
 export type EstadoSolicitud =
   | 'borrador'
@@ -11,7 +11,12 @@ export type EstadoSolicitud =
   | 'comprada'
   | 'recibida'
   | 'recibida_con_obs'
+  | 'en_compras'
+  | 'pago_programado'
   | 'cerrada';
+
+export type TipoSolicitud = 'formal' | 'caja_chica';
+export type PrioridadCompra = 'urgente' | 'normal' | 'programado';
 
 export type UrgenciaSolicitud = 'normal' | 'urgente' | 'critica';
 
@@ -51,8 +56,10 @@ export const ESTADOS_SOLICITUD: Record<EstadoSolicitud, { label: string; color: 
   enviada:           { label: 'Enviada',                       color: 'blue' },
   devuelta_resp:     { label: 'Devuelta',                      color: 'orange' },
   validada:          { label: 'Validada',                      color: 'cyan' },
-  devuelta_dir:      { label: 'Devuelta por Dirección',        color: 'orange' },
+  devuelta_dir:      { label: 'Devuelta por Aprobador',         color: 'orange' },
   aprobada:          { label: 'Aprobada',                      color: 'green' },
+  en_compras:        { label: 'En Compras',                    color: 'processing' },
+  pago_programado:   { label: 'Pago Programado',               color: 'purple' },
   rechazada:         { label: 'Rechazada',                     color: 'red' },
   comprada:          { label: 'Comprada',                      color: 'geekblue' },
   recibida:          { label: 'Recibida',                      color: 'lime' },

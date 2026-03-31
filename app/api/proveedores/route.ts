@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
 
     const proveedor = await db.proveedores.create({
       data: {
+        tenant_id: session.tenantId,
         nombre: data.nombre,
         cuit: data.cuit || null,
         datos_bancarios: data.datos_bancarios || null,

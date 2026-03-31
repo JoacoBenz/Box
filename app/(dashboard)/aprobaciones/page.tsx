@@ -28,7 +28,7 @@ export default function AprobacionesPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/solicitudes?estado=validada&limit=100')
+      const res = await fetch('/api/solicitudes?estado=validada,enviada&limit=100')
       if (res.ok) {
         const data = await res.json()
         setSolicitudes(data.data ?? [])

@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { nombreColegio, nombreUsuario, email, password } = result.data;
+    const { nombreOrganizacion, nombreUsuario, email, password } = result.data;
 
     // Check email uniqueness globally
     const existingUser = await prisma.usuarios.findFirst({ where: { email } });
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate unique slug
-    let slug = slugify(nombreColegio);
+    let slug = slugify(nombreOrganizacion);
     const existingSlug = await prisma.tenants.findUnique({ where: { slug } });
     if (existingSlug) {
       const count = await prisma.tenants.count({ where: { slug: { startsWith: slug } } });
@@ -55,12 +55,12 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: { code: 'INTERNAL', message: 'Roles no encontrados. Ejecutá el seed.' } }, { status: 500 });
     }
 
-    const AREAS_DEFAULT = ['Dirección', 'Secretaría', 'Cocina / Comedor', 'Mantenimiento', 'Deportes'];
+    const AREAS_DEFAULT = ['Administración', 'Operaciones', 'Finanzas', 'Recursos Humanos', 'Logística'];
 
     // Atomic transaction
     const txResult = await prisma.$transaction(async (tx) => {
       const newTenant = await tx.tenants.create({
-        data: { nombre: nombreColegio, slug, email_contacto: email, moneda: 'ARS' },
+        data: { nombre: nombreOrganizacion, slug, email_contacto: email, moneda: 'ARS' },
       });
 
       // Create default areas
@@ -105,12 +105,12 @@ export async function POST(request: NextRequest) {
     await registrarAuditoria({
       tenantId: txResult.tenant.id,
       usuarioId: txResult.usuarioId,
-      accion: 'registro_colegio',
+      accion: 'registro_organizacion',
       entidad: 'tenant',
       entidadId: txResult.tenant.id,
     });
 
-    return Response.json({ message: 'Colegio registrado exitosamente' }, { status: 201 });
+    return Response.json({ message: 'Organización registrada exitosamente' }, { status: 201 });
   } catch (error) {
     console.error('Error en registro:', error);
     return Response.json({ error: { code: 'INTERNAL', message: 'Error interno del servidor' } }, { status: 500 });

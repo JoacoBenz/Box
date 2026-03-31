@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     const db = tenantPrisma(session.tenantId);
 
     const existingEmail = await db.usuarios.findFirst({ where: { email } });
-    if (existingEmail) return Response.json({ error: { code: 'CONFLICT', message: 'Email ya registrado en este colegio' } }, { status: 409 });
+    if (existingEmail) return Response.json({ error: { code: 'CONFLICT', message: 'Email ya registrado en esta organización' } }, { status: 409 });
 
     const area = await db.areas.findFirst({ where: { id: area_id, activo: true } });
     if (!area) return Response.json({ error: { code: 'NOT_FOUND', message: 'Área no encontrada o inactiva' } }, { status: 404 });

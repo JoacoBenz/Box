@@ -4,8 +4,8 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Gestión de Compras - Sistema Escolar',
-  description: 'Sistema de gestión de solicitudes de compra para colegios',
+  title: 'BoxZenj — Gestión de Compras',
+  description: 'Sistema de gestión de solicitudes de compra para organizaciones',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

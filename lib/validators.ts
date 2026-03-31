@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const registroSchema = z.object({
-  nombreColegio: z.string().min(3, 'Mínimo 3 caracteres').max(255),
+  nombreOrganizacion: z.string().min(3, 'Mínimo 3 caracteres').max(255),
   nombreUsuario: z.string().min(2, 'Mínimo 2 caracteres').max(150),
   email: z.string().email('Email inválido'),
   password: z.string().min(8, 'Mínimo 8 caracteres'),
@@ -23,7 +23,7 @@ export const usuarioSchema = z.object({
   password: z.string().min(8).optional(),
   area_id: z.number().int().positive(),
   roles: z
-    .array(z.enum(['solicitante', 'responsable_area', 'director', 'tesoreria', 'admin']))
+    .array(z.enum(['solicitante', 'responsable_area', 'director', 'tesoreria', 'compras', 'admin']))
     .min(1, 'Asigná al menos un rol'),
 });
 
@@ -42,6 +42,7 @@ export const solicitudSchema = z.object({
   urgencia: z.enum(['normal', 'urgente', 'critica']),
   proveedor_sugerido: z.string().max(255).optional().nullable(),
   proveedor_id: z.number().int().positive().optional().nullable(),
+  centro_costo_id: z.number().int().positive().optional().nullable(),
   items: z.array(itemSolicitudSchema).min(1, 'Agregá al menos un ítem'),
 });
 
@@ -66,6 +67,17 @@ export const compraSchema = z.object({
   referencia_bancaria: z.string().max(100).optional().nullable(),
   numero_factura: z.string().max(50).optional().nullable(),
   observaciones: z.string().optional().nullable(),
+});
+
+export const procesarComprasSchema = z.object({
+  prioridad_compra: z.enum(['urgente', 'normal', 'programado']),
+  dia_pago_programado: z.string().refine((val) => !val || !isNaN(Date.parse(val)), 'Fecha inválida').optional().nullable(),
+  observaciones: z.string().optional().nullable(),
+});
+
+export const centroCostoSchema = z.object({
+  nombre: z.string().min(2, 'Mínimo 2 caracteres').max(150),
+  codigo: z.string().min(1, 'Código requerido').max(20),
 });
 
 export const recepcionSchema = z

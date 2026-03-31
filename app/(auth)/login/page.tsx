@@ -99,7 +99,7 @@ export default function LoginPage() {
             </svg>
           </div>
           <Title level={3} style={{ marginBottom: 4, fontWeight: 700 }}>Gestión de Compras</Title>
-          <Text type="secondary" style={{ fontSize: 14 }}>Ingresá con tu cuenta institucional</Text>
+          <Text type="secondary" style={{ fontSize: 14 }}>Ingresá con tu cuenta</Text>
         </div>
 
         {error && <Alert title={error} type="error" showIcon style={{ marginBottom: 20, borderRadius: 10 }} />}
@@ -107,7 +107,7 @@ export default function LoginPage() {
         <Form layout="vertical" onFinish={onFinish} autoComplete="off" size="large">
           <div className="anim-field-1">
             <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email', message: 'Ingresá un email válido' }]}>
-              <Input prefix={<UserOutlined style={{ color: '#a0aec0' }} />} placeholder="tu@colegio.edu.ar" />
+              <Input prefix={<UserOutlined style={{ color: '#a0aec0' }} />} placeholder="tu@empresa.com" />
             </Form.Item>
           </div>
 
@@ -142,7 +142,7 @@ export default function LoginPage() {
         </Form>
 
         <div style={{ textAlign: 'center', paddingTop: 8 }}>
-          <Text type="secondary" style={{ fontSize: 13 }}>¿Tu colegio aún no está registrado?</Text>
+          <Text type="secondary" style={{ fontSize: 13 }}>¿Tu organización aún no está registrada?</Text>
           <Link href="/registro" style={{ fontSize: 13, fontWeight: 600 }}> Registrarse</Link>
         </div>
       </Card>

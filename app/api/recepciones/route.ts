@@ -5,6 +5,7 @@ import { verificarRol } from '@/lib/permissions';
 import { registrarAuditoria } from '@/lib/audit';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { recepcionSchema } from '@/lib/validators';
+import { uploadFile } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +14,23 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: { code: 'FORBIDDEN', message: 'Sin permiso para confirmar recepción' } }, { status: 403 });
     }
 
-    const body = await request.json();
+    const contentType = request.headers.get('content-type') ?? '';
+    let body: any;
+    let remito: File | null = null;
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData();
+      remito = formData.get('remito') as File | null;
+      body = {
+        solicitud_id: parseInt(formData.get('solicitud_id') as string),
+        conforme: formData.get('conforme') === 'true',
+        tipo_problema: formData.get('tipo_problema') || null,
+        observaciones: formData.get('observaciones') || null,
+      };
+    } else {
+      body = await request.json();
+    }
+
     const result = recepcionSchema.safeParse(body);
     if (!result.success) {
       return Response.json({ error: { code: 'VALIDATION_ERROR', message: 'Datos inválidos', details: result.error.issues.map(i => ({ field: i.path.join('.'), message: i.message })) } }, { status: 400 });
@@ -42,8 +59,8 @@ export async function POST(request: NextRequest) {
 
     const nuevoEstado = conforme ? 'cerrada' : 'recibida_con_obs';
 
-    await prisma.$transaction(async (tx) => {
-      await tx.recepciones.create({
+    const recepcion = await prisma.$transaction(async (tx) => {
+      const rec = await tx.recepciones.create({
         data: {
           tenant_id: session.tenantId,
           solicitud_id,
@@ -54,7 +71,31 @@ export async function POST(request: NextRequest) {
         },
       });
       await tx.solicitudes.update({ where: { id: solicitud_id }, data: { estado: nuevoEstado } });
+      return rec;
     });
+
+    // Upload remito file if provided
+    if (remito) {
+      const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+      if (allowed.includes(remito.type) && remito.size <= 10 * 1024 * 1024) {
+        try {
+          const { path } = await uploadFile(session.tenantId, 'remitos', recepcion.id, remito);
+          await prisma.archivos.create({
+            data: {
+              tenant_id: session.tenantId,
+              entidad: 'recepcion',
+              entidad_id: recepcion.id,
+              nombre_archivo: remito.name,
+              ruta_archivo: path,
+              tamanio_bytes: remito.size,
+              subido_por_id: session.userId,
+            },
+          });
+        } catch (uploadErr) {
+          console.error('Error subiendo remito:', uploadErr);
+        }
+      }
+    }
 
     if (conforme) {
       await notificarPorRol(session.tenantId, 'tesoreria', 'Recepción confirmada', `${session.nombre} confirmó recepción de "${solicitud.titulo}"`, solicitud_id);

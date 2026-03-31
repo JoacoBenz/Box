@@ -28,6 +28,7 @@ model tenants {
   log_auditoria  log_auditoria[]
   configuracion  configuracion[]
   proveedores    proveedores[]
+  centros_costo  centros_costo[]
 }
 
 model roles {
@@ -74,6 +75,7 @@ model usuarios {
   solicitudes_validadas    solicitudes[]    @relation("solicitud_validador")
   solicitudes_aprobadas    solicitudes[]    @relation("solicitud_aprobador")
   solicitudes_rechazadas   solicitudes[]    @relation("solicitud_rechazador")
+  solicitudes_procesadas   solicitudes[]    @relation("solicitud_procesador")
   compras_ejecutadas       compras[]
   recepciones_realizadas   recepciones[]
   archivos_subidos         archivos[]
@@ -118,12 +120,21 @@ model solicitudes {
   motivo_rechazo            String?
   proveedor_sugerido        String?  @db.VarChar(255)
   proveedor_id              Int?
+  centro_costo_id           Int?
+  tipo                      String   @default("formal") @db.VarChar(20)
+  procesado_por_id          Int?
+  fecha_procesamiento       DateTime?
+  dia_pago_programado       DateTime? @db.Date
+  prioridad_compra          String?  @db.VarChar(20)
+  observaciones_compras     String?
   created_at                DateTime @default(now())
   updated_at                DateTime @updatedAt
 
-  tenant        tenants      @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-  proveedor     proveedores? @relation(fields: [proveedor_id], references: [id])
-  area          areas     @relation(fields: [area_id], references: [id])
+  tenant        tenants        @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  proveedor     proveedores?   @relation(fields: [proveedor_id], references: [id])
+  area          areas          @relation(fields: [area_id], references: [id])
+  centro_costo  centros_costo? @relation(fields: [centro_costo_id], references: [id])
+  procesado_por usuarios?      @relation("solicitud_procesador", fields: [procesado_por_id], references: [id])
   solicitante   usuarios  @relation("solicitud_solicitante", fields: [solicitante_id], references: [id])
   validado_por  usuarios? @relation("solicitud_validador", fields: [validado_por_id], references: [id])
   aprobado_por  usuarios? @relation("solicitud_aprobador", fields: [aprobado_por_id], references: [id])
@@ -277,4 +288,18 @@ model proveedores {
 
   @@unique([tenant_id, cuit])
   @@index([tenant_id, nombre])
+}
+
+model centros_costo {
+  id         Int      @id @default(autoincrement())
+  tenant_id  Int
+  nombre     String   @db.VarChar(150)
+  codigo     String   @db.VarChar(20)
+  activo     Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  tenant      tenants       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  solicitudes solicitudes[]
+
+  @@unique([tenant_id, codigo])
 }
