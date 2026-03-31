@@ -15,6 +15,7 @@ import {
   ShopOutlined,
   ShoppingCartOutlined,
   BankOutlined,
+  GlobalOutlined,
 } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
 import type { RolNombre } from '@/types';
@@ -85,6 +86,7 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
         { key: '/admin/usuarios', icon: <TeamOutlined />, label: 'Usuarios' },
         { key: '/admin/areas', icon: <ApartmentOutlined />, label: 'Áreas' },
         { key: '/admin/centros-costo', icon: <BankOutlined />, label: 'Centros de Costo' },
+        { key: '/admin/tenants', icon: <GlobalOutlined />, label: 'Organizaciones' },
       ],
     },
   ]

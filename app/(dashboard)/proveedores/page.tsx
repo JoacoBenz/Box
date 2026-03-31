@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { App, Table, Button, Input, Space, Tag, Popconfirm, Modal, Form } from 'antd'
+import { App, Table, Button, Input, Space, Tag, Popconfirm, Modal, Form, Typography } from 'antd'
 import { PlusOutlined, SearchOutlined, EditOutlined, StopOutlined } from '@ant-design/icons'
 import ProveedorCreateModal from '@/components/ProveedorCreateModal'
 import CuitInput from '@/components/CuitInput'
+
+const { Title } = Typography
 import PhoneInput from '@/components/PhoneInput'
 
 interface Proveedor {
@@ -41,6 +43,12 @@ export default function ProveedoresPage() {
   }, [search])
 
   useEffect(() => { fetchProveedores() }, [fetchProveedores])
+
+  useEffect(() => {
+    const handler = () => { fetchProveedores() }
+    window.addEventListener('admin-tenant-change', handler)
+    return () => window.removeEventListener('admin-tenant-change', handler)
+  }, [fetchProveedores])
 
   const handleCreated = () => {
     setCreateOpen(false)
@@ -124,9 +132,9 @@ export default function ProveedoresPage() {
   ]
 
   return (
-    <div className="page-content" style={{ padding: '32px 24px', maxWidth: 1100, margin: '0 auto' }}>
+    <div className="page-content">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h2 style={{ margin: 0, fontWeight: 700 }}>Proveedores</h2>
+        <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>Proveedores</Title>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
           Nuevo Proveedor
         </Button>
@@ -146,8 +154,8 @@ export default function ProveedoresPage() {
         columns={columns}
         dataSource={proveedores}
         loading={loading}
-        pagination={{ pageSize: 20 }}
-        size="small"
+        pagination={{ pageSize: 20, showSizeChanger: false }}
+        size="middle"
       />
 
       <ProveedorCreateModal open={createOpen} onClose={() => setCreateOpen(false)} onCreated={handleCreated} />

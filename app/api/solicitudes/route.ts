@@ -6,6 +6,7 @@ import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { solicitudSchema } from '@/lib/validators';
 import { getTenantConfigBool } from '@/lib/tenant-config';
+import { getEffectiveTenantId } from '@/lib/tenant-override';
 
 async function generarNumeroSolicitud(tenantId: number): Promise<string> {
   const año = new Date().getFullYear();
@@ -27,7 +28,7 @@ async function generarNumeroSolicitud(tenantId: number): Promise<string> {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const { session, effectiveTenantId } = await getEffectiveTenantId(request);
     const { searchParams } = request.nextUrl;
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
     const limit = Math.min(100, parseInt(searchParams.get('limit') || '20'));
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
     const orden = searchParams.get('orden') || 'created_at';
     const direccion = (searchParams.get('direccion') || 'desc') as 'asc' | 'desc';
 
-    const db = tenantPrisma(session.tenantId);
+    const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
 
     const where: any = {};
 

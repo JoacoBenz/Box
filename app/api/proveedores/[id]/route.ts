@@ -1,15 +1,16 @@
 import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
-import { tenantPrisma } from '@/lib/prisma';
+import { tenantPrisma, prisma } from '@/lib/prisma';
 import { verificarRol } from '@/lib/permissions';
 import { proveedorSchema } from '@/lib/validators';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
+import { getEffectiveTenantId } from '@/lib/tenant-override';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession();
+    const { effectiveTenantId } = await getEffectiveTenantId(request);
     const { id } = await params;
-    const db = tenantPrisma(session.tenantId);
+    const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
 
     const proveedor = await db.proveedores.findFirst({ where: { id: parseInt(id) } });
     if (!proveedor) return Response.json({ error: { code: 'NOT_FOUND', message: 'Proveedor no encontrado' } }, { status: 404 });

@@ -1,15 +1,16 @@
 import { getServerSession } from '@/lib/auth';
-import { tenantPrisma } from '@/lib/prisma';
+import { tenantPrisma, prisma } from '@/lib/prisma';
 import { verificarRol, apiError } from '@/lib/permissions';
+import { getEffectiveTenantId } from '@/lib/tenant-override';
 
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession();
+    const { session, effectiveTenantId } = await getEffectiveTenantId(request);
     if (!verificarRol(session.roles, ['director', 'tesoreria', 'compras', 'admin'])) {
       return apiError('FORBIDDEN', 'No tenés permisos para exportar', 403);
     }
 
-    const db = tenantPrisma(session.tenantId);
+    const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
     const { searchParams } = new URL(request.url);
     const estado = searchParams.get('estado');
 

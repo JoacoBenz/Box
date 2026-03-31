@@ -3,13 +3,14 @@ import { getServerSession } from '@/lib/auth';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { solicitudSchema } from '@/lib/validators';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
+import { getEffectiveTenantId } from '@/lib/tenant-override';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession();
+    const { session, effectiveTenantId } = await getEffectiveTenantId(request);
     const { id } = await params;
     const solicitudId = parseInt(id);
-    const db = tenantPrisma(session.tenantId);
+    const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
 
     const solicitud = await db.solicitudes.findFirst({
       where: { id: solicitudId },
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     // Add archivos
     const archivos = await prisma.archivos.findMany({
-      where: { tenant_id: session.tenantId, entidad: 'solicitud', entidad_id: solicitudId },
+      where: { ...(effectiveTenantId ? { tenant_id: effectiveTenantId } : {}), entidad: 'solicitud', entidad_id: solicitudId },
     });
 
     return Response.json({ ...solicitud, archivos });

@@ -52,6 +52,12 @@ export default function GestionComprasPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  useEffect(() => {
+    const handler = () => { fetchData() }
+    window.addEventListener('admin-tenant-change', handler)
+    return () => window.removeEventListener('admin-tenant-change', handler)
+  }, [fetchData])
+
   async function handleProcesar(values: { prioridad_compra: string; observaciones?: string }) {
     if (!selectedId) return
     setActionLoading(true)
@@ -197,8 +203,8 @@ export default function GestionComprasPage() {
   return (
     <div className="page-content">
       <div style={{ marginBottom: 24 }}>
-        <Title level={3} style={{ margin: 0 }}>Gestión de Compras</Title>
-        <Text type="secondary">Pipeline de solicitudes aprobadas para procesar y pagar</Text>
+        <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>Gestión de Compras</Title>
+        <Text type="secondary" style={{ marginTop: 4, display: 'block' }}>Pipeline de solicitudes aprobadas para procesar y pagar</Text>
       </div>
 
       <Table
@@ -206,9 +212,14 @@ export default function GestionComprasPage() {
         dataSource={solicitudes}
         rowKey="id"
         loading={loading}
-        pagination={{ pageSize: 20 }}
+        pagination={{ pageSize: 20, showSizeChanger: false }}
+        size="middle"
         locale={{ emptyText: 'No hay solicitudes pendientes en Compras' }}
-        style={{ borderRadius: 12, overflow: 'hidden' }}
+        rowClassName={(record: any) =>
+          record.urgencia === 'critica' ? 'urgencia-row-critica' :
+          record.urgencia === 'urgente' ? 'urgencia-row-urgente' :
+          'urgencia-row-normal'
+        }
       />
 
       {/* Modal: Procesar */}
@@ -229,7 +240,7 @@ export default function GestionComprasPage() {
               { value: 'programado', label: 'Programado' },
             ]} />
           </Form.Item>
-          <Form.Item name="observaciones" label="Observaciones (opcional)">
+          <Form.Item name="observaciones" label="Observaciones">
             <TextArea rows={3} placeholder="Notas internas de Compras..." maxLength={500} showCount />
           </Form.Item>
         </Form>

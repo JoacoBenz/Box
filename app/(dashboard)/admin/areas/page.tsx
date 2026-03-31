@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import {
+  App,
   Table,
   Tag,
   Button,
@@ -9,11 +10,11 @@ import {
   Form,
   Input,
   Space,
-  message,
   Popconfirm,
   Typography,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import { useAdminTenant } from '@/components/admin/TenantSelector'
 
 const { Title } = Typography
 
@@ -22,15 +23,18 @@ interface Area {
   nombre: string
   activo: boolean
   responsable: { nombre: string } | null
+  tenant?: { id: number; nombre: string }
 }
 
 export default function AdminAreasPage() {
+  const { message } = App.useApp()
   const [areas, setAreas] = useState<Area[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editArea, setEditArea] = useState<Area | null>(null)
   const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
+  const [selectedTenant] = useAdminTenant()
 
   const fetchAreas = useCallback(async () => {
     setLoading(true)
@@ -44,11 +48,15 @@ export default function AdminAreasPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [selectedTenant])
 
   useEffect(() => { fetchAreas() }, [fetchAreas])
 
   function openCreate() {
+    if (!selectedTenant) {
+      message.warning('Seleccioná una organización antes de crear un área')
+      return
+    }
     setEditArea(null)
     form.resetFields()
     setModalOpen(true)
@@ -109,12 +117,18 @@ export default function AdminAreasPage() {
   }
 
   const columns: ColumnsType<Area> = [
-    { title: 'ID', dataIndex: 'id', key: 'id', width: 70 },
+    { title: '#', key: 'index', width: 60, render: (_: unknown, __: Area, index: number) => index + 1 },
+    ...(!selectedTenant ? [{
+      title: 'Organización',
+      key: 'tenant',
+      width: 180,
+      render: (_: unknown, r: Area) => r.tenant?.nombre ?? '—',
+    }] : []),
     { title: 'Nombre', dataIndex: 'nombre', key: 'nombre' },
     {
       title: 'Responsable',
       key: 'responsable',
-      render: (_, r) => r.responsable?.nombre ?? <span style={{ color: '#bbb' }}>Sin asignar</span>,
+      render: (_: unknown, r: Area) => r.responsable?.nombre ?? <span style={{ color: '#bbb' }}>Sin asignar</span>,
     },
     {
       title: 'Estado',
@@ -123,11 +137,11 @@ export default function AdminAreasPage() {
       width: 100,
       render: (v: boolean) => <Tag color={v ? 'green' : 'default'}>{v ? 'Activa' : 'Inactiva'}</Tag>,
     },
-    {
+    ...(selectedTenant ? [{
       title: 'Acciones',
       key: 'actions',
       width: 180,
-      render: (_, r) => (
+      render: (_: unknown, r: Area) => (
         <Space>
           <Button size="small" onClick={() => openEdit(r)}>Editar</Button>
           <Popconfirm
@@ -140,14 +154,14 @@ export default function AdminAreasPage() {
           </Popconfirm>
         </Space>
       ),
-    },
+    }] : []),
   ]
 
   return (
-    <div className="page-content" style={{ padding: 24 }}>
+    <div className="page-content">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={3} style={{ margin: 0, fontWeight: 800, color: '#1e293b', letterSpacing: '-0.5px' }}>Áreas</Title>
-        <Button type="primary" onClick={openCreate} style={{ fontWeight: 600 }}>+ Nueva &Aacute;rea</Button>
+        <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>Áreas</Title>
+        {selectedTenant && <Button type="primary" onClick={openCreate} style={{ fontWeight: 600 }}>+ Nueva Área</Button>}
       </div>
 
       <Table

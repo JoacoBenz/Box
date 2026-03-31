@@ -1,8 +1,9 @@
 import { auth } from '@/lib/auth'
-import { tenantPrisma } from '@/lib/prisma'
+import { tenantPrisma, prisma } from '@/lib/prisma'
 import type { SessionUser } from '@/types'
 import { redirect, notFound } from 'next/navigation'
 import RegistrarCompraForm from './RegistrarCompraForm'
+import { getServerTenantId } from '@/lib/tenant-override'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -19,7 +20,8 @@ export default async function RegistrarCompraPage({ params }: PageProps) {
     redirect('/solicitudes')
   }
 
-  const db = tenantPrisma(user.tenantId)
+  const effectiveTenantId = await getServerTenantId({ tenantId: user.tenantId, roles: user.roles as string[] })
+  const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma
 
   const solicitud = await db.solicitudes.findFirst({
     where: { id: Number(id), estado: 'aprobada' },

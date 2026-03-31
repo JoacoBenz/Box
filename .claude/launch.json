@@ -3,10 +3,10 @@
   "configurations": [
     {
       "name": "dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 3000,
-      "autoPort": true
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["node_modules/next/dist/bin/next", "dev", "-p", "3737"],
+      "port": 3737,
+      "autoPort": false
     }
   ]
 }

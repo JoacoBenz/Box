@@ -86,12 +86,12 @@ export default function NuevaSolicitudPage() {
 
   return (
     <div className="page-content" style={{ padding: '32px 24px', maxWidth: 880, margin: '0 auto' }}>
-      <Title level={3} style={{ marginBottom: 32, fontWeight: 700 }}>
+      <Title level={3} style={{ marginBottom: 24, fontWeight: 700, color: '#1e293b' }}>
         Nueva Solicitud de Compra
       </Title>
 
       <Form form={form} layout="vertical" initialValues={{ urgencia: 'normal', items: [{ unidad: 'unidades', cantidad: 1 }] }} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <Card title={<span style={{ fontWeight: 600, fontSize: 15 }}>Información General</span>} style={{ borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+        <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Información General</span>} style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           <Form.Item
             label="Título"
             name="titulo"
@@ -131,7 +131,7 @@ export default function NuevaSolicitudPage() {
             />
           </Form.Item>
 
-          <Form.Item label="Proveedor (opcional)" name="proveedor_id">
+          <Form.Item label="Proveedor" name="proveedor_id">
             <ProveedorSelect
               onChange={(id, prov) => {
                 form.setFieldValue('proveedor_id', id)
@@ -148,7 +148,7 @@ export default function NuevaSolicitudPage() {
             <ProveedorInfoCard proveedor={selectedProveedor} style={{ marginBottom: 16 }} />
           )}
 
-          <Form.Item label="Monto Estimado Total (opcional)" name="monto_estimado_total">
+          <Form.Item label="Monto Estimado Total" name="monto_estimado_total">
             <InputNumber
               min={0}
               precision={2}
@@ -159,7 +159,7 @@ export default function NuevaSolicitudPage() {
           </Form.Item>
 
           {centrosCosto.length > 0 && (
-            <Form.Item label="Centro de Costo (opcional)" name="centro_costo_id">
+            <Form.Item label="Centro de Costo" name="centro_costo_id">
               <Select
                 allowClear
                 placeholder="Seleccionar centro de costo"
@@ -170,7 +170,7 @@ export default function NuevaSolicitudPage() {
           )}
         </Card>
 
-        <Card title={<span style={{ fontWeight: 600, fontSize: 15 }}>Items Solicitados</span>} style={{ borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+        <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Items Solicitados</span>} style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           <Form.List
             name="items"
             rules={[
@@ -243,7 +243,7 @@ export default function NuevaSolicitudPage() {
 
                       <Form.Item
                         {...restField}
-                        label="Precio Estimado (opcional)"
+                        label="Precio Estimado"
                         name={[name, 'precio_estimado']}
                         style={{ marginBottom: 0 }}
                       >
@@ -253,7 +253,7 @@ export default function NuevaSolicitudPage() {
 
                     <Form.Item
                       {...restField}
-                      label="Link del producto (opcional)"
+                      label="Link del producto"
                       name={[name, 'link_producto']}
                       style={{ marginTop: 12, marginBottom: 0 }}
                     >

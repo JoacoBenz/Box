@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Table, Tag, Button, Typography } from 'antd'
+import { Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { URGENCIAS } from '@/types'
 import type { UrgenciaSolicitud } from '@/types'
 
@@ -22,6 +22,7 @@ interface Solicitud {
 }
 
 export default function AprobacionesPage() {
+  const router = useRouter()
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -40,8 +41,19 @@ export default function AprobacionesPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  useEffect(() => {
+    const handler = () => { fetchData() }
+    window.addEventListener('admin-tenant-change', handler)
+    return () => window.removeEventListener('admin-tenant-change', handler)
+  }, [fetchData])
+
   const columns: ColumnsType<Solicitud> = [
-    { title: 'Número', dataIndex: 'numero', key: 'numero', width: 130 },
+    {
+      title: 'Número', dataIndex: 'numero', key: 'numero', width: 130,
+      render: (val: string, r: Solicitud) => (
+        <a onClick={() => router.push(`/solicitudes/${r.id}`)} style={{ cursor: 'pointer' }}>{val}</a>
+      ),
+    },
     { title: 'Título', dataIndex: 'titulo', key: 'titulo', ellipsis: true },
     {
       title: 'Área',
@@ -72,23 +84,11 @@ export default function AprobacionesPage() {
       width: 130,
       render: (val: number | null) => (val != null ? `$${Number(val).toFixed(2)}` : '—'),
     },
-    {
-      title: 'Acción',
-      key: 'actions',
-      width: 130,
-      render: (_, r) => (
-        <Link href={`/solicitudes/${r.id}`}>
-          <Button size="small" type="primary" style={{ background: '#52c41a' }}>
-            Ver y Aprobar
-          </Button>
-        </Link>
-      ),
-    },
   ]
 
   return (
-    <div style={{ padding: 24 }}>
-      <Title level={3} style={{ marginBottom: 24 }}>
+    <div className="page-content">
+      <Title level={3} style={{ margin: 0, marginBottom: 8, fontWeight: 700, color: '#1e293b' }}>
         Solicitudes Pendientes de Aprobación
       </Title>
       <p style={{ color: '#888', marginBottom: 16 }}>
@@ -104,7 +104,8 @@ export default function AprobacionesPage() {
         locale={{ emptyText: 'No hay solicitudes pendientes de aprobación' }}
         rowClassName={(record: any) =>
           record.urgencia === 'critica' ? 'urgencia-row-critica' :
-          record.urgencia === 'urgente' ? 'urgencia-row-urgente' : ''
+          record.urgencia === 'urgente' ? 'urgencia-row-urgente' :
+          'urgencia-row-normal'
         }
       />
     </div>

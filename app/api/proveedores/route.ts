@@ -1,17 +1,18 @@
 import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
-import { tenantPrisma } from '@/lib/prisma';
+import { tenantPrisma, prisma } from '@/lib/prisma';
 import { proveedorSchema } from '@/lib/validators';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
+import { getEffectiveTenantId } from '@/lib/tenant-override';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const { session, effectiveTenantId } = await getEffectiveTenantId(request);
     const { searchParams } = request.nextUrl;
     const search = searchParams.get('search') || '';
     const limit = Math.min(50, parseInt(searchParams.get('limit') || '20'));
 
-    const db = tenantPrisma(session.tenantId);
+    const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
 
     const where: any = { activo: true };
     if (search) {

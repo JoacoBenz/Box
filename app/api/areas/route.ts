@@ -4,15 +4,19 @@ import { tenantPrisma, prisma } from '@/lib/prisma';
 import { verificarRol } from '@/lib/permissions';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { areaSchema } from '@/lib/validators';
+import { getEffectiveTenantId } from '@/lib/tenant-override';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
-    const db = tenantPrisma(session.tenantId);
+    const { session, effectiveTenantId } = await getEffectiveTenantId(request);
+    const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
     const areas = await db.areas.findMany({
       where: { activo: true },
-      orderBy: { nombre: 'asc' },
-      include: { responsable: { select: { id: true, nombre: true } } },
+      orderBy: { id: 'asc' },
+      include: {
+        responsable: { select: { id: true, nombre: true } },
+        ...(!effectiveTenantId && { tenant: { select: { id: true, nombre: true } } }),
+      },
     });
     return Response.json(areas);
   } catch (error: any) {
@@ -23,9 +27,12 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const { session, effectiveTenantId } = await getEffectiveTenantId(request);
     if (!verificarRol(session.roles, ['admin'])) {
       return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo administradores pueden crear áreas' } }, { status: 403 });
+    }
+    if (!effectiveTenantId) {
+      return Response.json({ error: { code: 'BAD_REQUEST', message: 'Seleccioná una organización antes de crear' } }, { status: 400 });
     }
 
     const body = await request.json();
@@ -35,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { nombre, responsable_id } = result.data;
-    const db = tenantPrisma(session.tenantId);
+    const db = tenantPrisma(effectiveTenantId);
 
     // Check name uniqueness
     const existing = await db.areas.findFirst({ where: { nombre } });
@@ -49,9 +56,9 @@ export async function POST(request: NextRequest) {
       if (!user) return Response.json({ error: { code: 'NOT_FOUND', message: 'Responsable no encontrado' } }, { status: 404 });
     }
 
-    const area = await db.areas.create({ data: { tenant_id: session.tenantId, nombre, responsable_id: responsable_id ?? null } });
+    const area = await db.areas.create({ data: { tenant_id: effectiveTenantId, nombre, responsable_id: responsable_id ?? null } });
 
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'crear_area', entidad: 'area', entidadId: area.id, datosNuevos: { nombre }, ipAddress: getClientIp(request) });
+    await registrarAuditoria({ tenantId: effectiveTenantId, usuarioId: session.userId, accion: 'crear_area', entidad: 'area', entidadId: area.id, datosNuevos: { nombre }, ipAddress: getClientIp(request) });
 
     return Response.json(area, { status: 201 });
   } catch (error: any) {

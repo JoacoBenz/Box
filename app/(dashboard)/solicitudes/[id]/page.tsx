@@ -10,6 +10,7 @@ import SolicitudActionButtons from './SolicitudActionButtons'
 import ItemsTable from './ItemsTable'
 import TimelineSection from './TimelineSection'
 import ComentariosSection from './ComentariosSection'
+import { getServerTenantId } from '@/lib/tenant-override'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -21,13 +22,13 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
   if (!session?.user) redirect('/login')
 
   const user = (session as any).user
-  const tenantId: number = user.tenantId
+  const tenantId = await getServerTenantId({ tenantId: user.tenantId, roles: user.roles ?? [] })
   const sessionUserId: number = Number(user.id)
   const sessionRoles: string[] = user.roles ?? []
   const sessionAreaId: number | null = user.areaId ?? null
 
   const solicitud = await prisma.solicitudes.findFirst({
-    where: { id: Number(id), tenant_id: tenantId },
+    where: { id: Number(id), ...(tenantId ? { tenant_id: tenantId } : {}) },
     include: {
       area: true,
       solicitante: true,
@@ -53,7 +54,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
 
   // Check if session user is the designated responsable of this solicitud's area
   const isAreaResponsable = solicitud.area?.responsable_id === sessionUserId
-  const skipValidacion = !(await getTenantConfigBool(tenantId, 'requiere_validacion_responsable', true))
+  const skipValidacion = !(await getTenantConfigBool(tenantId ?? user.tenantId, 'requiere_validacion_responsable', true))
 
   const estado = solicitud.estado as EstadoSolicitud
   const urgencia = solicitud.urgencia as UrgenciaSolicitud
@@ -102,10 +103,10 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
           <div>
             <div style={{ fontSize: 13, marginBottom: 8 }}>
               <Link href="/solicitudes" style={{ color: '#4f46e5', fontWeight: 500, textDecoration: 'none' }}>
-                &larr; Volver a Solicitudes
+                ← Volver a Solicitudes
               </Link>
             </div>
-            <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: '#1e293b', letterSpacing: '-0.5px' }}>{solicitud.titulo}</h1>
+            <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#1e293b' }}>{solicitud.titulo}</h3>
             <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: '#64748b', fontSize: 13, fontWeight: 600 }}>{solicitud.numero}</span>
               {estadoInfo && <Tag color={estadoInfo.color}>{estadoInfo.label}</Tag>}

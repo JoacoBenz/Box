@@ -351,7 +351,7 @@ export default function SolicitudActionButtons({
               { value: 'programado', label: 'Programado' },
             ]} />
           </Form.Item>
-          <Form.Item name="observaciones" label="Observaciones (opcional)">
+          <Form.Item name="observaciones" label="Observaciones">
             <TextArea rows={3} maxLength={500} showCount />
           </Form.Item>
         </Form>
@@ -459,10 +459,10 @@ export default function SolicitudActionButtons({
               )
             }
           </Form.Item>
-          <Form.Item name="observaciones" label="Observaciones (opcional)">
+          <Form.Item name="observaciones" label="Observaciones">
             <TextArea rows={3} placeholder="Ingrese observaciones si las hubiera..." maxLength={500} showCount />
           </Form.Item>
-          <Form.Item name="remito" label="Remito / comprobante (opcional)">
+          <Form.Item name="remito" label="Remito / comprobante" valuePropName="fileList" getValueFromEvent={(e: any) => Array.isArray(e) ? e : e?.fileList}>
             <Upload
               beforeUpload={() => false}
               maxCount={1}

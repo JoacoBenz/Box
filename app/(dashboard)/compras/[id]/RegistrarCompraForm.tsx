@@ -140,19 +140,19 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
   }
 
   return (
-    <div style={{ padding: 24, maxWidth: 860 }}>
-      <div style={{ marginBottom: 16, fontSize: 13, color: '#888' }}>
-        <a onClick={() => router.push('/compras')} style={{ color: '#1677ff', cursor: 'pointer' }}>
+    <div className="page-content" style={{ maxWidth: 880, margin: '0 auto' }}>
+      <div style={{ marginBottom: 16, fontSize: 13 }}>
+        <a onClick={() => router.push('/compras')} style={{ color: '#4f46e5', fontWeight: 500, cursor: 'pointer', textDecoration: 'none' }}>
           ← Volver a Compras
         </a>
       </div>
 
-      <Title level={3} style={{ marginBottom: 24 }}>
+      <Title level={3} style={{ marginBottom: 24, fontWeight: 700, color: '#1e293b' }}>
         Registrar Compra
       </Title>
 
       {/* Solicitud summary */}
-      <Card title="Solicitud" style={{ marginBottom: 24 }}>
+      <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Solicitud</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
         <Descriptions column={2} size="small">
           <Descriptions.Item label="Número">{solicitud.numero}</Descriptions.Item>
           <Descriptions.Item label="Título">{solicitud.titulo}</Descriptions.Item>
@@ -178,7 +178,7 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
       )}
 
       {/* Purchase form */}
-      <Card title="Datos de la Compra">
+      <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Datos de la Compra</span>} style={{ borderRadius: 16 }}>
         <Form form={form} layout="vertical">
           <Form.Item
             label="Proveedor"
@@ -189,11 +189,11 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
               { whitespace: true, message: 'El nombre no puede estar vacío' },
             ]}
           >
-            <Input placeholder="Nombre del proveedor" maxLength={255} />
+            <Input placeholder="Nombre del proveedor" maxLength={255} readOnly={!!prov} disabled={!!prov} />
           </Form.Item>
 
-          <Form.Item label="Detalle del Proveedor (opcional)" name="proveedor_detalle">
-            <TextArea rows={2} placeholder="CUIT, dirección, teléfono, etc." maxLength={500} />
+          <Form.Item label="Detalle del Proveedor" name="proveedor_detalle">
+            <TextArea rows={2} placeholder="CUIT, dirección, teléfono, etc." maxLength={500} readOnly={!!prov} disabled={!!prov} />
           </Form.Item>
 
           <Space style={{ width: '100%' }} size={24} wrap>
@@ -272,7 +272,7 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
           </Space>
 
           <Form.Item
-            label="Número de Factura (opcional)"
+            label="Número de Factura"
             name="numero_factura"
             rules={[
               {
@@ -282,10 +282,38 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
             ]}
             extra="Formato: A-0001-00012345"
           >
-            <Input placeholder="A-0001-00012345" style={{ width: 240 }} maxLength={20} />
+            <Input
+              placeholder="A-0001-00012345"
+              style={{ width: 240 }}
+              maxLength={16}
+              onChange={(e) => {
+                const raw = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')
+                let formatted = ''
+                for (let i = 0; i < raw.length && formatted.length < 16; i++) {
+                  const c = raw[i]
+                  if (formatted.length === 0) {
+                    // First char: letter only
+                    if (/[A-Z]/.test(c)) formatted += c
+                  } else if (formatted.length === 1) {
+                    // Auto-insert dash after letter
+                    if (/\d/.test(c)) formatted += '-' + c
+                  } else if (formatted.length >= 2 && formatted.length < 6) {
+                    // 4 digits for punto de venta
+                    if (/\d/.test(c)) formatted += c
+                  } else if (formatted.length === 6) {
+                    // Auto-insert dash after punto de venta
+                    if (/\d/.test(c)) formatted += '-' + c
+                  } else if (formatted.length >= 7 && formatted.length < 16) {
+                    // 8 digits for número
+                    if (/\d/.test(c)) formatted += c
+                  }
+                }
+                form.setFieldValue('numero_factura', formatted)
+              }}
+            />
           </Form.Item>
 
-          <Form.Item label="Observaciones (opcional)" name="observaciones">
+          <Form.Item label="Observaciones" name="observaciones">
             <TextArea rows={3} placeholder="Notas adicionales sobre la compra" maxLength={1000} showCount />
           </Form.Item>
 
@@ -318,7 +346,7 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
 
           <Divider />
 
-          <Space>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <AnimatedSubmitButton
               variant="send"
               onClick={handleSubmit}
@@ -329,7 +357,7 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
             <Button size="large" onClick={() => router.push('/compras')} disabled={loading}>
               Cancelar
             </Button>
-          </Space>
+          </div>
         </Form>
       </Card>
     </div>

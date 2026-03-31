@@ -5,20 +5,22 @@ import { tenantPrisma, prisma } from '@/lib/prisma';
 import { verificarRol } from '@/lib/permissions';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { usuarioSchema } from '@/lib/validators';
+import { getEffectiveTenantId } from '@/lib/tenant-override';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const { session, effectiveTenantId } = await getEffectiveTenantId(request);
     if (!verificarRol(session.roles, ['admin'])) {
       return Response.json({ error: { code: 'FORBIDDEN', message: 'Sin permiso' } }, { status: 403 });
     }
 
-    const db = tenantPrisma(session.tenantId);
+    const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
     const usuarios = await db.usuarios.findMany({
       orderBy: { nombre: 'asc' },
       include: {
         area: { select: { id: true, nombre: true } },
         usuarios_roles: { include: { rol: { select: { id: true, nombre: true } } } },
+        ...(!effectiveTenantId && { tenant: { select: { id: true, nombre: true } } }),
       },
     });
 
@@ -31,9 +33,12 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const { session, effectiveTenantId } = await getEffectiveTenantId(request);
     if (!verificarRol(session.roles, ['admin'])) {
       return Response.json({ error: { code: 'FORBIDDEN', message: 'Sin permiso' } }, { status: 403 });
+    }
+    if (!effectiveTenantId) {
+      return Response.json({ error: { code: 'BAD_REQUEST', message: 'Seleccioná una organización antes de crear' } }, { status: 400 });
     }
 
     const body = await request.json();
@@ -47,7 +52,7 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: { code: 'VALIDATION_ERROR', message: 'La contraseña es obligatoria para nuevos usuarios' } }, { status: 400 });
     }
 
-    const db = tenantPrisma(session.tenantId);
+    const db = tenantPrisma(effectiveTenantId);
 
     const existingEmail = await db.usuarios.findFirst({ where: { email } });
     if (existingEmail) return Response.json({ error: { code: 'CONFLICT', message: 'Email ya registrado en esta organización' } }, { status: 409 });
@@ -64,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     const usuario = await prisma.$transaction(async (tx) => {
       const newUser = await tx.usuarios.create({
-        data: { tenant_id: session.tenantId, nombre, email, password_hash: passwordHash, area_id },
+        data: { tenant_id: effectiveTenantId, nombre, email, password_hash: passwordHash, area_id },
       });
       await tx.usuarios_roles.createMany({
         data: rolesData.map(r => ({ usuario_id: newUser.id, rol_id: r.id })),
@@ -76,7 +81,7 @@ export async function POST(request: NextRequest) {
       return newUser;
     });
 
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'crear_usuario', entidad: 'usuario', entidadId: usuario.id, datosNuevos: { nombre, email, roles: roleNames }, ipAddress: getClientIp(request) });
+    await registrarAuditoria({ tenantId: effectiveTenantId, usuarioId: session.userId, accion: 'crear_usuario', entidad: 'usuario', entidadId: usuario.id, datosNuevos: { nombre, email, roles: roleNames }, ipAddress: getClientIp(request) });
 
     return Response.json({ ...usuario, password_hash: undefined }, { status: 201 });
   } catch (error: any) {

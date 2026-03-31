@@ -16,6 +16,7 @@ import {
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { RolNombre } from '@/types'
+import { useAdminTenant } from '@/components/admin/TenantSelector'
 
 const { Title } = Typography
 
@@ -49,6 +50,7 @@ interface Usuario {
   activo: boolean
   area: { id: number; nombre: string } | null
   usuarios_roles: { rol: { id: number; nombre: string } }[]
+  tenant?: { id: number; nombre: string }
 }
 
 export default function AdminUsuariosPage() {
@@ -60,6 +62,7 @@ export default function AdminUsuariosPage() {
   const [editUser, setEditUser] = useState<Usuario | null>(null)
   const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
+  const [selectedTenant] = useAdminTenant()
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -81,11 +84,15 @@ export default function AdminUsuariosPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [selectedTenant])
 
   useEffect(() => { fetchData() }, [fetchData])
 
   function openCreate() {
+    if (!selectedTenant) {
+      message.warning('Seleccioná una organización antes de crear un usuario')
+      return
+    }
     setEditUser(null)
     form.resetFields()
     setModalOpen(true)
@@ -159,6 +166,12 @@ export default function AdminUsuariosPage() {
   }
 
   const columns: ColumnsType<Usuario> = [
+    ...(!selectedTenant ? [{
+      title: 'Organización',
+      key: 'tenant',
+      width: 180,
+      render: (_: unknown, r: Usuario) => r.tenant?.nombre ?? '—',
+    }] : []),
     { title: 'Nombre', dataIndex: 'nombre', key: 'nombre' },
     { title: 'Email', dataIndex: 'email', key: 'email', width: 220 },
     {
@@ -189,11 +202,11 @@ export default function AdminUsuariosPage() {
       width: 100,
       render: (v: boolean) => <Tag color={v ? 'green' : 'default'}>{v ? 'Activo' : 'Inactivo'}</Tag>,
     },
-    {
+    ...(selectedTenant ? [{
       title: 'Acciones',
       key: 'actions',
       width: 180,
-      render: (_, r) => (
+      render: (_: unknown, r: Usuario) => (
         <Space>
           <Button size="small" onClick={() => openEdit(r)}>Editar</Button>
           <Popconfirm
@@ -206,14 +219,14 @@ export default function AdminUsuariosPage() {
           </Popconfirm>
         </Space>
       ),
-    },
+    }] : []),
   ]
 
   return (
-    <div className="page-content" style={{ padding: 24 }}>
+    <div className="page-content">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={3} style={{ margin: 0, fontWeight: 800, color: '#1e293b', letterSpacing: '-0.5px' }}>Usuarios</Title>
-        <Button type="primary" onClick={openCreate} style={{ fontWeight: 600 }}>+ Nuevo Usuario</Button>
+        <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>Usuarios</Title>
+        {selectedTenant && <Button type="primary" onClick={openCreate} style={{ fontWeight: 600 }}>+ Nuevo Usuario</Button>}
       </div>
 
       <Table
@@ -272,7 +285,7 @@ export default function AdminUsuariosPage() {
           <Form.Item label="Área" name="area_id">
             <Select
               allowClear
-              placeholder="Seleccionar área (opcional)"
+              placeholder="Seleccionar área"
               options={areas.map((a) => ({ value: a.id, label: a.nombre }))}
             />
           </Form.Item>

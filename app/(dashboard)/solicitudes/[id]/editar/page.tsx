@@ -135,7 +135,7 @@ export default function EditarSolicitudPage() {
 
   return (
     <div className="page-content" style={{ padding: '32px 24px', maxWidth: 880, margin: '0 auto' }}>
-      <Title level={3} style={{ marginBottom: 32, fontWeight: 700 }}>
+      <Title level={3} style={{ marginBottom: 24, fontWeight: 700, color: '#1e293b' }}>
         Editar Solicitud
       </Title>
 
@@ -151,7 +151,7 @@ export default function EditarSolicitudPage() {
       )}
 
       <Form form={form} layout="vertical" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <Card title={<span style={{ fontWeight: 600, fontSize: 15 }}>Información General</span>} style={{ borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+        <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Información General</span>} style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           <Form.Item
             label="Título"
             name="titulo"
@@ -191,7 +191,7 @@ export default function EditarSolicitudPage() {
             />
           </Form.Item>
 
-          <Form.Item label="Proveedor (opcional)" name="proveedor_id">
+          <Form.Item label="Proveedor" name="proveedor_id">
             <ProveedorSelect
               onChange={(id, prov) => {
                 form.setFieldValue('proveedor_id', id)
@@ -208,7 +208,7 @@ export default function EditarSolicitudPage() {
           )}
         </Card>
 
-        <Card title={<span style={{ fontWeight: 600, fontSize: 15 }}>Items Solicitados</span>} style={{ borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+        <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Items Solicitados</span>} style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           <Form.List
             name="items"
             rules={[
@@ -281,7 +281,7 @@ export default function EditarSolicitudPage() {
 
                       <Form.Item
                         {...restField}
-                        label="Precio Estimado (opcional)"
+                        label="Precio Estimado"
                         name={[name, 'precio_estimado']}
                         style={{ marginBottom: 0 }}
                       >
@@ -291,7 +291,7 @@ export default function EditarSolicitudPage() {
 
                     <Form.Item
                       {...restField}
-                      label="Link del producto (opcional)"
+                      label="Link del producto"
                       name={[name, 'link_producto']}
                       style={{ marginTop: 12, marginBottom: 0 }}
                     >

@@ -34,6 +34,7 @@ export function DashboardShell({ tenantNombre, userName, areaNombre, roles, chil
             userName={userName}
             areaNombre={areaNombre}
             rolPrincipal={rolPrincipal}
+            roles={roles}
             collapsed={collapsed}
             onToggle={() => setCollapsed(!collapsed)}
           />

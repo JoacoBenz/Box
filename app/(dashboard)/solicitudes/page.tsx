@@ -5,6 +5,7 @@ import type { SessionUser, EstadoSolicitud, UrgenciaSolicitud } from '@/types'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import SolicitudesTable from './SolicitudesTable'
+import { getServerTenantId } from '@/lib/tenant-override'
 
 interface PageProps {
   searchParams: Promise<{ estado?: string; urgencia?: string }>
@@ -15,11 +16,12 @@ export default async function SolicitudesPage({ searchParams }: PageProps) {
   if (!session?.user) redirect('/login')
 
   const user = session.user as unknown as SessionUser
+  const effectiveTenantId = await getServerTenantId({ tenantId: user.tenantId, roles: user.roles as string[] })
 
   const { estado, urgencia } = await searchParams
 
   // Build role-based where clause
-  const where: Record<string, unknown> = { tenant_id: user.tenantId }
+  const where: Record<string, unknown> = effectiveTenantId ? { tenant_id: effectiveTenantId } : {}
 
   if (user.roles.includes('solicitante') && !user.roles.includes('admin') && !user.roles.includes('director') && !user.roles.includes('tesoreria')) {
     where.solicitante_id = Number(user.id)
@@ -45,7 +47,7 @@ export default async function SolicitudesPage({ searchParams }: PageProps) {
   return (
     <div className="page-content">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: '#1e293b', letterSpacing: '-0.5px' }}>Solicitudes de Compra</h1>
+        <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#1e293b' }}>Solicitudes de Compra</h3>
         {isSolicitante && (
           <Link href="/solicitudes/nueva">
             <button className="btn-primary-gradient">

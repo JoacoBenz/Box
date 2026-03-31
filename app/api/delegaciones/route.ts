@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
-import { tenantPrisma } from '@/lib/prisma';
+import { tenantPrisma, prisma } from '@/lib/prisma';
 import { verificarRol, apiError } from '@/lib/permissions';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
 
 export async function GET(request: Request) {
-  const session = await getServerSession();
-  const db = tenantPrisma(session.tenantId);
+  const { session, effectiveTenantId } = await (await import('@/lib/tenant-override')).getEffectiveTenantId(request);
+  const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
 
   // Admin sees all, others see their own delegations
   const where = verificarRol(session.roles, ['admin'])

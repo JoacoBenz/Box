@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, Input, Button, List, Typography, Space, message, Avatar } from 'antd'
+import { Card, Input, Button, Typography, message, Avatar, Spin } from 'antd'
 import { SendOutlined, CommentOutlined, UserOutlined } from '@ant-design/icons'
 
 const { Text } = Typography
@@ -74,24 +74,22 @@ export default function ComentariosSection({ solicitudId }: { solicitudId: numbe
         </Text>
       )}
 
-      <List
-        loading={loading}
-        dataSource={comentarios}
-        renderItem={(c) => (
-          <div style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
-            <Avatar size={32} icon={<UserOutlined />} style={{ background: '#4f46e5', flexShrink: 0 }}>
-              {c.usuario.nombre.charAt(0).toUpperCase()}
-            </Avatar>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <Text strong style={{ fontSize: 13 }}>{c.usuario.nombre}</Text>
-                <Text type="secondary" style={{ fontSize: 11 }}>{formatDate(c.created_at)}</Text>
-              </div>
-              <Text style={{ fontSize: 14, whiteSpace: 'pre-wrap' }}>{c.mensaje}</Text>
+      {loading && <div style={{ textAlign: 'center', padding: 20 }}><Spin /></div>}
+
+      {!loading && comentarios.map(c => (
+        <div key={c.id} style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
+          <Avatar size={32} icon={<UserOutlined />} style={{ background: '#4f46e5', flexShrink: 0 }}>
+            {c.usuario.nombre.charAt(0).toUpperCase()}
+          </Avatar>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <Text strong style={{ fontSize: 13 }}>{c.usuario.nombre}</Text>
+              <Text type="secondary" style={{ fontSize: 11 }}>{formatDate(c.created_at)}</Text>
             </div>
+            <Text style={{ fontSize: 14, whiteSpace: 'pre-wrap' }}>{c.mensaje}</Text>
           </div>
-        )}
-      />
+        </div>
+      ))}
 
       <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
         <TextArea

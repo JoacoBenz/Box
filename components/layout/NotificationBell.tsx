@@ -64,6 +64,7 @@ export function NotificationBell() {
     await fetch('/api/notificaciones/marcar-todas', { method: 'PATCH' });
     setNotificaciones(prev => prev.map(n => ({ ...n, leida: true })));
     setCount(0);
+    setOpen(false);
   }
 
   async function handleClickNotif(notif: Notificacion) {
