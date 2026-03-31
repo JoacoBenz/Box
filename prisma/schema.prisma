@@ -15,6 +15,7 @@ model tenants {
   email_contacto String   @db.VarChar(255)
   moneda         String   @default("ARS") @db.VarChar(10)
   fecha_registro DateTime @default(now())
+  desactivado    Boolean  @default(false)
   created_at     DateTime @default(now())
   updated_at     DateTime @updatedAt
 
@@ -129,7 +130,7 @@ model solicitudes {
   created_at                DateTime @default(now())
   updated_at                DateTime @updatedAt
 
-  tenant        tenants        @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  tenant        tenants        @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   proveedor     proveedores?   @relation(fields: [proveedor_id], references: [id])
   area          areas          @relation(fields: [area_id], references: [id])
   centro_costo  centros_costo? @relation(fields: [centro_costo_id], references: [id])
@@ -181,12 +182,13 @@ model compras {
   observaciones       String?
   created_at          DateTime @default(now())
 
-  tenant        tenants      @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  tenant        tenants      @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   solicitud     solicitudes  @relation(fields: [solicitud_id], references: [id])
   ejecutado_por usuarios     @relation(fields: [ejecutado_por_id], references: [id])
   proveedor     proveedores? @relation(fields: [proveedor_id], references: [id])
 
   @@unique([tenant_id, id])
+  @@unique([tenant_id, numero_factura])
   @@index([tenant_id, solicitud_id])
 }
 
@@ -201,7 +203,7 @@ model recepciones {
   observaciones   String?
   created_at      DateTime @default(now())
 
-  tenant    tenants     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  tenant    tenants     @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   solicitud solicitudes @relation(fields: [solicitud_id], references: [id])
   receptor  usuarios    @relation(fields: [receptor_id], references: [id])
 }
@@ -217,7 +219,7 @@ model archivos {
   subido_por_id  Int
   created_at     DateTime @default(now())
 
-  tenant     tenants  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  tenant     tenants  @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   subido_por usuarios @relation(fields: [subido_por_id], references: [id])
 }
 
@@ -281,7 +283,7 @@ model proveedores {
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
-  tenant      tenants       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  tenant      tenants       @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   solicitudes solicitudes[]
   compras     compras[]
 

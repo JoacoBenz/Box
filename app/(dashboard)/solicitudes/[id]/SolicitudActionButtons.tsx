@@ -20,6 +20,7 @@ interface Props {
   sessionAreaId: number | null
   isAreaResponsable: boolean
   skipValidacion?: boolean
+  updatedAt?: string
 }
 
 export default function SolicitudActionButtons({
@@ -32,6 +33,7 @@ export default function SolicitudActionButtons({
   sessionAreaId,
   isAreaResponsable,
   skipValidacion = false,
+  updatedAt,
 }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -101,39 +103,39 @@ export default function SolicitudActionButtons({
   }
 
   async function handleEnviar() {
-    await postAction(`/api/solicitudes/${solicitudId}/enviar`)
+    await postAction(`/api/solicitudes/${solicitudId}/enviar`, { updated_at: updatedAt })
   }
 
   async function handleValidar() {
-    await postAction(`/api/solicitudes/${solicitudId}/validar`)
+    await postAction(`/api/solicitudes/${solicitudId}/validar`, { updated_at: updatedAt })
   }
 
   async function handleDevolver(values: { motivo: string }) {
     // Determine origen from the current state, not the role (a user may have both roles)
     const origen = estado === 'validada' ? 'director' : 'responsable'
-    await postAction(`/api/solicitudes/${solicitudId}/devolver`, { observaciones: values.motivo, origen })
+    await postAction(`/api/solicitudes/${solicitudId}/devolver`, { observaciones: values.motivo, origen, updated_at: updatedAt })
     setDevolverOpen(false)
     devolverForm.resetFields()
   }
 
   async function handleAprobar() {
-    await postAction(`/api/solicitudes/${solicitudId}/aprobar`)
+    await postAction(`/api/solicitudes/${solicitudId}/aprobar`, { updated_at: updatedAt })
   }
 
   async function handleRechazar(values: { motivo: string }) {
-    await postAction(`/api/solicitudes/${solicitudId}/rechazar`, { motivo: values.motivo })
+    await postAction(`/api/solicitudes/${solicitudId}/rechazar`, { motivo: values.motivo, updated_at: updatedAt })
     setRechazarOpen(false)
     rechazarForm.resetFields()
   }
 
   async function handleProcesarCompras(values: { prioridad_compra: string; observaciones?: string }) {
-    await postAction(`/api/solicitudes/${solicitudId}/procesar-compras`, values)
+    await postAction(`/api/solicitudes/${solicitudId}/procesar-compras`, { ...values, updated_at: updatedAt })
     setProcesarOpen(false)
     procesarForm.resetFields()
   }
 
   async function handleProgramarPago(values: { dia_pago_programado: any }) {
-    await postAction(`/api/solicitudes/${solicitudId}/programar-pago`, { dia_pago_programado: values.dia_pago_programado.toISOString() })
+    await postAction(`/api/solicitudes/${solicitudId}/programar-pago`, { dia_pago_programado: values.dia_pago_programado.toISOString(), updated_at: updatedAt })
     setProgramarOpen(false)
     programarForm.resetFields()
   }

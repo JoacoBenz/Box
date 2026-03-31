@@ -25,6 +25,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const body = await request.json().catch(() => ({}));
     const resolucion = body?.resolucion ?? 'Resuelto';
 
+    // Optimistic locking: verify no concurrent modification
+    const expectedUpdatedAt = body?.updated_at;
+    if (expectedUpdatedAt) {
+      const current = solicitud.updated_at.toISOString();
+      if (current !== expectedUpdatedAt) {
+        return Response.json({ error: { code: 'CONFLICT', message: 'Esta solicitud fue modificada por otro usuario. Recargá la página.' } }, { status: 409 });
+      }
+    }
+
     await db.solicitudes.update({ where: { id: solicitudId }, data: { estado: 'cerrada' } });
     await crearNotificacion({ tenantId: session.tenantId, destinatarioId: solicitud.solicitante_id, tipo: 'solicitud_cerrada', titulo: 'Tu solicitud fue cerrada', mensaje: `Resolución: ${resolucion}`, solicitudId });
 

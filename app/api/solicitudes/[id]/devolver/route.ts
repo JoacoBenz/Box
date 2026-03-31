@@ -23,6 +23,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const solicitud = await db.solicitudes.findFirst({ where: { id: solicitudId } });
     if (!solicitud) return Response.json({ error: { code: 'NOT_FOUND', message: 'No encontrada' } }, { status: 404 });
 
+    // Optimistic locking: verify no concurrent modification
+    const expectedUpdatedAt = body?.updated_at;
+    if (expectedUpdatedAt) {
+      const current = solicitud.updated_at.toISOString();
+      if (current !== expectedUpdatedAt) {
+        return Response.json({ error: { code: 'CONFLICT', message: 'Esta solicitud fue modificada por otro usuario. Recargá la página.' } }, { status: 409 });
+      }
+    }
+
     if (origen === 'responsable') {
       if (!verificarRol(session.roles, ['responsable_area'])) {
         return Response.json({ error: { code: 'FORBIDDEN', message: 'Sin permiso' } }, { status: 403 });

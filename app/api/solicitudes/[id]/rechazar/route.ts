@@ -32,6 +32,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return Response.json({ error: { code: 'VALIDATION_ERROR', message: 'Datos inválidos', details: result.error.issues.map(i => ({ field: i.path.join('.'), message: i.message })) } }, { status: 400 });
     }
 
+    // Optimistic locking: verify no concurrent modification
+    const expectedUpdatedAt = body?.updated_at;
+    if (expectedUpdatedAt) {
+      const current = solicitud.updated_at.toISOString();
+      if (current !== expectedUpdatedAt) {
+        return Response.json({ error: { code: 'CONFLICT', message: 'Esta solicitud fue modificada por otro usuario. Recargá la página.' } }, { status: 409 });
+      }
+    }
+
     await db.solicitudes.update({
       where: { id: solicitudId },
       data: { estado: 'rechazada', rechazado_por_id: session.userId, fecha_rechazo: new Date(), motivo_rechazo: result.data.motivo },

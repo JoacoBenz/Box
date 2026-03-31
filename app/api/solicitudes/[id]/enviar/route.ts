@@ -24,6 +24,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return Response.json({ error: { code: 'BAD_REQUEST', message: 'La solicitud debe tener al menos un ítem' } }, { status: 400 });
     }
 
+    // Optimistic locking: verify no concurrent modification
+    const body = await request.json().catch(() => ({}));
+    const expectedUpdatedAt = body?.updated_at;
+    if (expectedUpdatedAt) {
+      const current = solicitud.updated_at.toISOString();
+      if (current !== expectedUpdatedAt) {
+        return Response.json({ error: { code: 'CONFLICT', message: 'Esta solicitud fue modificada por otro usuario. Recargá la página.' } }, { status: 409 });
+      }
+    }
+
     await db.solicitudes.update({ where: { id: solicitudId }, data: { estado: 'enviada', fecha_envio: new Date() } });
 
     const requiereValidacion = await getTenantConfigBool(session.tenantId, 'requiere_validacion_responsable', true);

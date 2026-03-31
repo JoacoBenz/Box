@@ -29,6 +29,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const seg = verificarSegregacion(solicitud, session.userId, 'aprobar');
     if (!seg.permitido) return Response.json({ error: { code: 'FORBIDDEN', message: seg.motivo } }, { status: 403 });
 
+    // Optimistic locking: verify no concurrent modification
+    const body = await request.json().catch(() => ({}));
+    const expectedUpdatedAt = body?.updated_at;
+    if (expectedUpdatedAt) {
+      const current = solicitud.updated_at.toISOString();
+      if (current !== expectedUpdatedAt) {
+        return Response.json({ error: { code: 'CONFLICT', message: 'Esta solicitud fue modificada por otro usuario. Recargá la página.' } }, { status: 409 });
+      }
+    }
+
     // Check if tenant has users with 'compras' role to route there
     const comprasRole = await prisma.roles.findUnique({ where: { nombre: 'compras' } });
     const hasComprasUsers = comprasRole ? await prisma.usuarios_roles.count({

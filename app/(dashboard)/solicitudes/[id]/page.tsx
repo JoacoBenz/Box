@@ -199,6 +199,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
             sessionAreaId={sessionAreaId}
             isAreaResponsable={isAreaResponsable}
             skipValidacion={skipValidacion}
+            updatedAt={solicitud.updated_at.toISOString()}
           />
         </div>
       </div>

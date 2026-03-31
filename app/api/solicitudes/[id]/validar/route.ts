@@ -33,6 +33,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const body = await request.json().catch(() => ({}));
     const observaciones = body?.observaciones ?? null;
 
+    // Optimistic locking: verify no concurrent modification
+    const expectedUpdatedAt = body?.updated_at;
+    if (expectedUpdatedAt) {
+      const current = solicitud.updated_at.toISOString();
+      if (current !== expectedUpdatedAt) {
+        return Response.json({ error: { code: 'CONFLICT', message: 'Esta solicitud fue modificada por otro usuario. Recargá la página.' } }, { status: 409 });
+      }
+    }
+
     await db.solicitudes.update({
       where: { id: solicitudId },
       data: { estado: 'validada', validado_por_id: session.userId, fecha_validacion: new Date(), observaciones_responsable: observaciones },
