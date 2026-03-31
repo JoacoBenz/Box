@@ -13,6 +13,7 @@ export type EstadoSolicitud =
   | 'recibida_con_obs'
   | 'en_compras'
   | 'pago_programado'
+  | 'anulada'
   | 'cerrada';
 
 export type PrioridadCompra = 'urgente' | 'normal' | 'programado';
@@ -63,6 +64,7 @@ export const ESTADOS_SOLICITUD: Record<EstadoSolicitud, { label: string; color: 
   comprada:          { label: 'Comprada',                      color: 'geekblue' },
   recibida:          { label: 'Recibida',                      color: 'lime' },
   recibida_con_obs:  { label: 'Recibida con observaciones',    color: 'gold' },
+  anulada:           { label: 'Anulada',                       color: 'default' },
   cerrada:           { label: 'Cerrada',                       color: 'purple' },
 };
 

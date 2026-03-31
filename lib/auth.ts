@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
 import type { RolNombre } from '@/types';
 import { checkRateLimit } from './rate-limit';
+import { getRolesEfectivos } from './delegaciones';
 import { isAccountLocked, recordFailedLogin, clearFailedAttempts } from './account-lockout';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -106,12 +107,22 @@ export async function getServerSession() {
   const session = await auth();
   if (!session?.user) throw new Error('No autenticado');
   const user = session.user as any;
+  const baseRoles = user.roles as RolNombre[];
+
+  // Enrich with delegated roles
+  const { roles: rolesEfectivos, delegaciones } = await getRolesEfectivos(
+    user.tenantId as number,
+    Number(user.id),
+    baseRoles
+  );
+
   return {
     userId: Number(user.id),
     tenantId: user.tenantId as number,
     areaId: user.areaId as number | null,
     areaNombre: user.areaNombre as string | null,
-    roles: user.roles as RolNombre[],
+    roles: rolesEfectivos,
+    delegaciones,
     nombre: user.name as string,
     email: user.email as string,
   };

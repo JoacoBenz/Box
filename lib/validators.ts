@@ -154,6 +154,8 @@ export const centroCostoSchema = z.object({
       'El código solo puede contener letras, números, guiones y guiones bajos'
     )
     .refine((v) => v.trim() === v, 'El código no puede tener espacios'),
+  presupuesto_anual: z.number().nonnegative().max(999_999_999).optional().nullable(),
+  presupuesto_mensual: z.number().nonnegative().max(999_999_999).optional().nullable(),
 });
 
 export const recepcionSchema = z
@@ -162,6 +164,12 @@ export const recepcionSchema = z
     conforme: z.boolean(),
     tipo_problema: z.enum(['faltante', 'dañado', 'diferente', 'otro']).optional().nullable(),
     observaciones: z.string().max(2000).optional().nullable(),
+    items: z.array(z.object({
+      item_solicitud_id: z.number().int().positive(),
+      cantidad_recibida: z.number().positive('La cantidad debe ser mayor a 0'),
+      conforme: z.boolean().default(true),
+      observaciones: z.string().max(500).optional().nullable(),
+    })).optional(),
   })
   .refine((data) => data.conforme || (data.tipo_problema && data.observaciones && data.observaciones.trim().length >= 10), {
     message: 'Si no es conforme, indicá el tipo de problema y describí qué pasó (mínimo 10 caracteres)',

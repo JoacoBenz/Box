@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Table, Button, Modal, Form, Input, Tag, Popconfirm, Typography, Space } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined } from '@ant-design/icons'
+import { InputNumber } from 'antd'
 
 const { Title } = Typography
 
@@ -12,6 +13,8 @@ interface CentroCosto {
   nombre: string
   codigo: string
   activo: boolean
+  presupuesto_anual: number | null
+  presupuesto_mensual: number | null
 }
 
 export default function CentrosCostoPage() {
@@ -42,7 +45,7 @@ export default function CentrosCostoPage() {
 
   function openEdit(item: CentroCosto) {
     setEditItem(item)
-    form.setFieldsValue({ nombre: item.nombre, codigo: item.codigo })
+    form.setFieldsValue({ nombre: item.nombre, codigo: item.codigo, presupuesto_anual: item.presupuesto_anual, presupuesto_mensual: item.presupuesto_mensual })
     setModalOpen(true)
   }
 
@@ -81,6 +84,18 @@ export default function CentrosCostoPage() {
   const columns: ColumnsType<CentroCosto> = [
     { title: 'Código', dataIndex: 'codigo', width: 120, render: (val) => <Tag>{val}</Tag> },
     { title: 'Nombre', dataIndex: 'nombre' },
+    {
+      title: 'Presupuesto Anual',
+      dataIndex: 'presupuesto_anual',
+      width: 160,
+      render: (val: number | null) => val != null ? `$${Number(val).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` : '-',
+    },
+    {
+      title: 'Presupuesto Mensual',
+      dataIndex: 'presupuesto_mensual',
+      width: 160,
+      render: (val: number | null) => val != null ? `$${Number(val).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` : '-',
+    },
     {
       title: 'Estado',
       dataIndex: 'activo',
@@ -167,6 +182,34 @@ export default function CentrosCostoPage() {
             ]}
           >
             <Input placeholder="Administración, Operaciones..." maxLength={150} />
+          </Form.Item>
+          <Form.Item
+            name="presupuesto_anual"
+            label="Presupuesto Anual"
+          >
+            <InputNumber
+              style={{ width: '100%' }}
+              min={0}
+              max={999999999}
+              precision={2}
+              placeholder="Opcional"
+              formatter={(value) => value ? `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}
+              parser={(value) => Number(value?.replace(/\$\s?|(\.)/g, '') || 0) as any}
+            />
+          </Form.Item>
+          <Form.Item
+            name="presupuesto_mensual"
+            label="Presupuesto Mensual"
+          >
+            <InputNumber
+              style={{ width: '100%' }}
+              min={0}
+              max={999999999}
+              precision={2}
+              placeholder="Opcional"
+              formatter={(value) => value ? `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}
+              parser={(value) => Number(value?.replace(/\$\s?|(\.)/g, '') || 0) as any}
+            />
           </Form.Item>
         </Form>
       </Modal>

@@ -40,6 +40,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       data: {
         ...(result.data.nombre && { nombre: result.data.nombre }),
         ...(result.data.codigo && { codigo: result.data.codigo.toUpperCase() }),
+        ...(result.data.presupuesto_anual !== undefined && { presupuesto_anual: result.data.presupuesto_anual }),
+        ...(result.data.presupuesto_mensual !== undefined && { presupuesto_mensual: result.data.presupuesto_mensual }),
         ...(body.activo !== undefined && { activo: body.activo }),
       },
     });

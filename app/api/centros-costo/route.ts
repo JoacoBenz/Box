@@ -51,6 +51,8 @@ export async function POST(request: NextRequest) {
         tenant_id: session.tenantId,
         nombre: result.data.nombre,
         codigo: result.data.codigo.toUpperCase(),
+        ...(result.data.presupuesto_anual !== undefined && { presupuesto_anual: result.data.presupuesto_anual }),
+        ...(result.data.presupuesto_mensual !== undefined && { presupuesto_mensual: result.data.presupuesto_mensual }),
       },
     });
 

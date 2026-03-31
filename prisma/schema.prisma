@@ -30,6 +30,7 @@ model tenants {
   configuracion  configuracion[]
   proveedores    proveedores[]
   centros_costo  centros_costo[]
+  delegaciones   delegaciones[]
 }
 
 model roles {
@@ -82,6 +83,8 @@ model usuarios {
   archivos_subidos         archivos[]
   notificaciones_recibidas notificaciones[]
   log_auditoria            log_auditoria[]
+  delegaciones_otorgadas   delegaciones[] @relation("delegaciones_delegante")
+  delegaciones_recibidas   delegaciones[] @relation("delegaciones_delegado")
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, email])
@@ -164,6 +167,7 @@ model items_solicitud {
   link_producto   String?  @db.VarChar(500)
 
   solicitud solicitudes @relation(fields: [solicitud_id], references: [id], onDelete: Cascade)
+  items_recepcion items_recepcion[]
 }
 
 model compras {
@@ -206,6 +210,20 @@ model recepciones {
   tenant    tenants     @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   solicitud solicitudes @relation(fields: [solicitud_id], references: [id])
   receptor  usuarios    @relation(fields: [receptor_id], references: [id])
+  items_recepcion items_recepcion[]
+}
+
+model items_recepcion {
+  id                Int      @id @default(autoincrement())
+  tenant_id         Int
+  recepcion_id      Int
+  item_solicitud_id Int
+  cantidad_recibida Decimal  @db.Decimal(10, 2)
+  conforme          Boolean  @default(true)
+  observaciones     String?
+
+  recepcion      recepciones     @relation(fields: [recepcion_id], references: [id], onDelete: Cascade)
+  item_solicitud items_solicitud @relation(fields: [item_solicitud_id], references: [id])
 }
 
 model archivos {
@@ -296,11 +314,33 @@ model centros_costo {
   tenant_id  Int
   nombre     String   @db.VarChar(150)
   codigo     String   @db.VarChar(20)
-  activo     Boolean  @default(true)
-  created_at DateTime @default(now())
+  activo              Boolean  @default(true)
+  presupuesto_anual   Decimal? @db.Decimal(15, 2)
+  presupuesto_mensual Decimal? @db.Decimal(15, 2)
+  created_at          DateTime @default(now())
 
   tenant      tenants       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   solicitudes solicitudes[]
 
   @@unique([tenant_id, codigo])
+}
+
+model delegaciones {
+  id              Int       @id @default(autoincrement())
+  tenant_id       Int
+  delegante_id    Int
+  delegado_id     Int
+  rol_delegado    String    @db.VarChar(50)
+  fecha_inicio    DateTime  @db.Date
+  fecha_fin       DateTime  @db.Date
+  motivo          String?   @db.VarChar(255)
+  activo          Boolean   @default(true)
+  created_at      DateTime  @default(now())
+
+  tenant    tenants  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  delegante usuarios @relation("delegaciones_delegante", fields: [delegante_id], references: [id])
+  delegado  usuarios @relation("delegaciones_delegado", fields: [delegado_id], references: [id])
+
+  @@unique([tenant_id, delegante_id, delegado_id, rol_delegado, fecha_inicio])
+  @@index([tenant_id, delegado_id, activo])
 }

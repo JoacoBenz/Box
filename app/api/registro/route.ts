@@ -105,8 +105,12 @@ export async function POST(request: NextRequest) {
       });
 
       // Initial config
-      await tx.configuracion.create({
-        data: { tenant_id: newTenant.id, clave: 'moneda', valor: 'ARS' },
+      await tx.configuracion.createMany({
+        data: [
+          { tenant_id: newTenant.id, clave: 'moneda', valor: 'ARS' },
+          { tenant_id: newTenant.id, clave: 'umbral_aprobacion_responsable', valor: '0' },
+          { tenant_id: newTenant.id, clave: 'umbral_aprobacion_director', valor: '999999999' },
+        ],
       });
 
       return { tenant: newTenant, usuarioId: usuario.id };

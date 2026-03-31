@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button, Space, Modal, Form, Input, Radio, Select, Typography, Tag, DatePicker, Upload } from 'antd'
+import { Button, Space, Modal, Form, Input, Popconfirm, Radio, Select, Typography, Tag, DatePicker, Upload } from 'antd'
 import { UploadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import Link from 'next/link'
@@ -44,6 +44,9 @@ export default function SolicitudActionButtons({
   const [rechazarOpen, setRechazarOpen] = useState(false)
   const [rechazarForm] = Form.useForm<{ motivo: string }>()
 
+  const [anularOpen, setAnularOpen] = useState(false)
+  const [anularForm] = Form.useForm<{ motivo: string }>()
+
   const [recepcionOpen, setRecepcionOpen] = useState(false)
   const [recepcionForm] = Form.useForm<{ conforme: 'si' | 'no'; tipo_problema?: string; observaciones?: string }>()
 
@@ -75,11 +78,12 @@ export default function SolicitudActionButtons({
   const canRegistrarCompra = (isTesoreria || isCompras) && ['aprobada', 'pago_programado', 'en_compras'].includes(estado)
   const canConfirmarRecepcion = ((isSolicitante && isOwner) || (isResponsable && isAreaResponsable)) && estado === 'comprada'
   const canCerrar = (isTesoreria || isAdmin) && estado === 'recibida_con_obs'
+  const canAnular = ['enviada', 'validada', 'aprobada', 'en_compras', 'pago_programado'].includes(estado) && (isOwner || isDirector || isAdmin)
   const isCerrada = estado === 'cerrada'
 
   const hasAnyAction =
     canEditar || canEnviar || canValidar || canDevolver || canAprobar ||
-    canRechazar || canProcesarCompras || canProgramarPago || canRegistrarCompra || canConfirmarRecepcion || canCerrar || isCerrada
+    canRechazar || canProcesarCompras || canProgramarPago || canRegistrarCompra || canConfirmarRecepcion || canCerrar || canAnular || isCerrada
 
   async function postAction(path: string, body?: Record<string, unknown>) {
     setLoading(true)
@@ -138,6 +142,12 @@ export default function SolicitudActionButtons({
     await postAction(`/api/solicitudes/${solicitudId}/programar-pago`, { dia_pago_programado: values.dia_pago_programado.toISOString(), updated_at: updatedAt })
     setProgramarOpen(false)
     programarForm.resetFields()
+  }
+
+  async function handleAnular(values: { motivo: string }) {
+    await postAction(`/api/solicitudes/${solicitudId}/anular`, { motivo: values.motivo, updated_at: updatedAt })
+    setAnularOpen(false)
+    anularForm.resetFields()
   }
 
   async function handleConfirmarRecepcion(values: { conforme: 'si' | 'no'; tipo_problema?: string; observaciones?: string; remito?: any }) {
@@ -255,6 +265,21 @@ export default function SolicitudActionButtons({
             Confirmar Recepción
           </Button>
         )}
+
+        {canAnular && (
+          <Popconfirm
+            title="¿Anular esta solicitud?"
+            description="Esta acción no se puede deshacer."
+            onConfirm={() => setAnularOpen(true)}
+            okText="Sí, anular"
+            cancelText="No"
+            okButtonProps={{ danger: true }}
+          >
+            <Button danger style={{ borderStyle: 'dashed' }}>
+              Anular
+            </Button>
+          </Popconfirm>
+        )}
       </Space>}
 
       {/* Modal: Devolver */}
@@ -354,6 +379,34 @@ export default function SolicitudActionButtons({
               format="DD/MM/YYYY"
               disabledDate={(d) => d && d < dayjs().startOf('day')}
             />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal: Anular */}
+      <Modal
+        title="Anular Solicitud"
+        open={anularOpen}
+        onCancel={() => { setAnularOpen(false); anularForm.resetFields() }}
+        onOk={() => anularForm.submit()}
+        okText="Anular"
+        okButtonProps={{ danger: true, loading }}
+        cancelText="Cancelar"
+        destroyOnHidden={false}
+      >
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
+          Ingrese el motivo de la anulación (mínimo 10 caracteres). Esta acción no se puede deshacer.
+        </Typography.Paragraph>
+        <Form form={anularForm} layout="vertical" onFinish={handleAnular}>
+          <Form.Item
+            name="motivo"
+            label="Motivo de anulación"
+            rules={[
+              { required: true, message: 'El motivo es requerido.' },
+              { min: 10, message: 'Mínimo 10 caracteres.' },
+            ]}
+          >
+            <TextArea rows={4} placeholder="Describa el motivo de la anulación..." maxLength={500} showCount />
           </Form.Item>
         </Form>
       </Modal>

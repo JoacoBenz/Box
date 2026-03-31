@@ -5,6 +5,8 @@ import { verificarRol, verificarSegregacion } from '@/lib/permissions';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { getTenantConfigBool } from '@/lib/tenant-config';
+import { canUserApproveAmount } from '@/lib/approval-limits';
+import { verificarPresupuesto } from '@/lib/budget-control';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -28,6 +30,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const seg = verificarSegregacion(solicitud, session.userId, 'aprobar');
     if (!seg.permitido) return Response.json({ error: { code: 'FORBIDDEN', message: seg.motivo } }, { status: 403 });
+
+    // Check approval limits based on amount
+    const amountCheck = await canUserApproveAmount(
+      session.tenantId,
+      session.roles,
+      solicitud.monto_estimado_total ? Number(solicitud.monto_estimado_total) : null
+    );
+    if (!amountCheck.allowed) {
+      return Response.json({ error: { code: 'INSUFFICIENT_AUTHORITY', message: amountCheck.reason! } }, { status: 403 });
+    }
 
     // Optimistic locking: verify no concurrent modification
     const body = await request.json().catch(() => ({}));
@@ -66,6 +78,24 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const area = await prisma.areas.findFirst({ where: { id: solicitud.area_id, tenant_id: session.tenantId } });
       if (area?.responsable_id) {
         await crearNotificacion({ tenantId: session.tenantId, destinatarioId: area.responsable_id, tipo: 'solicitud_aprobada', titulo: 'Solicitud aprobada', mensaje: `La solicitud "${solicitud.titulo}" fue aprobada`, solicitudId });
+      }
+    }
+
+    // Budget control warning
+    if (solicitud.centro_costo_id && solicitud.monto_estimado_total) {
+      const budget = await verificarPresupuesto(
+        session.tenantId,
+        solicitud.centro_costo_id,
+        Number(solicitud.monto_estimado_total)
+      );
+      if (budget.status.excedido) {
+        await notificarPorRol(
+          session.tenantId,
+          'tesoreria',
+          `⚠ Presupuesto excedido: ${budget.status.centroCosto}`,
+          `La solicitud ${solicitud.numero} ($${Number(solicitud.monto_estimado_total).toLocaleString()}) excede el presupuesto del centro de costo "${budget.status.centroCosto}". Uso: ${budget.status.alertaPorcentaje}%`,
+          solicitudId
+        );
       }
     }
 
