@@ -49,6 +49,7 @@ interface Usuario {
   email: string
   activo: boolean
   area: { id: number; nombre: string } | null
+  area_sugerida?: string | null
   usuarios_roles: { rol: { id: number; nombre: string } }[]
   tenant?: { id: number; nombre: string }
 }
@@ -177,8 +178,12 @@ export default function AdminUsuariosPage() {
     {
       title: 'Área',
       key: 'area',
-      width: 160,
-      render: (_, r) => r.area ? r.area.nombre : '—',
+      width: 200,
+      render: (_, r) => {
+        if (r.area) return r.area.nombre
+        if (r.area_sugerida) return <Tag color="orange">Sugerida: {r.area_sugerida}</Tag>
+        return '—'
+      },
     },
     {
       title: 'Roles',

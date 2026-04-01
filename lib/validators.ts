@@ -38,6 +38,14 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Ingresá tu contraseña'),
 });
 
+export const unirseSchema = z.object({
+  nombre: nonBlank(2, 'Mínimo 2 caracteres').max(150),
+  email: z.string().email('Email inválido'),
+  password: passwordSchema,
+  area_texto: nonBlank(2, 'Indicá tu área').max(150),
+  codigo: z.string().max(8).optional(),
+});
+
 export const areaSchema = z.object({
   nombre: nonBlank(2, 'Mínimo 2 caracteres').max(100),
   responsable_id: z.number().int().positive().optional().nullable(),
