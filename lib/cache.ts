@@ -46,10 +46,13 @@ export function invalidateTenantCache(tenantId: number): void {
   invalidateCache(`t:${tenantId}:`);
 }
 
-// Periodic cleanup of expired entries
-setInterval(() => {
+/** Remove expired entries from the cache. Runs automatically every 120 s. */
+export function _cleanupExpired(): void {
   const now = Date.now();
   for (const [key, entry] of store) {
     if (now >= entry.expiresAt) store.delete(key);
   }
-}, 120_000); // every 2 minutes
+}
+
+// Periodic cleanup of expired entries
+setInterval(_cleanupExpired, 120_000); // every 2 minutes

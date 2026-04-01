@@ -5,14 +5,17 @@ const failedAttempts = new Map<string, { count: number; lockedUntil: number | nu
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
-// Clean up periodically
-setInterval(() => {
+/** Remove expired lockouts and zeroed entries. Runs automatically every 60 s. */
+export function _cleanupExpired(): void {
   const now = Date.now();
   for (const [key, val] of failedAttempts) {
     if (val.lockedUntil && now > val.lockedUntil) failedAttempts.delete(key);
     else if (!val.lockedUntil && val.count === 0) failedAttempts.delete(key);
   }
-}, 60_000);
+}
+
+// Clean up periodically
+setInterval(_cleanupExpired, 60_000);
 
 export function isAccountLocked(email: string): { locked: boolean; remainingMs: number } {
   const entry = failedAttempts.get(email.toLowerCase());

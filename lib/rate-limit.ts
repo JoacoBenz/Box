@@ -2,13 +2,16 @@
 const MAX_ENTRIES = 10_000;
 const attempts = new Map<string, { count: number; resetAt: number }>();
 
-// Clean up expired entries periodically
-setInterval(() => {
+/** Remove expired entries from the in-memory store. Runs automatically every 60 s. */
+export function _cleanupExpired(): void {
   const now = Date.now();
   for (const [key, val] of attempts) {
     if (now > val.resetAt) attempts.delete(key);
   }
-}, 60_000);
+}
+
+// Clean up expired entries periodically
+setInterval(_cleanupExpired, 60_000);
 
 export function checkRateLimit(
   key: string,
