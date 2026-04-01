@@ -162,7 +162,7 @@ export default function LoginPage() {
           </Text>
         </div>
 
-        <Space direction="vertical" style={{ width: '100%' }} size={10}>
+        <Space orientation="vertical" style={{ width: '100%' }} size={10}>
           <Button
             block
             size="large"
