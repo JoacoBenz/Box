@@ -18,8 +18,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const solicitud = await db.solicitudes.findFirst({ where: { id: solicitudId } });
     if (!solicitud) return Response.json({ error: { code: 'NOT_FOUND', message: 'No encontrada' } }, { status: 404 });
-    if (solicitud.estado !== 'recibida_con_obs') {
-      return Response.json({ error: { code: 'BAD_REQUEST', message: 'Solo se pueden cerrar solicitudes con observaciones de recepción' } }, { status: 400 });
+    if (!['recibida', 'recibida_con_obs'].includes(solicitud.estado)) {
+      return Response.json({ error: { code: 'BAD_REQUEST', message: 'Solo se pueden cerrar solicitudes recibidas' } }, { status: 400 });
     }
 
     const body = await request.json().catch(() => ({}));

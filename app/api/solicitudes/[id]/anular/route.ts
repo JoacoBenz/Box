@@ -51,6 +51,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const estadoAnterior = solicitud.estado;
 
+  // motivo_rechazo is reused for anulación with [ANULADA] prefix.
+  // A dedicated motivo_anulacion column would be cleaner but requires a migration.
   await db.solicitudes.update({
     where: { id: solicitudId },
     data: {
@@ -75,7 +77,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     tenantId: session.tenantId,
     usuarioId: session.userId,
     accion: 'anular_solicitud',
-    entidad: 'solicitudes',
+    entidad: 'solicitud',
     entidadId: solicitudId,
     datosAnteriores: { estado: estadoAnterior },
     datosNuevos: { estado: 'anulada', motivo },

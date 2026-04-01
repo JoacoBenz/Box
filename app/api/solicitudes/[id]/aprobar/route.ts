@@ -81,7 +81,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
     }
 
-    // Budget control warning
+    // Budget control: informational only — notifies tesorería but does NOT block approval.
+    // To make this a hard block, return a 403 instead of just notifying.
     if (solicitud.centro_costo_id && solicitud.monto_estimado_total) {
       const budget = await verificarPresupuesto(
         session.tenantId,

@@ -5,17 +5,18 @@ import { apiError } from '@/lib/permissions';
 import { getEffectiveTenantId } from '@/lib/tenant-override';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { effectiveTenantId } = await getEffectiveTenantId(request);
+  try {
+  const { session, effectiveTenantId } = await getEffectiveTenantId(request);
   const { id } = await params;
   const solicitudId = Number(id);
   if (isNaN(solicitudId)) return apiError('VALIDATION', 'ID inválido', 400);
 
-  const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
+  const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : tenantPrisma(session.tenantId);
 
   // Get audit log entries for this solicitud
   const events = await db.log_auditoria.findMany({
     where: {
-      entidad: 'solicitudes',
+      entidad: 'solicitud',
       entidad_id: solicitudId,
     },
     include: {
@@ -35,4 +36,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }));
 
   return NextResponse.json(timeline);
+  } catch (e: any) {
+    if (e.message === 'No autenticado') return apiError('UNAUTHORIZED', 'No autenticado', 401);
+    return apiError('INTERNAL', 'Error cargando timeline', 500);
+  }
 }

@@ -62,20 +62,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const solicitud = await db.solicitudes.findFirst({
-      where: { id: result.data.solicitud_id },
-      include: { proveedor: true },
-    });
-    if (!solicitud) return Response.json({ error: { code: 'NOT_FOUND', message: 'Solicitud no encontrada' } }, { status: 404 });
-    const estadosPermitidos = ['aprobada', 'pago_programado', 'en_compras'];
-    if (!estadosPermitidos.includes(solicitud.estado)) {
-      return Response.json({ error: { code: 'BAD_REQUEST', message: 'Esta solicitud no está lista para registrar la compra' } }, { status: 400 });
-    }
-
-    const seg = verificarSegregacion(solicitud, session.userId, 'comprar');
-    if (!seg.permitido) return Response.json({ error: { code: 'FORBIDDEN', message: seg.motivo } }, { status: 403 });
-
-    // Validate file type
+    // Validate file type before transaction
     const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
     if (!allowed.includes(archivo.type)) {
       return Response.json({ error: { code: 'BAD_REQUEST', message: 'Tipo de archivo no permitido. Usá PDF, JPG o PNG.' } }, { status: 400 });
@@ -84,7 +71,19 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: { code: 'BAD_REQUEST', message: 'El archivo no puede superar los 10MB' } }, { status: 400 });
     }
 
-    const compra = await prisma.$transaction(async (tx) => {
+    // State check + creation inside transaction to prevent race conditions
+    const txResult = await prisma.$transaction(async (tx) => {
+      const solicitud = await tx.solicitudes.findFirst({
+        where: { id: result.data.solicitud_id, tenant_id: session.tenantId },
+        include: { proveedor: true },
+      });
+      if (!solicitud) throw new Error('NOT_FOUND');
+      const estadosPermitidos = ['aprobada', 'pago_programado', 'en_compras'];
+      if (!estadosPermitidos.includes(solicitud.estado)) throw new Error('BAD_STATE');
+
+      const seg = verificarSegregacion(solicitud, session.userId, 'comprar');
+      if (!seg.permitido) throw new Error(`FORBIDDEN:${seg.motivo}`);
+
       const nuevaCompra = await tx.compras.create({
         data: {
           tenant_id: session.tenantId,
@@ -104,8 +103,11 @@ export async function POST(request: NextRequest) {
 
       await tx.solicitudes.update({ where: { id: result.data.solicitud_id }, data: { estado: 'comprada' } });
 
-      return nuevaCompra;
+      return { compra: nuevaCompra, solicitud };
     });
+
+    const compra = txResult.compra;
+    const solicitud = txResult.solicitud;
 
     // Upload file after transaction
     let uploadWarning: string | null = null;
@@ -138,6 +140,9 @@ export async function POST(request: NextRequest) {
     return Response.json({ ...compra, warning: uploadWarning }, { status: 201 });
   } catch (error: any) {
     if (error.message === 'No autenticado') return Response.json({ error: { code: 'UNAUTHORIZED', message: 'No autenticado' } }, { status: 401 });
+    if (error.message === 'NOT_FOUND') return Response.json({ error: { code: 'NOT_FOUND', message: 'Solicitud no encontrada' } }, { status: 404 });
+    if (error.message === 'BAD_STATE') return Response.json({ error: { code: 'BAD_REQUEST', message: 'Esta solicitud no está lista para registrar la compra' } }, { status: 400 });
+    if (error.message?.startsWith('FORBIDDEN:')) return Response.json({ error: { code: 'FORBIDDEN', message: error.message.slice(10) } }, { status: 403 });
     logApiError('/api/compras', 'POST', error);
     return Response.json({ error: { code: 'INTERNAL', message: 'Error interno' } }, { status: 500 });
   }

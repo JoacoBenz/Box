@@ -10,7 +10,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { session, effectiveTenantId } = await getEffectiveTenantId(request);
     const { id } = await params;
     const solicitudId = parseInt(id);
-    const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
+    const db = tenantPrisma(effectiveTenantId ?? session.tenantId);
 
     const solicitud = await db.solicitudes.findFirst({
       where: { id: solicitudId },
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { userId, roles, areaId } = session;
     const esSolicitante = solicitud.solicitante_id === userId;
     const esResponsableArea = solicitud.area_id === areaId;
-    const tieneAcceso = esSolicitante || esResponsableArea || roles.includes('director') || roles.includes('tesoreria') || roles.includes('admin');
+    const tieneAcceso = esSolicitante || esResponsableArea || roles.includes('director') || roles.includes('tesoreria') || roles.includes('compras') || roles.includes('admin');
     if (!tieneAcceso) return Response.json({ error: { code: 'FORBIDDEN', message: 'Sin acceso a esta solicitud' } }, { status: 403 });
 
     // Add archivos

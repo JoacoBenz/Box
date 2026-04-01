@@ -7,12 +7,12 @@ import { getEffectiveTenantId } from '@/lib/tenant-override';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { effectiveTenantId } = await getEffectiveTenantId(request);
+    const { session, effectiveTenantId } = await getEffectiveTenantId(request);
     const { id } = await params;
     const solicitudId = Number(id);
     if (isNaN(solicitudId)) return apiError('VALIDATION', 'ID inválido', 400);
 
-    const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
+    const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : tenantPrisma(session.tenantId);
 
     const comentarios = await db.comentarios.findMany({
       where: { solicitud_id: solicitudId },
