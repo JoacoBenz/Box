@@ -458,16 +458,25 @@ export default function DashboardPage() {
                 <MiniStatCard title="Orgs Activas" value={data.adminPlatform.orgActivas} icon={<BankOutlined />} color="green" />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Pendientes Aprobación" value={data.adminPlatform.orgPendientes} icon={<ClockCircleOutlined />} color={data.adminPlatform.orgPendientes > 0 ? 'orange' : 'green'} />
+                <MiniStatCard title="Pendientes Aprobaci\u00f3n" value={data.adminPlatform.orgPendientes} icon={<ClockCircleOutlined />} color={data.adminPlatform.orgPendientes > 0 ? 'orange' : 'green'} />
               </Col>
               <Col xs={12} sm={8} lg={4}>
                 <MiniStatCard title="Suspendidas" value={data.adminPlatform.orgSuspendidas} icon={<SafetyOutlined />} color={data.adminPlatform.orgSuspendidas > 0 ? 'red' : 'green'} />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Usuarios Totales" value={data.adminPlatform.totalUsuariosPlataforma} icon={<TeamOutlined />} color="cyan" />
+                <MiniStatCard title="Usuarios Plataforma" value={data.adminPlatform.totalUsuariosPlataforma} icon={<TeamOutlined />} color="cyan" />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Usuarios Nuevos (mes)" value={data.adminPlatform.usuariosNuevosMes} icon={<UserAddOutlined />} color="blue" />
+                <MiniStatCard title="Nuevos Usuarios (mes)" value={data.adminPlatform.usuariosNuevosMes} icon={<UserAddOutlined />} color="blue" />
+              </Col>
+              <Col xs={12} sm={8} lg={4}>
+                <MiniStatCard title="Orgs Nuevas (mes)" value={data.adminPlatform.orgsNuevasMes} icon={<RiseOutlined />} color="purple" />
+              </Col>
+              <Col xs={12} sm={8} lg={4}>
+                <MiniStatCard title="Orgs Dormidas (30d)" value={data.adminPlatform.orgsDormidas} icon={<AlertOutlined />} color={data.adminPlatform.orgsDormidas > 0 ? 'orange' : 'green'} />
+              </Col>
+              <Col xs={12} sm={8} lg={4}>
+                <MiniStatCard title="Prom. Usuarios/Org" value={data.adminPlatform.promedioUsuariosPorOrg} icon={<TeamOutlined />} color="cyan" />
               </Col>
             </>
           )}
@@ -491,55 +500,13 @@ export default function DashboardPage() {
       {/* ═══════════════════════════════════════════════════ */}
       {hasAdmin && (
         <div style={{ marginBottom: 28 }}>
-          <Row gutter={[16, 16]}>
-            {data.adminPlatform.orgsPorActividad?.length > 0 && (
-              <Col xs={24} lg={14}>
-                <Card
-                  title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Organizaciones - Actividad del Mes</span>}
-                  style={{ borderRadius: 16 }}
-                  extra={<Link href="/admin/tenants" style={{ color: '#4f46e5', fontWeight: 600 }}>Ver todas <ArrowRightOutlined /></Link>}
-                >
-                  <Table
-                    dataSource={data.adminPlatform.orgsPorActividad}
-                    rowKey="org"
-                    pagination={false}
-                    size="small"
-                    columns={[
-                      { title: 'Organizaci\u00f3n', dataIndex: 'org', ellipsis: true },
-                      { title: 'Usuarios', dataIndex: 'usuarios', width: 90, align: 'center' as const },
-                      { title: 'Solicitudes', dataIndex: 'solicitudes', width: 100, align: 'center' as const, render: (v: number) => <Tag color={v > 0 ? 'blue' : 'default'}>{v}</Tag> },
-                      { title: 'Compras (mes)', dataIndex: 'comprasTotal', width: 130, align: 'right' as const, render: (v: number) => <Text strong>{formatMoney(v)}</Text> },
-                    ]}
-                  />
-                </Card>
-              </Col>
-            )}
-            {data.adminPlatform.registrosMes?.length > 0 && (
-              <Col xs={24} lg={10}>
-                <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Registros de Orgs (6 meses)</span>} style={{ borderRadius: 16 }} styles={{ body: { padding: '16px 24px' } }}>
-                  {data.adminPlatform.registrosMes.map((item: any, i: number) => (
-                    <BarChartRow
-                      key={item.mes}
-                      label={item.mes}
-                      value={item.cantidad}
-                      maxValue={Math.max(...data.adminPlatform.registrosMes.map((r: any) => r.cantidad), 1)}
-                      color="linear-gradient(90deg, #4f46e5, #7c3aed)"
-                      subtext={`${item.cantidad} org${item.cantidad !== 1 ? 's' : ''}`}
-                      index={i}
-                    />
-                  ))}
-                </Card>
-              </Col>
-            )}
-          </Row>
+          {/* Pending approvals banner */}
           {data.adminPlatform.orgPendientes > 0 && (
-            <Card style={{ borderRadius: 16, marginTop: 16, background: 'linear-gradient(135deg, #fff7ed, #fed7aa)', border: '1px solid #fdba74' }}>
+            <Card style={{ borderRadius: 16, marginBottom: 16, background: 'linear-gradient(135deg, #fff7ed, #fed7aa)', border: '1px solid #fdba74' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <Text strong style={{ fontSize: 15, color: '#9a3412' }}>
-                    {data.adminPlatform.orgPendientes} organizacion{data.adminPlatform.orgPendientes !== 1 ? 'es' : ''} pendiente{data.adminPlatform.orgPendientes !== 1 ? 's' : ''} de aprobaci\u00f3n
-                  </Text>
-                </div>
+                <Text strong style={{ fontSize: 15, color: '#9a3412' }}>
+                  {data.adminPlatform.orgPendientes} organizaci{data.adminPlatform.orgPendientes !== 1 ? 'ones' : '\u00f3n'} pendiente{data.adminPlatform.orgPendientes !== 1 ? 's' : ''} de aprobaci\u00f3n
+                </Text>
                 <Link href="/admin/aprobaciones-org">
                   <Button type="primary" style={{ background: '#ea580c', borderColor: '#ea580c', fontWeight: 600 }}>
                     Revisar Aprobaciones
@@ -548,6 +515,65 @@ export default function DashboardPage() {
               </div>
             </Card>
           )}
+
+          <Row gutter={[16, 16]}>
+            {/* Orgs ranked by users */}
+            {data.adminPlatform.orgsTopUso?.length > 0 && (
+              <Col xs={24} lg={14}>
+                <Card
+                  title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Organizaciones por Uso</span>}
+                  style={{ borderRadius: 16 }}
+                  extra={<Link href="/admin/tenants" style={{ color: '#4f46e5', fontWeight: 600 }}>Ver todas <ArrowRightOutlined /></Link>}
+                >
+                  <Table
+                    dataSource={data.adminPlatform.orgsTopUso}
+                    rowKey="org"
+                    pagination={false}
+                    size="small"
+                    columns={[
+                      { title: 'Organizaci\u00f3n', dataIndex: 'org', ellipsis: true },
+                      { title: 'Usuarios', dataIndex: 'usuarios', width: 90, align: 'center' as const, render: (v: number) => <Tag color={v > 5 ? 'blue' : v > 0 ? 'cyan' : 'default'}>{v}</Tag> },
+                      { title: '\u00daltimo acceso', dataIndex: 'ultimoAcceso', width: 140, render: (v: string | null) => v ? new Date(v).toLocaleDateString('es-AR') : '\u2014' },
+                    ]}
+                  />
+                </Card>
+              </Col>
+            )}
+
+            {/* Growth charts */}
+            <Col xs={24} lg={10}>
+              {data.adminPlatform.crecimientoOrgs?.length > 0 && (
+                <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Crecimiento Orgs (6 meses)</span>} style={{ borderRadius: 16, marginBottom: 16 }} styles={{ body: { padding: '16px 24px' } }}>
+                  {data.adminPlatform.crecimientoOrgs.map((item: any, i: number) => (
+                    <BarChartRow
+                      key={item.mes}
+                      label={item.mes}
+                      value={item.cantidad}
+                      maxValue={Math.max(...data.adminPlatform.crecimientoOrgs.map((r: any) => r.cantidad), 1)}
+                      color="linear-gradient(90deg, #4f46e5, #7c3aed)"
+                      subtext={`${item.cantidad} org${item.cantidad !== 1 ? 's' : ''}`}
+                      index={i}
+                    />
+                  ))}
+                </Card>
+              )}
+              {data.adminPlatform.crecimientoUsuarios?.length > 0 && (
+                <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Crecimiento Usuarios (6 meses)</span>} style={{ borderRadius: 16 }} styles={{ body: { padding: '16px 24px' } }}>
+                  {data.adminPlatform.crecimientoUsuarios.map((item: any, i: number) => (
+                    <BarChartRow
+                      key={item.mes}
+                      label={item.mes}
+                      value={item.cantidad}
+                      maxValue={Math.max(...data.adminPlatform.crecimientoUsuarios.map((r: any) => r.cantidad), 1)}
+                      color="linear-gradient(90deg, #22c55e, #16a34a)"
+                      subtext={`${item.cantidad} usuario${item.cantidad !== 1 ? 's' : ''}`}
+                      index={i}
+                    />
+                  ))}
+                </Card>
+              )}
+            </Col>
+          </Row>
         </div>
       )}
 

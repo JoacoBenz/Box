@@ -264,6 +264,8 @@ export async function GET(request: Request) {
 
     // ── Admin section (platform-level metrics) ──
     if (roles.includes('admin')) {
+      const hace30Dias = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
       const [
         totalOrganizaciones,
         orgActivas,
@@ -271,8 +273,12 @@ export async function GET(request: Request) {
         orgSuspendidas,
         totalUsuariosPlataforma,
         usuariosNuevosMes,
-        registrosMesData,
-        orgsPorActividad,
+        orgsNuevasMes,
+        orgsDormidas,
+        promedioUsuariosPorOrg,
+        crecimientoOrgsData,
+        crecimientoUsuariosData,
+        orgsTopUso,
       ] = await Promise.all([
         prisma.tenants.count(),
         prisma.tenants.count({ where: { estado: 'activo', desactivado: false } }),
@@ -280,7 +286,29 @@ export async function GET(request: Request) {
         prisma.tenants.count({ where: { OR: [{ estado: 'suspendido' }, { desactivado: true }] } }),
         prisma.usuarios.count({ where: { activo: true } }),
         prisma.usuarios.count({ where: { created_at: { gte: inicioMes } } }),
-        // Registros por mes (últimos 6 meses)
+        prisma.tenants.count({ where: { fecha_registro: { gte: inicioMes } } }),
+        // Orgs dormidas: activas pero sin actividad (ningún usuario logueó o creó algo en 30 días)
+        prisma.$queryRaw<{ cantidad: string }[]>`
+          SELECT COUNT(*)::text AS cantidad
+          FROM tenants t
+          WHERE t.estado = 'activo' AND t.desactivado = false
+            AND NOT EXISTS (
+              SELECT 1 FROM usuarios u
+              WHERE u.tenant_id = t.id AND u.activo = true
+                AND u.updated_at >= ${hace30Dias}
+            )
+        `,
+        // Promedio usuarios activos por org activa
+        prisma.$queryRaw<{ promedio: string }[]>`
+          SELECT ROUND(AVG(cnt))::text AS promedio FROM (
+            SELECT COUNT(u.id) AS cnt
+            FROM tenants t
+            LEFT JOIN usuarios u ON u.tenant_id = t.id AND u.activo = true
+            WHERE t.estado = 'activo' AND t.desactivado = false
+            GROUP BY t.id
+          ) sub
+        `,
+        // Crecimiento orgs: registros por mes últimos 6 meses
         prisma.$queryRaw<{ mes: string; cantidad: string }[]>`
           SELECT TO_CHAR(fecha_registro, 'YYYY-MM') AS mes, COUNT(*)::text AS cantidad
           FROM tenants
@@ -288,16 +316,23 @@ export async function GET(request: Request) {
           GROUP BY TO_CHAR(fecha_registro, 'YYYY-MM')
           ORDER BY mes ASC
         `,
-        // Top 5 orgs por actividad (solicitudes este mes)
-        prisma.$queryRaw<{ org: string; usuarios: string; solicitudes: string; compras_total: string }[]>`
-          SELECT t.nombre AS org,
+        // Crecimiento usuarios: nuevos usuarios por mes últimos 6 meses
+        prisma.$queryRaw<{ mes: string; cantidad: string }[]>`
+          SELECT TO_CHAR(created_at, 'YYYY-MM') AS mes, COUNT(*)::text AS cantidad
+          FROM usuarios
+          WHERE created_at >= (CURRENT_DATE - INTERVAL '6 months')
+          GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+          ORDER BY mes ASC
+        `,
+        // Top orgs por uso: más usuarios activos + actividad reciente
+        prisma.$queryRaw<{ org: string; estado: string; usuarios: string; ultimo_acceso: string | null }[]>`
+          SELECT t.nombre AS org, t.estado,
                  (SELECT COUNT(*)::text FROM usuarios u WHERE u.tenant_id = t.id AND u.activo = true) AS usuarios,
-                 (SELECT COUNT(*)::text FROM solicitudes s WHERE s.tenant_id = t.id AND s.created_at >= ${inicioMes}) AS solicitudes,
-                 (SELECT COALESCE(SUM(c.monto_total), 0)::text FROM compras c WHERE c.tenant_id = t.id AND c.fecha_compra >= ${inicioMes}) AS compras_total
+                 (SELECT MAX(u.updated_at)::text FROM usuarios u WHERE u.tenant_id = t.id AND u.activo = true) AS ultimo_acceso
           FROM tenants t
           WHERE t.estado = 'activo' AND t.desactivado = false
-          ORDER BY (SELECT COUNT(*) FROM solicitudes s WHERE s.tenant_id = t.id AND s.created_at >= ${inicioMes}) DESC
-          LIMIT 5
+          ORDER BY (SELECT COUNT(*) FROM usuarios u WHERE u.tenant_id = t.id AND u.activo = true) DESC
+          LIMIT 10
         `,
       ]);
 
@@ -308,12 +343,16 @@ export async function GET(request: Request) {
         orgSuspendidas,
         totalUsuariosPlataforma,
         usuariosNuevosMes,
-        registrosMes: registrosMesData.map(r => ({ mes: r.mes, cantidad: parseInt(r.cantidad) })),
-        orgsPorActividad: orgsPorActividad.map(r => ({
+        orgsNuevasMes,
+        orgsDormidas: parseInt(orgsDormidas[0]?.cantidad ?? '0'),
+        promedioUsuariosPorOrg: parseInt(promedioUsuariosPorOrg[0]?.promedio ?? '0'),
+        crecimientoOrgs: crecimientoOrgsData.map(r => ({ mes: r.mes, cantidad: parseInt(r.cantidad) })),
+        crecimientoUsuarios: crecimientoUsuariosData.map(r => ({ mes: r.mes, cantidad: parseInt(r.cantidad) })),
+        orgsTopUso: orgsTopUso.map(r => ({
           org: r.org,
+          estado: r.estado,
           usuarios: parseInt(r.usuarios),
-          solicitudes: parseInt(r.solicitudes),
-          comprasTotal: parseFloat(r.compras_total),
+          ultimoAcceso: r.ultimo_acceso,
         })),
       };
     }
