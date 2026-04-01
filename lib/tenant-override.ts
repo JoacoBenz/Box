@@ -32,10 +32,10 @@ export async function getEffectiveTenantId(request?: Request | { nextUrl: { sear
     if (cookieVal) overrideId = Number(cookieVal);
   }
 
-  // Admins: use override if set, otherwise null (= all tenants)
+  // Admins: use override if set, otherwise fall back to their own tenant
   // Non-admins: always their own tenant
   if (session.roles.includes('admin')) {
-    return { session, effectiveTenantId: overrideId ?? null };
+    return { session, effectiveTenantId: overrideId ?? session.tenantId };
   }
 
   return { session, effectiveTenantId: session.tenantId };
@@ -51,5 +51,5 @@ export async function getServerTenantId(session: { tenantId: number; roles: stri
   const cookieVal = cookieStore.get(COOKIE_NAME)?.value;
   if (cookieVal) return Number(cookieVal);
 
-  return null;
+  return session.tenantId;
 }

@@ -87,8 +87,8 @@ export const proveedorSchema = z.object({
   link_pagina: z.string().url('URL inválida. Incluí https://').max(500).optional().nullable().or(z.literal('')),
   telefono: z
     .string()
-    .max(12)
-    .refine((v) => !v || /^\d{2}-\d{4}-\d{4}$/.test(v), 'Formato inválido. Usá: XX-XXXX-XXXX')
+    .max(20, 'Máximo 20 caracteres')
+    .refine((v) => !v || /^[+\d(][\d\s\-()]{5,19}$/.test(v), 'Formato de teléfono inválido')
     .optional()
     .nullable()
     .or(z.literal('')),

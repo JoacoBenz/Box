@@ -9,13 +9,13 @@ import { getEffectiveTenantId } from '@/lib/tenant-override';
 export async function GET(request: NextRequest) {
   try {
     const { session, effectiveTenantId } = await getEffectiveTenantId(request);
-    const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
+    const db = tenantPrisma(effectiveTenantId ?? session.tenantId);
     const areas = await db.areas.findMany({
       where: { activo: true },
       orderBy: { id: 'asc' },
       include: {
         responsable: { select: { id: true, nombre: true } },
-        ...(!effectiveTenantId && { tenant: { select: { id: true, nombre: true } } }),
+        tenant: { select: { id: true, nombre: true } },
       },
     });
     return Response.json(areas);

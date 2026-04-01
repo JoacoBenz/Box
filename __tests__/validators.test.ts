@@ -571,12 +571,14 @@ describe('proveedorSchema', () => {
   });
 
   // ── Telefono validation ──
-  it('accepts valid phone format (XX-XXXX-XXXX)', () => {
+  it('accepts valid phone formats', () => {
     expect(proveedorSchema.safeParse({ nombre: 'Test', telefono: '11-1234-5678' }).success).toBe(true);
+    expect(proveedorSchema.safeParse({ nombre: 'Test', telefono: '+54 11 4567-8901' }).success).toBe(true);
+    expect(proveedorSchema.safeParse({ nombre: 'Test', telefono: '(011) 4567-8901' }).success).toBe(true);
   });
 
   it('rejects invalid phone format', () => {
-    expect(proveedorSchema.safeParse({ nombre: 'Test', telefono: '1112345678' }).success).toBe(false);
+    expect(proveedorSchema.safeParse({ nombre: 'Test', telefono: 'abc' }).success).toBe(false);
   });
 
   // ── URL validation ──

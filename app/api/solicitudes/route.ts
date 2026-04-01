@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
-    if (!verificarRol(session.roles, ['solicitante'])) {
+    if (!verificarRol(session.roles, ['solicitante', 'admin'])) {
       return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo solicitantes pueden crear solicitudes' } }, { status: 403 });
     }
     if (!session.areaId) {

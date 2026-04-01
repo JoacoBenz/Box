@@ -12,6 +12,7 @@ async function main() {
     { nombre: 'responsable_area', descripcion: 'Valida solicitudes de su área' },
     { nombre: 'director', descripcion: 'Aprueba o rechaza gastos' },
     { nombre: 'tesoreria', descripcion: 'Ejecuta compras y registra pagos' },
+    { nombre: 'compras', descripcion: 'Gestiona y procesa compras' },
     { nombre: 'admin', descripcion: 'Administrador del sistema' },
   ];
 
