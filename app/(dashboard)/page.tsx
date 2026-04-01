@@ -515,7 +515,7 @@ export default function DashboardPage() {
                 >
                   <Table
                     dataSource={data.adminPlatform.orgsTopUso}
-                    rowKey={(record: any, i) => `org-${i}`}
+                    rowKey="id"
                     pagination={false}
                     size="small"
                     columns={[

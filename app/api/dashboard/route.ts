@@ -325,8 +325,8 @@ export async function GET(request: Request) {
           ORDER BY mes ASC
         `,
         // Top orgs por uso: más usuarios activos + actividad reciente
-        prisma.$queryRaw<{ org: string; estado: string; usuarios: string; ultimo_acceso: string | null }[]>`
-          SELECT t.nombre AS org, t.estado,
+        prisma.$queryRaw<{ id: number; org: string; estado: string; usuarios: string; ultimo_acceso: string | null }[]>`
+          SELECT t.id, t.nombre AS org, t.estado,
                  (SELECT COUNT(*)::text FROM usuarios u WHERE u.tenant_id = t.id AND u.activo = true) AS usuarios,
                  (SELECT MAX(u.updated_at)::text FROM usuarios u WHERE u.tenant_id = t.id AND u.activo = true) AS ultimo_acceso
           FROM tenants t
@@ -349,6 +349,7 @@ export async function GET(request: Request) {
         crecimientoOrgs: crecimientoOrgsData.map(r => ({ mes: r.mes, cantidad: parseInt(r.cantidad) })),
         crecimientoUsuarios: crecimientoUsuariosData.map(r => ({ mes: r.mes, cantidad: parseInt(r.cantidad) })),
         orgsTopUso: orgsTopUso.map(r => ({
+          id: r.id,
           org: r.org,
           estado: r.estado,
           usuarios: parseInt(r.usuarios),
