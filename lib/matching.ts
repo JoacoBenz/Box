@@ -1,4 +1,4 @@
-export interface MatchingResult {
+interface MatchingResult {
   matched: boolean;
   discrepancies: string[];
   montoSolicitud: number;

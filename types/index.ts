@@ -16,15 +16,9 @@ export type EstadoSolicitud =
   | 'anulada'
   | 'cerrada';
 
-export type PrioridadCompra = 'urgente' | 'normal' | 'programado';
-
 export type UrgenciaSolicitud = 'normal' | 'urgente' | 'critica';
 
 export type MedioPago = 'transferencia' | 'efectivo' | 'cheque' | 'tarjeta' | 'otro';
-
-export type TipoProblema = 'faltante' | 'dañado' | 'diferente' | 'otro';
-
-export type EntidadArchivo = 'solicitud' | 'compra' | 'recepcion';
 
 export interface SessionUser {
   id: number;
@@ -42,13 +36,6 @@ export interface ApiError {
     message: string;
     details?: { field: string; message: string }[];
   };
-}
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  totalPages: number;
 }
 
 export const ESTADOS_SOLICITUD: Record<EstadoSolicitud, { label: string; color: string }> = {

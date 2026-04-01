@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { getEffectiveTenantId } from '@/lib/tenant-override';
 

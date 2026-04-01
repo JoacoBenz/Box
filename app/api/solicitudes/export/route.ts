@@ -1,5 +1,4 @@
-import { getServerSession } from '@/lib/auth';
-import { tenantPrisma, prisma } from '@/lib/prisma';
+import { tenantPrisma } from '@/lib/prisma';
 import { verificarRol, apiError } from '@/lib/permissions';
 import { getEffectiveTenantId } from '@/lib/tenant-override';
 

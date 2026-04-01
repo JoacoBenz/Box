@@ -1,4 +1,3 @@
-import { getServerSession } from '@/lib/auth';
 import { Prisma } from '@/app/generated/prisma/client';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { getEffectiveTenantId } from '@/lib/tenant-override';

@@ -53,7 +53,7 @@ export const usuarioSchema = z.object({
     .min(1, 'Asigná al menos un rol'),
 });
 
-export const itemSolicitudSchema = z.object({
+const itemSolicitudSchema = z.object({
   descripcion: nonBlank(2, 'La descripción del ítem es requerida').max(255),
   cantidad: z
     .number()

@@ -1,5 +1,4 @@
 import { NextRequest } from 'next/server';
-import { getServerSession } from '@/lib/auth';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { verificarRol } from '@/lib/permissions';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
-import { tenantPrisma, prisma } from '@/lib/prisma';
+import { tenantPrisma } from '@/lib/prisma';
 import { verificarRol, apiError } from '@/lib/permissions';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { invalidateTenantCache } from '@/lib/cache';

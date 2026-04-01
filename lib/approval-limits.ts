@@ -1,8 +1,8 @@
 import { getTenantConfigNumber } from './tenant-config';
 
-export type ApprovalLevel = 'responsable' | 'director' | 'director_general';
+type ApprovalLevel = 'responsable' | 'director' | 'director_general';
 
-export async function getRequiredApprovalLevel(
+async function getRequiredApprovalLevel(
   tenantId: number,
   montoEstimado: number | null
 ): Promise<ApprovalLevel> {

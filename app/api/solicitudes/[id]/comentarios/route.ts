@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { apiError } from '@/lib/permissions';
-import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
+import { crearNotificacion } from '@/lib/notifications';
 import { getEffectiveTenantId } from '@/lib/tenant-override';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {

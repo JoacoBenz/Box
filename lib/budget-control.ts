@@ -1,6 +1,6 @@
 import { tenantPrisma } from './prisma';
 
-export interface BudgetStatus {
+interface BudgetStatus {
   centroCosto: string;
   presupuestoAnual: number | null;
   presupuestoMensual: number | null;

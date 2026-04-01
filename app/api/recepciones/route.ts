@@ -3,7 +3,7 @@ import { getServerSession } from '@/lib/auth';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { verificarRol } from '@/lib/permissions';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
-import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
+import { notificarPorRol } from '@/lib/notifications';
 import { recepcionSchema } from '@/lib/validators';
 import { uploadFile } from '@/lib/supabase';
 import { calcularMatching } from '@/lib/matching';

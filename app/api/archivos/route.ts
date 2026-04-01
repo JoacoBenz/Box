@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
-import { tenantPrisma, prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import { uploadFile } from '@/lib/supabase';
 
 const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];

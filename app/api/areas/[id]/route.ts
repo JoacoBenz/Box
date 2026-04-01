@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getServerSession } from '@/lib/auth';
-import { tenantPrisma, prisma } from '@/lib/prisma';
+import { tenantPrisma } from '@/lib/prisma';
 import { verificarRol } from '@/lib/permissions';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { areaSchema } from '@/lib/validators';
@@ -15,7 +14,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const { id } = await params;
     const areaId = parseInt(id);
-    const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
+    const db = tenantPrisma(effectiveTenantId ?? session.tenantId);
 
     const area = await db.areas.findFirst({ where: { id: areaId } });
     if (!area) return Response.json({ error: { code: 'NOT_FOUND', message: 'Área no encontrada' } }, { status: 404 });
@@ -72,7 +71,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     const { id } = await params;
     const areaId = parseInt(id);
-    const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
+    const db = tenantPrisma(effectiveTenantId ?? session.tenantId);
 
     const area = await db.areas.findFirst({ where: { id: areaId } });
     if (!area) return Response.json({ error: { code: 'NOT_FOUND', message: 'Área no encontrada' } }, { status: 404 });

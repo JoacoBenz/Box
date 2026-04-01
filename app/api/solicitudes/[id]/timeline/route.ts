@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
-import { tenantPrisma, prisma } from '@/lib/prisma';
+import { tenantPrisma } from '@/lib/prisma';
 import { apiError } from '@/lib/permissions';
 import { getEffectiveTenantId } from '@/lib/tenant-override';
 
@@ -11,7 +10,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const solicitudId = Number(id);
   if (isNaN(solicitudId)) return apiError('VALIDATION', 'ID inválido', 400);
 
-  const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : tenantPrisma(session.tenantId);
+  const db = tenantPrisma(effectiveTenantId ?? session.tenantId);
 
   // Get audit log entries for this solicitud
   const events = await db.log_auditoria.findMany({
