@@ -1,5 +1,7 @@
 export type RolNombre = 'solicitante' | 'responsable_area' | 'director' | 'tesoreria' | 'compras' | 'admin';
 
+export type EstadoTenant = 'pendiente' | 'activo' | 'rechazado' | 'suspendido';
+
 export type EstadoSolicitud =
   | 'borrador'
   | 'enviada'

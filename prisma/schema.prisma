@@ -30,8 +30,9 @@ model tenants {
   configuracion  configuracion[]
   proveedores    proveedores[]
   centros_costo  centros_costo[]
-  delegaciones   delegaciones[]
-  comentarios    comentarios[]
+  delegaciones         delegaciones[]
+  comentarios          comentarios[]
+  codigos_invitacion   codigos_invitacion[]
 }
 
 model roles {
@@ -60,15 +61,18 @@ model areas {
 }
 
 model usuarios {
-  id            Int      @id @default(autoincrement())
-  tenant_id     Int
-  nombre        String   @db.VarChar(150)
-  email         String   @db.VarChar(255)
-  password_hash String   @db.VarChar(255)
-  area_id       Int?
-  activo        Boolean  @default(true)
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  id             Int      @id @default(autoincrement())
+  tenant_id      Int
+  nombre         String   @db.VarChar(150)
+  email          String   @db.VarChar(255)
+  password_hash  String?  @db.VarChar(255)
+  area_id        Int?
+  activo         Boolean  @default(true)
+  oauth_provider String?  @db.VarChar(20)
+  oauth_sub      String?  @db.VarChar(255)
+  area_sugerida  String?  @db.VarChar(150)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
 
   tenant                   tenants          @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   area                     areas?           @relation("usuario_area", fields: [area_id], references: [id])
@@ -87,9 +91,11 @@ model usuarios {
   delegaciones_otorgadas   delegaciones[] @relation("delegaciones_delegante")
   delegaciones_recibidas   delegaciones[] @relation("delegaciones_delegado")
   comentarios              comentarios[]
+  codigos_creados          codigos_invitacion[] @relation("codigo_creador")
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, email])
+  @@unique([oauth_provider, oauth_sub])
 }
 
 model usuarios_roles {
@@ -362,4 +368,21 @@ model comentarios {
   usuario   usuarios    @relation(fields: [usuario_id], references: [id])
 
   @@index([tenant_id, solicitud_id])
+}
+
+model codigos_invitacion {
+  id         Int      @id @default(autoincrement())
+  tenant_id  Int
+  codigo     String   @unique @db.VarChar(8)
+  creado_por Int
+  activo     Boolean  @default(true)
+  usos       Int      @default(0)
+  max_usos   Int?
+  expira_el  DateTime
+  created_at DateTime @default(now())
+
+  tenant  tenants  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  creador usuarios @relation("codigo_creador", fields: [creado_por], references: [id])
+
+  @@index([tenant_id, activo])
 }
