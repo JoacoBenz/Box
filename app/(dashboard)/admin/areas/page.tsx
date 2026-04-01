@@ -9,6 +9,7 @@ import {
   Modal,
   Form,
   Input,
+  Select,
   Space,
   Popconfirm,
   Typography,
@@ -22,13 +23,19 @@ interface Area {
   id: number
   nombre: string
   activo: boolean
-  responsable: { nombre: string } | null
+  responsable: { id: number; nombre: string } | null
   tenant?: { id: number; nombre: string }
+}
+
+interface Usuario {
+  id: number
+  nombre: string
 }
 
 export default function AdminAreasPage() {
   const { message } = App.useApp()
   const [areas, setAreas] = useState<Area[]>([])
+  const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editArea, setEditArea] = useState<Area | null>(null)
@@ -50,7 +57,16 @@ export default function AdminAreasPage() {
     }
   }, [selectedTenant])
 
-  useEffect(() => { fetchAreas() }, [fetchAreas])
+  const fetchUsuarios = useCallback(async () => {
+    try {
+      const res = await fetch('/api/usuarios?pageSize=100')
+      if (!res.ok) return
+      const data = await res.json()
+      setUsuarios((data.data ?? []).map((u: any) => ({ id: u.id, nombre: u.nombre })))
+    } catch {}
+  }, [selectedTenant])
+
+  useEffect(() => { fetchAreas(); fetchUsuarios() }, [fetchAreas, fetchUsuarios])
 
   function openCreate() {
     if (!selectedTenant) {
@@ -64,7 +80,7 @@ export default function AdminAreasPage() {
 
   function openEdit(area: Area) {
     setEditArea(area)
-    form.setFieldsValue({ nombre: area.nombre })
+    form.setFieldsValue({ nombre: area.nombre, responsable_id: area.responsable?.id ?? null })
     setModalOpen(true)
   }
 
@@ -193,6 +209,18 @@ export default function AdminAreasPage() {
             ]}
           >
             <Input placeholder="Ej: Secretaría, Dirección, Contaduría" autoFocus />
+          </Form.Item>
+          <Form.Item
+            label="Responsable"
+            name="responsable_id"
+          >
+            <Select
+              placeholder="Seleccionar responsable"
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              options={usuarios.map(u => ({ value: u.id, label: u.nombre }))}
+            />
           </Form.Item>
         </Form>
       </Modal>
