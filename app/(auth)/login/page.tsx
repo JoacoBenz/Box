@@ -2,17 +2,25 @@
 
 import { useState } from 'react';
 import { Form, Input, Button, Card, Typography, Alert, Space } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, GoogleOutlined, WindowsOutlined } from '@ant-design/icons';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 const { Title, Text } = Typography;
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [oauthLoading, setOauthLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() => {
+    const err = searchParams.get('error');
+    if (err === 'OAuthAccountNotLinked') return 'Esta cuenta OAuth no está vinculada a un usuario. Contactá a tu administrador.';
+    if (err === 'AccessDenied') return 'Acceso denegado. Tu organización no tiene SSO habilitado para este proveedor.';
+    if (err) return 'Error al iniciar sesión';
+    return null;
+  });
 
   async function onFinish(values: { email: string; password: string }) {
     setLoading(true);
@@ -33,6 +41,12 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleOAuth(provider: string) {
+    setOauthLoading(provider);
+    setError(null);
+    signIn(provider, { callbackUrl: '/' });
   }
 
   return (
@@ -141,7 +155,39 @@ export default function LoginPage() {
           </div>
         </Form>
 
-        <div style={{ textAlign: 'center', paddingTop: 8 }}>
+        <div style={{ position: 'relative', textAlign: 'center', margin: '20px 0' }}>
+          <div style={{ borderTop: '1px solid #e5e7eb', position: 'absolute', top: '50%', left: 0, right: 0 }} />
+          <Text type="secondary" style={{ fontSize: 12, background: '#fff', padding: '0 12px', position: 'relative' }}>
+            o continuar con
+          </Text>
+        </div>
+
+        <Space direction="vertical" style={{ width: '100%' }} size={10}>
+          <Button
+            block
+            size="large"
+            icon={<GoogleOutlined />}
+            loading={oauthLoading === 'google'}
+            disabled={!!oauthLoading}
+            onClick={() => handleOAuth('google')}
+            style={{ height: 44, fontWeight: 600, borderRadius: 10 }}
+          >
+            Google
+          </Button>
+          <Button
+            block
+            size="large"
+            icon={<WindowsOutlined />}
+            loading={oauthLoading === 'microsoft-entra-id'}
+            disabled={!!oauthLoading}
+            onClick={() => handleOAuth('microsoft-entra-id')}
+            style={{ height: 44, fontWeight: 600, borderRadius: 10 }}
+          >
+            Microsoft
+          </Button>
+        </Space>
+
+        <div style={{ textAlign: 'center', paddingTop: 16 }}>
           <Text type="secondary" style={{ fontSize: 13 }}>¿Tu organización aún no está registrada?</Text>
           <Link href="/registro" style={{ fontSize: 13, fontWeight: 600 }}> Registrarse</Link>
           <br />
