@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Form, Input, Button, Card, Typography, Alert, Space } from 'antd';
+import { Form, Input, Button, Card, Typography, Alert } from 'antd';
 import { UserOutlined, LockOutlined, GoogleOutlined, WindowsOutlined } from '@ant-design/icons';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -162,7 +162,7 @@ export default function LoginPage() {
           </Text>
         </div>
 
-        <Space orientation="vertical" style={{ width: '100%' }} size={10}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <Button
             block
             size="large"
@@ -185,7 +185,7 @@ export default function LoginPage() {
           >
             Microsoft
           </Button>
-        </Space>
+        </div>
 
         <div style={{ textAlign: 'center', paddingTop: 16 }}>
           <Text type="secondary" style={{ fontSize: 13 }}>¿Tu organización aún no está registrada?</Text>

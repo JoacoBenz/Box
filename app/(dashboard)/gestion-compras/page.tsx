@@ -119,7 +119,7 @@ export default function GestionComprasPage() {
       title: 'Título',
       dataIndex: 'titulo',
       render: (val, row) => (
-        <Space direction="vertical" size={2}>
+        <Space orientation="vertical" size={2}>
           <Link href={`/solicitudes/${row.id}`} style={{ fontWeight: 500 }}>{val}</Link>
           <Text type="secondary" style={{ fontSize: 12 }}>{row.area?.nombre ?? '—'} · {row.solicitante.nombre}</Text>
         </Space>
