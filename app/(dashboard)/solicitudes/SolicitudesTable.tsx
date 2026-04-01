@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { Table, Tag, Select, Space, Button, Input, Card, Row, Col, Typography } from 'antd'
 import { SearchOutlined, DownloadOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useRouter } from 'next/navigation'
@@ -53,6 +53,14 @@ export default function SolicitudesTable({ roles, areas }: Props) {
   const [pageSize, setPageSize] = useState(20)
   const [loading, setLoading] = useState(true)
 
+  // Re-fetch when admin switches tenant
+  const [tenantVersion, setTenantVersion] = useState(0)
+  useEffect(() => {
+    const handler = () => { setTenantVersion(v => v + 1); setPage(1) }
+    window.addEventListener('admin-tenant-change', handler)
+    return () => window.removeEventListener('admin-tenant-change', handler)
+  }, [])
+
   // Debounce search
   useEffect(() => {
     if (searchTimeout.current) clearTimeout(searchTimeout.current)
@@ -84,7 +92,8 @@ export default function SolicitudesTable({ roles, areas }: Props) {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, estado, urgencia, areaId, debouncedBusqueda])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, pageSize, estado, urgencia, areaId, debouncedBusqueda, tenantVersion])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -104,7 +113,7 @@ export default function SolicitudesTable({ roles, areas }: Props) {
 
   const hasFilters = estado || urgencia || areaId || debouncedBusqueda
 
-  const columns: ColumnsType<Solicitud> = [
+  const columns: ColumnsType<Solicitud> = useMemo(() => [
     {
       title: 'Número',
       dataIndex: 'numero',
@@ -175,7 +184,8 @@ export default function SolicitudesTable({ roles, areas }: Props) {
         return date ? <Text type="secondary" style={{ fontSize: 12 }}>{new Date(date).toLocaleDateString('es-AR')}</Text> : '—'
       },
     },
-  ]
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [router])
 
   return (
     <div>

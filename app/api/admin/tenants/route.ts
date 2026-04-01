@@ -24,22 +24,34 @@ export async function GET() {
       },
     });
 
-    // Get stats for each tenant
-    const tenantsWithStats = await Promise.all(
-      tenants.map(async (t) => {
-        const [usuarios, areas, solicitudes, compras, proveedores] = await Promise.all([
-          prisma.usuarios.count({ where: { tenant_id: t.id, activo: true } }),
-          prisma.areas.count({ where: { tenant_id: t.id, activo: true } }),
-          prisma.solicitudes.count({ where: { tenant_id: t.id } }),
-          prisma.compras.count({ where: { tenant_id: t.id } }),
-          prisma.proveedores.count({ where: { tenant_id: t.id, activo: true } }),
-        ]);
-        return {
-          ...t,
-          stats: { usuarios, areas, solicitudes, compras, proveedores },
-        };
-      })
-    );
+    // Get stats for all tenants in a single query
+    const tenantIds = tenants.map(t => t.id);
+    const stats = tenantIds.length > 0
+      ? await prisma.$queryRaw<{ tenant_id: number; usuarios: string; areas: string; solicitudes: string; compras: string; proveedores: string }[]>`
+          SELECT
+            t.id AS tenant_id,
+            (SELECT COUNT(*) FROM usuarios u WHERE u.tenant_id = t.id AND u.activo = true)::text AS usuarios,
+            (SELECT COUNT(*) FROM areas a WHERE a.tenant_id = t.id AND a.activo = true)::text AS areas,
+            (SELECT COUNT(*) FROM solicitudes s WHERE s.tenant_id = t.id)::text AS solicitudes,
+            (SELECT COUNT(*) FROM compras c WHERE c.tenant_id = t.id)::text AS compras,
+            (SELECT COUNT(*) FROM proveedores p WHERE p.tenant_id = t.id AND p.activo = true)::text AS proveedores
+          FROM tenants t
+          WHERE t.id = ANY(${tenantIds}::int[])
+        `
+      : [];
+
+    const statsMap = new Map(stats.map(s => [s.tenant_id, {
+      usuarios: parseInt(s.usuarios),
+      areas: parseInt(s.areas),
+      solicitudes: parseInt(s.solicitudes),
+      compras: parseInt(s.compras),
+      proveedores: parseInt(s.proveedores),
+    }]));
+
+    const tenantsWithStats = tenants.map(t => ({
+      ...t,
+      stats: statsMap.get(t.id) ?? { usuarios: 0, areas: 0, solicitudes: 0, compras: 0, proveedores: 0 },
+    }));
 
     return Response.json(tenantsWithStats);
   } catch (error: any) {

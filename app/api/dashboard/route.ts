@@ -2,6 +2,7 @@ import { getServerSession } from '@/lib/auth';
 import { Prisma } from '@/app/generated/prisma/client';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { getEffectiveTenantId } from '@/lib/tenant-override';
+import { cached } from '@/lib/cache';
 
 export async function GET(request: Request) {
   try {
@@ -315,70 +316,79 @@ export async function GET(request: Request) {
         ? Prisma.sql`AND s.area_id = ${directorAreaId}`
         : Prisma.empty;
 
-      const [gastoAnual, gastoMensual, gastoPorArea, tendenciaMensual, gastoPorMedioPago, topProveedores, solicitudesPorEstado, solicitudesPorUrgencia] = await Promise.all([
-        prisma.$queryRaw<{ total: string | null }[]>`
-          SELECT COALESCE(SUM(c.monto_total), 0)::text AS total
-          FROM compras c
-          ${areaJoinFilter}
-          WHERE c.tenant_id = ${tenantId} AND c.fecha_compra >= ${inicioAño}
-        `,
-        prisma.$queryRaw<{ total: string | null }[]>`
-          SELECT COALESCE(SUM(c.monto_total), 0)::text AS total
-          FROM compras c
-          ${areaJoinFilter}
-          WHERE c.tenant_id = ${tenantId} AND c.fecha_compra >= ${inicioMes}
-        `,
-        prisma.$queryRaw<{ area_nombre: string; total: string; cantidad: string }[]>`
-          SELECT a.nombre AS area_nombre, COALESCE(SUM(c.monto_total), 0)::text AS total, COUNT(c.id)::text AS cantidad
-          FROM compras c
-          JOIN solicitudes s ON c.solicitud_id = s.id AND c.tenant_id = s.tenant_id
-          JOIN areas a ON s.area_id = a.id AND s.tenant_id = a.tenant_id
-          WHERE c.tenant_id = ${tenantId} AND c.fecha_compra >= ${inicioAño}
-          ${areaWhereFilter}
-          GROUP BY a.nombre
-          ORDER BY SUM(c.monto_total) DESC
-        `,
-        prisma.$queryRaw<{ mes: string; total: string; cantidad: string }[]>`
-          SELECT TO_CHAR(c.fecha_compra, 'YYYY-MM') AS mes,
-                 COALESCE(SUM(c.monto_total), 0)::text AS total,
-                 COUNT(c.id)::text AS cantidad
-          FROM compras c
-          ${tendenciaAreaJoin}
-          WHERE c.tenant_id = ${tenantId}
-            AND c.fecha_compra >= (CURRENT_DATE - INTERVAL '6 months')
-            ${tendenciaAreaWhere}
-          GROUP BY TO_CHAR(c.fecha_compra, 'YYYY-MM')
-          ORDER BY mes ASC
-        `,
-        prisma.$queryRaw<{ medio_pago: string; total: string; cantidad: string }[]>`
-          SELECT c.medio_pago, COALESCE(SUM(c.monto_total), 0)::text AS total, COUNT(c.id)::text AS cantidad
-          FROM compras c
-          WHERE c.tenant_id = ${tenantId} AND c.fecha_compra >= ${inicioAño}
-          GROUP BY c.medio_pago
-          ORDER BY SUM(c.monto_total) DESC
-        `,
-        prisma.$queryRaw<{ proveedor: string; total: string; cantidad: string }[]>`
-          SELECT c.proveedor_nombre AS proveedor, COALESCE(SUM(c.monto_total), 0)::text AS total, COUNT(c.id)::text AS cantidad
-          FROM compras c
-          WHERE c.tenant_id = ${tenantId} AND c.fecha_compra >= ${inicioAño}
-          GROUP BY c.proveedor_nombre
-          ORDER BY SUM(c.monto_total) DESC
-          LIMIT 5
-        `,
-        prisma.$queryRaw<{ estado: string; cantidad: string }[]>`
-          SELECT estado, COUNT(*)::text AS cantidad
-          FROM solicitudes
-          WHERE tenant_id = ${tenantId}
-          GROUP BY estado
-          ORDER BY cantidad DESC
-        `,
-        prisma.$queryRaw<{ urgencia: string; cantidad: string }[]>`
-          SELECT urgencia, COUNT(*)::text AS cantidad
-          FROM solicitudes
-          WHERE tenant_id = ${tenantId} AND created_at >= ${inicioAño}
-          GROUP BY urgencia
-        `,
-      ]);
+      const analyticsData = await cached(
+        `t:${tenantId}:dashboard:analytics:${directorAreaId ?? 'all'}`,
+        2 * 60 * 1000, // 2 min TTL
+        async () => {
+          const [gastoAnual, gastoMensual, gastoPorArea, tendenciaMensual, gastoPorMedioPago, topProveedores, solicitudesPorEstado, solicitudesPorUrgencia] = await Promise.all([
+            prisma.$queryRaw<{ total: string | null }[]>`
+              SELECT COALESCE(SUM(c.monto_total), 0)::text AS total
+              FROM compras c
+              ${areaJoinFilter}
+              WHERE c.tenant_id = ${tenantId} AND c.fecha_compra >= ${inicioAño}
+            `,
+            prisma.$queryRaw<{ total: string | null }[]>`
+              SELECT COALESCE(SUM(c.monto_total), 0)::text AS total
+              FROM compras c
+              ${areaJoinFilter}
+              WHERE c.tenant_id = ${tenantId} AND c.fecha_compra >= ${inicioMes}
+            `,
+            prisma.$queryRaw<{ area_nombre: string; total: string; cantidad: string }[]>`
+              SELECT a.nombre AS area_nombre, COALESCE(SUM(c.monto_total), 0)::text AS total, COUNT(c.id)::text AS cantidad
+              FROM compras c
+              JOIN solicitudes s ON c.solicitud_id = s.id AND c.tenant_id = s.tenant_id
+              JOIN areas a ON s.area_id = a.id AND s.tenant_id = a.tenant_id
+              WHERE c.tenant_id = ${tenantId} AND c.fecha_compra >= ${inicioAño}
+              ${areaWhereFilter}
+              GROUP BY a.nombre
+              ORDER BY SUM(c.monto_total) DESC
+            `,
+            prisma.$queryRaw<{ mes: string; total: string; cantidad: string }[]>`
+              SELECT TO_CHAR(c.fecha_compra, 'YYYY-MM') AS mes,
+                     COALESCE(SUM(c.monto_total), 0)::text AS total,
+                     COUNT(c.id)::text AS cantidad
+              FROM compras c
+              ${tendenciaAreaJoin}
+              WHERE c.tenant_id = ${tenantId}
+                AND c.fecha_compra >= (CURRENT_DATE - INTERVAL '6 months')
+                ${tendenciaAreaWhere}
+              GROUP BY TO_CHAR(c.fecha_compra, 'YYYY-MM')
+              ORDER BY mes ASC
+            `,
+            prisma.$queryRaw<{ medio_pago: string; total: string; cantidad: string }[]>`
+              SELECT c.medio_pago, COALESCE(SUM(c.monto_total), 0)::text AS total, COUNT(c.id)::text AS cantidad
+              FROM compras c
+              WHERE c.tenant_id = ${tenantId} AND c.fecha_compra >= ${inicioAño}
+              GROUP BY c.medio_pago
+              ORDER BY SUM(c.monto_total) DESC
+            `,
+            prisma.$queryRaw<{ proveedor: string; total: string; cantidad: string }[]>`
+              SELECT c.proveedor_nombre AS proveedor, COALESCE(SUM(c.monto_total), 0)::text AS total, COUNT(c.id)::text AS cantidad
+              FROM compras c
+              WHERE c.tenant_id = ${tenantId} AND c.fecha_compra >= ${inicioAño}
+              GROUP BY c.proveedor_nombre
+              ORDER BY SUM(c.monto_total) DESC
+              LIMIT 5
+            `,
+            prisma.$queryRaw<{ estado: string; cantidad: string }[]>`
+              SELECT estado, COUNT(*)::text AS cantidad
+              FROM solicitudes
+              WHERE tenant_id = ${tenantId}
+              GROUP BY estado
+              ORDER BY cantidad DESC
+            `,
+            prisma.$queryRaw<{ urgencia: string; cantidad: string }[]>`
+              SELECT urgencia, COUNT(*)::text AS cantidad
+              FROM solicitudes
+              WHERE tenant_id = ${tenantId} AND created_at >= ${inicioAño}
+              GROUP BY urgencia
+            `,
+          ]);
+          return { gastoAnual, gastoMensual, gastoPorArea, tendenciaMensual, gastoPorMedioPago, topProveedores, solicitudesPorEstado, solicitudesPorUrgencia };
+        }
+      );
+
+      const { gastoAnual, gastoMensual, gastoPorArea, tendenciaMensual, gastoPorMedioPago, topProveedores, solicitudesPorEstado, solicitudesPorUrgencia } = analyticsData;
       result.gastoAnual = parseFloat(gastoAnual[0]?.total ?? '0');
       result.gastoMensual = parseFloat(gastoMensual[0]?.total ?? '0');
       result.gastoPorArea = gastoPorArea.map(r => ({

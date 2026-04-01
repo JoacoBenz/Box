@@ -107,6 +107,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Upload file after transaction
+    let uploadWarning: string | null = null;
     try {
       const { path } = await uploadFile(session.tenantId, 'comprobantes', compra.id, archivo);
       await prisma.archivos.create({
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
       });
     } catch (uploadErr) {
       console.error('Error subiendo comprobante:', uploadErr);
-      // Don't fail the whole operation, log the error
+      uploadWarning = 'La compra se registró correctamente, pero el comprobante no pudo subirse. Podés adjuntarlo después.';
     }
 
     await crearNotificacion({ tenantId: session.tenantId, destinatarioId: solicitud.solicitante_id, tipo: 'compra_registrada', titulo: 'Tu pedido fue comprado', mensaje: `Tesorería compró "${solicitud.titulo}" a ${result.data.proveedor_nombre} por $${result.data.monto_total}. Confirmá la recepción cuando lo recibas.`, solicitudId: solicitud.id });
@@ -133,7 +134,7 @@ export async function POST(request: NextRequest) {
     }
 
     await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'registrar_compra', entidad: 'compra', entidadId: compra.id, ipAddress: getClientIp(request) });
-    return Response.json(compra, { status: 201 });
+    return Response.json({ ...compra, warning: uploadWarning }, { status: 201 });
   } catch (error: any) {
     if (error.message === 'No autenticado') return Response.json({ error: { code: 'UNAUTHORIZED', message: 'No autenticado' } }, { status: 401 });
     console.error(error);

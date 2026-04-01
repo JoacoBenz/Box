@@ -31,20 +31,20 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
     where: { id: Number(id), ...(tenantId ? { tenant_id: tenantId } : {}) },
     include: {
       area: true,
-      solicitante: true,
+      solicitante: { select: { id: true, nombre: true, email: true } },
       proveedor: true,
-      validado_por: true,
-      aprobado_por: true,
-      rechazado_por: true,
+      validado_por: { select: { id: true, nombre: true, email: true } },
+      aprobado_por: { select: { id: true, nombre: true, email: true } },
+      rechazado_por: { select: { id: true, nombre: true, email: true } },
       items_solicitud: true,
       compras: {
         include: {
-          ejecutado_por: true,
+          ejecutado_por: { select: { id: true, nombre: true, email: true } },
         },
       },
       recepciones: {
         include: {
-          receptor: true,
+          receptor: { select: { id: true, nombre: true, email: true } },
         },
       },
     },

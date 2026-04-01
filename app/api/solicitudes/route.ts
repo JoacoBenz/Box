@@ -199,18 +199,21 @@ export async function POST(request: NextRequest) {
       const mensajeUrgencia = `${session.nombre} marcó como ${urgencia}: "${titulo}". Requiere atención prioritaria.`
 
       const areaUrgencia = await prisma.areas.findFirst({ where: { id: session.areaId!, tenant_id: session.tenantId } })
+      const urgencyNotifications: Promise<any>[] = [
+        notificarPorRol(session.tenantId, 'tesoreria', tituloUrgencia, mensajeUrgencia, solicitud.id),
+        notificarPorRol(session.tenantId, 'compras', tituloUrgencia, mensajeUrgencia, solicitud.id),
+      ];
       if (areaUrgencia?.responsable_id) {
-        await crearNotificacion({
+        urgencyNotifications.push(crearNotificacion({
           tenantId: session.tenantId,
           destinatarioId: areaUrgencia.responsable_id,
           tipo: `solicitud_${urgencia}`,
           titulo: tituloUrgencia,
           mensaje: mensajeUrgencia,
           solicitudId: solicitud.id,
-        })
+        }));
       }
-      await notificarPorRol(session.tenantId, 'tesoreria', tituloUrgencia, mensajeUrgencia, solicitud.id)
-      await notificarPorRol(session.tenantId, 'compras', tituloUrgencia, mensajeUrgencia, solicitud.id)
+      await Promise.all(urgencyNotifications)
     }
 
     await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: enviar ? 'enviar_solicitud' : 'crear_borrador', entidad: 'solicitud', entidadId: solicitud.id, ipAddress: getClientIp(request) });

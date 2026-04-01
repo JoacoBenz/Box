@@ -1,4 +1,5 @@
 // Track failed login attempts per email
+const MAX_LOCKOUT_ENTRIES = 10_000;
 const failedAttempts = new Map<string, { count: number; lockedUntil: number | null }>();
 
 const MAX_FAILED_ATTEMPTS = 5;
@@ -38,6 +39,10 @@ export function recordFailedLogin(email: string): { locked: boolean; attemptsRem
     return { locked: true, attemptsRemaining: 0 };
   }
 
+  if (failedAttempts.size >= MAX_LOCKOUT_ENTRIES) {
+    const firstKey = failedAttempts.keys().next().value;
+    if (firstKey !== undefined) failedAttempts.delete(firstKey);
+  }
   failedAttempts.set(key, entry);
   return { locked: false, attemptsRemaining: MAX_FAILED_ATTEMPTS - entry.count };
 }

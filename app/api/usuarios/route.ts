@@ -14,17 +14,27 @@ export async function GET(request: NextRequest) {
       return Response.json({ error: { code: 'FORBIDDEN', message: 'Sin permiso' } }, { status: 403 });
     }
 
-    const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
-    const usuarios = await db.usuarios.findMany({
-      orderBy: { nombre: 'asc' },
-      include: {
-        area: { select: { id: true, nombre: true } },
-        usuarios_roles: { include: { rol: { select: { id: true, nombre: true } } } },
-        ...(!effectiveTenantId && { tenant: { select: { id: true, nombre: true } } }),
-      },
-    });
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get('page') ?? '1'));
+    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') ?? '50')));
 
-    return Response.json(usuarios.map(u => ({ ...u, password_hash: undefined })));
+    const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
+    const [usuarios, total] = await Promise.all([
+      db.usuarios.findMany({
+        orderBy: { nombre: 'asc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          area: { select: { id: true, nombre: true } },
+          usuarios_roles: { include: { rol: { select: { id: true, nombre: true } } } },
+          ...(!effectiveTenantId && { tenant: { select: { id: true, nombre: true } } }),
+        },
+      }),
+      db.usuarios.count(),
+    ]);
+
+    const data = usuarios.map(u => ({ ...u, password_hash: undefined }));
+    return Response.json({ data, total, page, pageSize });
   } catch (error: any) {
     if (error.message === 'No autenticado') return Response.json({ error: { code: 'UNAUTHORIZED', message: 'No autenticado' } }, { status: 401 });
     return Response.json({ error: { code: 'INTERNAL', message: 'Error interno' } }, { status: 500 });

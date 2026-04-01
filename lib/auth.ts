@@ -6,6 +6,7 @@ import type { RolNombre } from '@/types';
 import { checkRateLimit } from './rate-limit';
 import { getRolesEfectivos } from './delegaciones';
 import { isAccountLocked, recordFailedLogin, clearFailedAttempts } from './account-lockout';
+import { cached } from './cache';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -109,11 +110,11 @@ export async function getServerSession() {
   const user = session.user as any;
   const baseRoles = user.roles as RolNombre[];
 
-  // Enrich with delegated roles
-  const { roles: rolesEfectivos, delegaciones } = await getRolesEfectivos(
-    user.tenantId as number,
-    Number(user.id),
-    baseRoles
+  // Enrich with delegated roles (cached 5min per user)
+  const { roles: rolesEfectivos, delegaciones } = await cached(
+    `t:${user.tenantId}:roles:${user.id}`,
+    5 * 60 * 1000,
+    () => getRolesEfectivos(user.tenantId as number, Number(user.id), baseRoles)
   );
 
   return {

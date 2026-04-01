@@ -21,50 +21,16 @@ import {
   AlertOutlined,
 } from '@ant-design/icons'
 import Link from 'next/link'
-import DirectorDashboard from './components/DirectorDashboard'
+import dynamic from 'next/dynamic'
+
+const DirectorDashboard = dynamic(() => import('./components/DirectorDashboard'), {
+  loading: () => <div style={{ textAlign: 'center', padding: 40 }}>Cargando dashboard...</div>,
+  ssr: false,
+})
+
+import { ESTADO_COLOR, ESTADO_LABEL, URGENCIA_COLOR } from '@/lib/constants'
 
 const { Title, Text } = Typography
-
-const ESTADO_COLOR: Record<string, string> = {
-  borrador: 'default',
-  enviada: 'processing',
-  devuelta_resp: 'warning',
-  devuelta_dir: 'warning',
-  validada: 'cyan',
-  aprobada: 'green',
-  en_compras: 'processing',
-  pago_programado: 'purple',
-  rechazada: 'red',
-  comprada: 'purple',
-  recibida: 'lime',
-  recibida_con_obs: 'orange',
-  cerrada: 'default',
-  anulada: 'default',
-}
-
-const ESTADO_LABEL: Record<string, string> = {
-  borrador: 'Borrador',
-  enviada: 'Enviada',
-  devuelta_resp: 'Devuelta (Resp.)',
-  devuelta_dir: 'Devuelta (Aprob.)',
-  validada: 'Validada',
-  aprobada: 'Aprobada',
-  en_compras: 'En Compras',
-  pago_programado: 'Pago Programado',
-  rechazada: 'Rechazada',
-  comprada: 'Comprada',
-  recibida: 'Recibida',
-  recibida_con_obs: 'Recibida c/obs',
-  cerrada: 'Cerrada',
-  anulada: 'Anulada',
-}
-
-const URGENCIA_COLOR: Record<string, string> = {
-  baja: 'green',
-  normal: 'blue',
-  urgente: 'orange',
-  critica: 'red',
-}
 
 const MEDIO_PAGO_LABEL: Record<string, string> = {
   transferencia: 'Transferencia',

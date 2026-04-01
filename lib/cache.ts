@@ -3,6 +3,7 @@ interface CacheEntry<T> {
   expiresAt: number;
 }
 
+const MAX_CACHE_SIZE = 500;
 const store = new Map<string, CacheEntry<any>>();
 
 /**
@@ -20,6 +21,10 @@ export async function cached<T>(
   }
 
   const data = await fetcher();
+  if (store.size >= MAX_CACHE_SIZE) {
+    const firstKey = store.keys().next().value;
+    if (firstKey !== undefined) store.delete(firstKey);
+  }
   store.set(key, { data, expiresAt: Date.now() + ttlMs });
   return data;
 }

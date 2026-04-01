@@ -197,6 +197,7 @@ model compras {
   @@unique([tenant_id, id])
   @@unique([tenant_id, numero_factura])
   @@index([tenant_id, solicitud_id])
+  @@index([tenant_id, fecha_compra])
 }
 
 model recepciones {

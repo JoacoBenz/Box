@@ -26,22 +26,21 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    for (const compra of comprasSinRecepcion) {
+    await Promise.all(comprasSinRecepcion.map(async (compra) => {
       const sol = compra.solicitud;
-      await crearNotificacion({
-        tenantId: sol.tenant_id,
-        destinatarioId: sol.solicitante_id,
-        tipo: 'alerta_recepcion_pendiente',
-        titulo: 'Recepción pendiente',
-        mensaje: `Han pasado más de 24hs desde la compra de "${sol.titulo}". Confirmá la recepción cuando recibas el pedido.`,
-        solicitudId: sol.id,
-      });
-
-      // Also notify tesoreria/compras
-      await notificarPorRol(sol.tenant_id, 'tesoreria', 'Recepción sin confirmar', `"${sol.titulo}" fue comprado hace más de 24hs y aún no tiene recepción confirmada.`, sol.id);
-
+      await Promise.all([
+        crearNotificacion({
+          tenantId: sol.tenant_id,
+          destinatarioId: sol.solicitante_id,
+          tipo: 'alerta_recepcion_pendiente',
+          titulo: 'Recepción pendiente',
+          mensaje: `Han pasado más de 24hs desde la compra de "${sol.titulo}". Confirmá la recepción cuando recibas el pedido.`,
+          solicitudId: sol.id,
+        }),
+        notificarPorRol(sol.tenant_id, 'tesoreria', 'Recepción sin confirmar', `"${sol.titulo}" fue comprado hace más de 24hs y aún no tiene recepción confirmada.`, sol.id),
+      ]);
       alertas++;
-    }
+    }));
 
     // Alerta 2: Solicitudes en estado 'comprada' hace >5 días sin recepción
     const solicitudesCompradas = await prisma.solicitudes.findMany({
@@ -52,7 +51,7 @@ export async function POST(request: NextRequest) {
       select: { id: true, titulo: true, tenant_id: true, solicitante_id: true },
     });
 
-    for (const sol of solicitudesCompradas) {
+    await Promise.all(solicitudesCompradas.map(async (sol) => {
       await crearNotificacion({
         tenantId: sol.tenant_id,
         destinatarioId: sol.solicitante_id,
@@ -62,7 +61,7 @@ export async function POST(request: NextRequest) {
         solicitudId: sol.id,
       });
       alertas++;
-    }
+    }));
 
     return Response.json({ ok: true, alertas_enviadas: alertas });
   } catch (error) {

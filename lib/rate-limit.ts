@@ -1,4 +1,5 @@
 // In-memory rate limiter with sliding window
+const MAX_ENTRIES = 10_000;
 const attempts = new Map<string, { count: number; resetAt: number }>();
 
 // Clean up expired entries periodically
@@ -18,6 +19,10 @@ export function checkRateLimit(
   const entry = attempts.get(key);
 
   if (!entry || now > entry.resetAt) {
+    if (attempts.size >= MAX_ENTRIES) {
+      const firstKey = attempts.keys().next().value;
+      if (firstKey !== undefined) attempts.delete(firstKey);
+    }
     attempts.set(key, { count: 1, resetAt: now + windowMs });
     return { allowed: true, remaining: maxAttempts - 1, resetInMs: windowMs };
   }
