@@ -60,9 +60,9 @@ export async function POST(request: NextRequest) {
 
     // Get all roles
     const roles = await prisma.roles.findMany();
-    const adminRole = roles.find(r => r.nombre === 'admin');
     const directorRole = roles.find(r => r.nombre === 'director');
-    if (!adminRole || !directorRole) {
+    const solicitanteRole = roles.find(r => r.nombre === 'solicitante');
+    if (!directorRole || !solicitanteRole) {
       return Response.json({ error: { code: 'INTERNAL', message: 'Roles no encontrados. Ejecutá el seed.' } }, { status: 500 });
     }
 
@@ -91,11 +91,11 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Assign admin + director roles
+      // Assign director + solicitante roles (NOT admin — admin is the platform admin)
       await tx.usuarios_roles.createMany({
         data: [
-          { usuario_id: usuario.id, rol_id: adminRole.id },
           { usuario_id: usuario.id, rol_id: directorRole.id },
+          { usuario_id: usuario.id, rol_id: solicitanteRole.id },
         ],
       });
 
