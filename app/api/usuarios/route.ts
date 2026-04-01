@@ -62,6 +62,11 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: { code: 'VALIDATION_ERROR', message: 'La contraseña es obligatoria para nuevos usuarios' } }, { status: 400 });
     }
 
+    // Directors cannot assign the admin role
+    if (roleNames.includes('admin') && !session.roles.includes('admin')) {
+      return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo un administrador de plataforma puede asignar el rol admin' } }, { status: 403 });
+    }
+
     const db = tenantPrisma(effectiveTenantId);
 
     const existingEmail = await db.usuarios.findFirst({ where: { email } });

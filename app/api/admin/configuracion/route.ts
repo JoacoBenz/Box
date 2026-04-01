@@ -43,7 +43,8 @@ export async function PUT(request: NextRequest) {
       return apiError('VALIDATION_ERROR', 'Clave requerida', 400);
     }
 
-    // Allow only known config keys for safety
+    // All keys below are org-level config (safe for director access).
+    // If platform-level keys are added in the future, restrict them to admin-only.
     const allowedKeys = [
       'sso_dominio', 'sso_google_habilitado', 'sso_microsoft_habilitado',
       'moneda', 'umbral_aprobacion_responsable', 'umbral_aprobacion_director',

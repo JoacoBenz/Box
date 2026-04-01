@@ -64,6 +64,13 @@ export default function AdminUsuariosPage() {
   const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
   const [selectedTenant] = useAdminTenant()
+  const [sessionRoles, setSessionRoles] = useState<string[]>([])
+
+  useEffect(() => {
+    fetch('/api/auth/session').then(r => r.json()).then(s => {
+      setSessionRoles(s?.user?.roles ?? [])
+    }).catch(() => {})
+  }, [])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -306,10 +313,12 @@ export default function AdminUsuariosPage() {
             <Select
               mode="multiple"
               placeholder="Seleccionar roles"
-              options={(Object.keys(ROL_LABELS) as RolNombre[]).map((r) => ({
-                value: r,
-                label: ROL_LABELS[r],
-              }))}
+              options={(Object.keys(ROL_LABELS) as RolNombre[])
+                .filter((r) => r !== 'admin' || sessionRoles.includes('admin'))
+                .map((r) => ({
+                  value: r,
+                  label: ROL_LABELS[r],
+                }))}
             />
           </Form.Item>
         </Form>

@@ -28,6 +28,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const { nombre, email, password, area_id, roles: roleNames } = result.data;
 
+    // Directors cannot assign or remove the admin role
+    const isAdmin = session.roles.includes('admin');
+    const targetHasAdmin = usuario.usuarios_roles.some(ur => ur.rol.nombre === 'admin');
+    if (!isAdmin) {
+      if (roleNames.includes('admin')) {
+        return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo un administrador de plataforma puede asignar el rol admin' } }, { status: 403 });
+      }
+      if (targetHasAdmin) {
+        return Response.json({ error: { code: 'FORBIDDEN', message: 'No podés editar un usuario con rol admin' } }, { status: 403 });
+      }
+    }
+
     if (email !== usuario.email) {
       const existing = await db.usuarios.findFirst({ where: { email } });
       if (existing) return Response.json({ error: { code: 'CONFLICT', message: 'Email ya en uso' } }, { status: 409 });

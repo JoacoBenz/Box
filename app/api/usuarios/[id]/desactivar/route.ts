@@ -21,10 +21,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json().catch(() => ({}));
     const nuevoActivo = typeof body.activo === 'boolean' ? body.activo : !usuario.activo;
 
-    // Only check admin constraint when deactivating
+    // Directors cannot deactivate/activate admin users
+    const targetIsAdmin = usuario.usuarios_roles.some(ur => ur.rol.nombre === 'admin');
+    if (targetIsAdmin && !session.roles.includes('admin')) {
+      return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo un administrador de plataforma puede modificar usuarios admin' } }, { status: 403 });
+    }
+
+    // Only check last-admin constraint when deactivating
     if (!nuevoActivo) {
-      const isAdmin = usuario.usuarios_roles.some(ur => ur.rol.nombre === 'admin');
-      if (isAdmin) {
+      if (targetIsAdmin) {
         const adminCount = await prisma.usuarios.count({
           where: { tenant_id: session.tenantId, activo: true, usuarios_roles: { some: { rol: { nombre: 'admin' } } } },
         });
