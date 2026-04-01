@@ -20,9 +20,12 @@ export async function GET(request: NextRequest) {
     });
 
     return Response.json(codigos);
-  } catch (error: any) {
-    if (error.message === 'No autenticado') return apiError('UNAUTHORIZED', 'No autenticado', 401);
-    return apiError('INTERNAL', 'Error interno', 500);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    const stack = error instanceof Error ? error.stack : '';
+    console.error('[invitaciones GET]', msg, stack);
+    if (msg === 'No autenticado') return apiError('UNAUTHORIZED', 'No autenticado', 401);
+    return Response.json({ error: { code: 'INTERNAL', message: msg } }, { status: 500 });
   }
 }
 
