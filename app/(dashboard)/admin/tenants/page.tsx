@@ -158,12 +158,12 @@ export default function AdminTenantsPage() {
     {
       title: 'Estado',
       key: 'estado',
-      width: 110,
-      render: (_, t) => (
-        t.desactivado
-          ? <Badge status="error" text={<Text type="secondary">Inactivo</Text>} />
-          : <Badge status="success" text={<Text>Activo</Text>} />
-      ),
+      width: 130,
+      render: (_, t) => {
+        if (t.desactivado) return <Tag color="default">Inactivo</Tag>
+        const colors: Record<string, string> = { pendiente: 'orange', activo: 'green', rechazado: 'red', suspendido: 'default' }
+        return <Tag color={colors[t.estado] ?? 'default'}>{t.estado.charAt(0).toUpperCase() + t.estado.slice(1)}</Tag>
+      },
     },
     {
       title: 'Moneda',

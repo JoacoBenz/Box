@@ -40,6 +40,7 @@ const usuario = await prisma.usuarios.findFirst({
           where: {
             email: credentials.email as string,
             activo: true,
+            tenant: { estado: 'activo', desactivado: false },
           },
           include: {
             tenant: { select: { nombre: true } },
@@ -55,6 +56,10 @@ const usuario = await prisma.usuarios.findFirst({
           logLoginFailed(email, 'unknown', attempt.attemptsRemaining);
           if (attempt.locked) logAccountLocked(email, 'unknown', 15 * 60 * 1000);
           return null;
+        }
+
+        if (!usuario.password_hash) {
+          return null; // OAuth-only user, can't use password login
         }
 
         const passwordMatch = await bcrypt.compare(

@@ -1,16 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { Form, Input, Button, Card, Typography, Alert, Space, message } from 'antd';
-import { useRouter } from 'next/navigation';
+import { Form, Input, Button, Card, Typography, Alert, Space, Result } from 'antd';
 import Link from 'next/link';
 
 const { Title, Text } = Typography;
 
 export default function RegistroPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registrado, setRegistrado] = useState(false);
 
   async function onFinish(values: any) {
     if (values.password !== values.confirmarPassword) {
@@ -37,11 +36,23 @@ export default function RegistroPage() {
         return;
       }
 
-      message.success('¡Organización registrada! Ya podés ingresar.');
-      router.push('/login');
+      setRegistrado(true);
     } finally {
       setLoading(false);
     }
+  }
+
+  if (registrado) {
+    return (
+      <Card style={{ width: 480, boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+        <Result
+          status="success"
+          title="Registro enviado"
+          subTitle="Tu organización fue registrada y está pendiente de aprobación. Te notificaremos cuando sea activada."
+          extra={<Link href="/login"><Button type="primary">Volver al inicio</Button></Link>}
+        />
+      </Card>
+    );
   }
 
   return (
@@ -67,8 +78,15 @@ export default function RegistroPage() {
             <Input placeholder="admin@empresa.com" size="large" />
           </Form.Item>
 
-          <Form.Item name="password" label="Contraseña" rules={[{ required: true, min: 8, message: 'Mínimo 8 caracteres' }]}>
-            <Input.Password placeholder="••••••••" size="large" />
+          <Form.Item name="password" label="Contraseña" rules={[
+            { required: true, message: 'La contraseña es obligatoria' },
+            { min: 10, message: 'Mínimo 10 caracteres' },
+            { pattern: /[A-Z]/, message: 'Debe contener al menos una mayúscula' },
+            { pattern: /[a-z]/, message: 'Debe contener al menos una minúscula' },
+            { pattern: /[0-9]/, message: 'Debe contener al menos un número' },
+            { pattern: /[^A-Za-z0-9]/, message: 'Debe contener al menos un carácter especial' },
+          ]}>
+            <Input.Password placeholder="Mínimo 10 caracteres" size="large" />
           </Form.Item>
 
           <Form.Item name="confirmarPassword" label="Confirmar contraseña" rules={[{ required: true, message: 'Confirmá tu contraseña' }]}>
@@ -85,6 +103,9 @@ export default function RegistroPage() {
         <div style={{ textAlign: 'center' }}>
           <Text type="secondary">¿Ya tenés cuenta? </Text>
           <Link href="/login">Ingresar</Link>
+          <br />
+          <Text type="secondary">¿Querés unirte a una organización existente? </Text>
+          <Link href="/unirse">Unirse</Link>
         </div>
       </Space>
     </Card>

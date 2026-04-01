@@ -4,14 +4,18 @@ import { prisma } from '@/lib/prisma';
 import { verificarRol, apiError } from '@/lib/permissions';
 import { logApiError } from '@/lib/logger';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession();
     if (!verificarRol(session.roles, ['admin'])) {
       return apiError('FORBIDDEN', 'No tenés permisos para ver tenants', 403);
     }
 
+    const { searchParams } = new URL(request.url);
+    const estadoFilter = searchParams.get('estado');
+
     const tenants = await prisma.tenants.findMany({
+      ...(estadoFilter && { where: { estado: estadoFilter } }),
       orderBy: { id: 'asc' },
       select: {
         id: true,

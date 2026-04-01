@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     // Atomic transaction
     const txResult = await prisma.$transaction(async (tx) => {
       const newTenant = await tx.tenants.create({
-        data: { nombre: nombreOrganizacion, slug, email_contacto: email, moneda: 'ARS' },
+        data: { nombre: nombreOrganizacion, slug, email_contacto: email, moneda: 'ARS', estado: 'pendiente' },
       });
 
       // Create default areas
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
       ipAddress: getClientIp(request),
     });
 
-    return Response.json({ message: 'Organización registrada exitosamente' }, { status: 201 });
+    return Response.json({ message: 'Tu organización fue registrada y está pendiente de aprobación. Te notificaremos cuando sea activada.' }, { status: 201 });
   } catch (error) {
     logApiError('/api/registro', 'POST', error);
     return Response.json({ error: { code: 'INTERNAL', message: 'Error interno del servidor' } }, { status: 500 });

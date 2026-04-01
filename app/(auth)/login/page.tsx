@@ -144,6 +144,9 @@ export default function LoginPage() {
         <div style={{ textAlign: 'center', paddingTop: 8 }}>
           <Text type="secondary" style={{ fontSize: 13 }}>¿Tu organización aún no está registrada?</Text>
           <Link href="/registro" style={{ fontSize: 13, fontWeight: 600 }}> Registrarse</Link>
+          <br />
+          <Text type="secondary" style={{ fontSize: 13 }}>¿Querés unirte a una organización existente?</Text>
+          <Link href="/unirse" style={{ fontSize: 13, fontWeight: 600 }}> Unirse</Link>
         </div>
       </Card>
     </>
