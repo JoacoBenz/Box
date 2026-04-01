@@ -76,11 +76,11 @@ export async function POST(request: NextRequest) {
       // Create item-level receipt records if provided
       if (body.items && Array.isArray(body.items) && body.items.length > 0) {
         // Validate that all item_solicitud_id values belong to this solicitud
-        const solicitudItems = await tx.items_solicitud.findMany({
+        const validItems = await tx.items_solicitud.findMany({
           where: { solicitud_id: body.solicitud_id },
           select: { id: true },
         });
-        const validItemIds = new Set(solicitudItems.map(i => i.id));
+        const validItemIds = new Set(validItems.map(i => i.id));
         const invalidItems = body.items.filter((item: any) => !validItemIds.has(item.item_solicitud_id));
         if (invalidItems.length > 0) {
           throw new Error('INVALID_ITEMS');
