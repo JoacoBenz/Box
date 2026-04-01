@@ -1,0 +1,388 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model tenants {
+  id             Int      @id @default(autoincrement())
+  nombre         String   @db.VarChar(255)
+  slug           String   @unique @db.VarChar(100)
+  estado         String   @default("activo") @db.VarChar(20)
+  email_contacto String   @db.VarChar(255)
+  moneda         String   @default("ARS") @db.VarChar(10)
+  fecha_registro DateTime @default(now())
+  desactivado    Boolean  @default(false)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  areas          areas[]
+  usuarios       usuarios[]
+  solicitudes    solicitudes[]
+  compras        compras[]
+  recepciones    recepciones[]
+  archivos       archivos[]
+  notificaciones notificaciones[]
+  log_auditoria  log_auditoria[]
+  configuracion  configuracion[]
+  proveedores    proveedores[]
+  centros_costo  centros_costo[]
+  delegaciones         delegaciones[]
+  comentarios          comentarios[]
+  codigos_invitacion   codigos_invitacion[]
+}
+
+model roles {
+  id          Int    @id @default(autoincrement())
+  nombre      String @unique @db.VarChar(50)
+  descripcion String?
+
+  usuarios_roles usuarios_roles[]
+}
+
+model areas {
+  id             Int      @id @default(autoincrement())
+  tenant_id      Int
+  nombre         String   @db.VarChar(100)
+  activo         Boolean  @default(true)
+  responsable_id Int?
+  created_at     DateTime @default(now())
+
+  tenant        tenants    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  responsable   usuarios?  @relation("area_responsable", fields: [responsable_id], references: [id])
+  usuarios_area usuarios[] @relation("usuario_area")
+  solicitudes   solicitudes[]
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, nombre])
+}
+
+model usuarios {
+  id             Int      @id @default(autoincrement())
+  tenant_id      Int
+  nombre         String   @db.VarChar(150)
+  email          String   @db.VarChar(255)
+  password_hash  String?  @db.VarChar(255)
+  area_id        Int?
+  activo         Boolean  @default(true)
+  oauth_provider String?  @db.VarChar(20)
+  oauth_sub      String?  @db.VarChar(255)
+  area_sugerida  String?  @db.VarChar(150)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  tenant                   tenants          @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  area                     areas?           @relation("usuario_area", fields: [area_id], references: [id])
+  areas_responsable        areas[]          @relation("area_responsable")
+  usuarios_roles           usuarios_roles[]
+  solicitudes_creadas      solicitudes[]    @relation("solicitud_solicitante")
+  solicitudes_validadas    solicitudes[]    @relation("solicitud_validador")
+  solicitudes_aprobadas    solicitudes[]    @relation("solicitud_aprobador")
+  solicitudes_rechazadas   solicitudes[]    @relation("solicitud_rechazador")
+  solicitudes_procesadas   solicitudes[]    @relation("solicitud_procesador")
+  compras_ejecutadas       compras[]
+  recepciones_realizadas   recepciones[]
+  archivos_subidos         archivos[]
+  notificaciones_recibidas notificaciones[]
+  log_auditoria            log_auditoria[]
+  delegaciones_otorgadas   delegaciones[] @relation("delegaciones_delegante")
+  delegaciones_recibidas   delegaciones[] @relation("delegaciones_delegado")
+  comentarios              comentarios[]
+  codigos_creados          codigos_invitacion[] @relation("codigo_creador")
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, email])
+  @@unique([oauth_provider, oauth_sub])
+}
+
+model usuarios_roles {
+  usuario_id Int
+  rol_id     Int
+
+  usuario usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  rol     roles    @relation(fields: [rol_id], references: [id], onDelete: Cascade)
+
+  @@id([usuario_id, rol_id])
+}
+
+model solicitudes {
+  id                        Int      @id @default(autoincrement())
+  tenant_id                 Int
+  numero                    String   @db.VarChar(20)
+  titulo                    String   @db.VarChar(255)
+  descripcion               String
+  justificacion             String
+  urgencia                  String   @default("normal") @db.VarChar(20)
+  monto_estimado_total      Decimal? @db.Decimal(15, 2)
+  solicitante_id            Int
+  area_id                   Int
+  validado_por_id           Int?
+  aprobado_por_id           Int?
+  rechazado_por_id          Int?
+  estado                    String   @default("borrador") @db.VarChar(30)
+  fecha_envio               DateTime?
+  fecha_validacion          DateTime?
+  fecha_aprobacion          DateTime?
+  fecha_rechazo             DateTime?
+  observaciones_responsable String?
+  observaciones_director    String?
+  motivo_rechazo            String?
+  proveedor_sugerido        String?  @db.VarChar(255)
+  proveedor_id              Int?
+  centro_costo_id           Int?
+  procesado_por_id          Int?
+  fecha_procesamiento       DateTime?
+  dia_pago_programado       DateTime? @db.Date
+  prioridad_compra          String?  @db.VarChar(20)
+  observaciones_compras     String?
+  created_at                DateTime @default(now())
+  updated_at                DateTime @updatedAt
+
+  tenant        tenants        @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  proveedor     proveedores?   @relation(fields: [proveedor_id], references: [id])
+  area          areas          @relation(fields: [area_id], references: [id])
+  centro_costo  centros_costo? @relation(fields: [centro_costo_id], references: [id])
+  procesado_por usuarios?      @relation("solicitud_procesador", fields: [procesado_por_id], references: [id])
+  solicitante   usuarios  @relation("solicitud_solicitante", fields: [solicitante_id], references: [id])
+  validado_por  usuarios? @relation("solicitud_validador", fields: [validado_por_id], references: [id])
+  aprobado_por  usuarios? @relation("solicitud_aprobador", fields: [aprobado_por_id], references: [id])
+  rechazado_por usuarios? @relation("solicitud_rechazador", fields: [rechazado_por_id], references: [id])
+
+  items_solicitud items_solicitud[]
+  compras         compras[]
+  recepciones     recepciones[]
+  notificaciones  notificaciones[]
+  comentarios     comentarios[]
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, numero])
+  @@index([tenant_id, estado])
+  @@index([tenant_id, solicitante_id])
+  @@index([tenant_id, area_id])
+  @@index([tenant_id, estado, area_id])
+}
+
+model items_solicitud {
+  id              Int      @id @default(autoincrement())
+  tenant_id       Int
+  solicitud_id    Int
+  descripcion     String   @db.VarChar(255)
+  cantidad        Decimal  @db.Decimal(10, 2)
+  unidad          String   @default("unidades") @db.VarChar(50)
+  precio_estimado Decimal? @db.Decimal(15, 2)
+  link_producto   String?  @db.VarChar(500)
+
+  solicitud solicitudes @relation(fields: [solicitud_id], references: [id], onDelete: Cascade)
+  items_recepcion items_recepcion[]
+}
+
+model compras {
+  id                  Int      @id @default(autoincrement())
+  tenant_id           Int
+  solicitud_id        Int
+  ejecutado_por_id    Int
+  proveedor_id        Int?
+  proveedor_nombre    String   @db.VarChar(255)
+  proveedor_detalle   String?
+  fecha_compra        DateTime @db.Date
+  monto_total         Decimal  @db.Decimal(15, 2)
+  medio_pago          String   @db.VarChar(50)
+  referencia_bancaria String?  @db.VarChar(100)
+  numero_factura      String?  @db.VarChar(50)
+  observaciones       String?
+  created_at          DateTime @default(now())
+
+  tenant        tenants      @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  solicitud     solicitudes  @relation(fields: [solicitud_id], references: [id])
+  ejecutado_por usuarios     @relation(fields: [ejecutado_por_id], references: [id])
+  proveedor     proveedores? @relation(fields: [proveedor_id], references: [id])
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, numero_factura])
+  @@index([tenant_id, solicitud_id])
+  @@index([tenant_id, fecha_compra])
+}
+
+model recepciones {
+  id              Int      @id @default(autoincrement())
+  tenant_id       Int
+  solicitud_id    Int
+  receptor_id     Int
+  fecha_recepcion DateTime @default(now())
+  conforme        Boolean
+  tipo_problema   String?  @db.VarChar(50)
+  observaciones   String?
+  created_at      DateTime @default(now())
+
+  tenant    tenants     @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  solicitud solicitudes @relation(fields: [solicitud_id], references: [id])
+  receptor  usuarios    @relation(fields: [receptor_id], references: [id])
+  items_recepcion items_recepcion[]
+}
+
+model items_recepcion {
+  id                Int      @id @default(autoincrement())
+  tenant_id         Int
+  recepcion_id      Int
+  item_solicitud_id Int
+  cantidad_recibida Decimal  @db.Decimal(10, 2)
+  conforme          Boolean  @default(true)
+  observaciones     String?
+
+  recepcion      recepciones     @relation(fields: [recepcion_id], references: [id], onDelete: Cascade)
+  item_solicitud items_solicitud @relation(fields: [item_solicitud_id], references: [id])
+}
+
+model archivos {
+  id             Int      @id @default(autoincrement())
+  tenant_id      Int
+  entidad        String   @db.VarChar(30)
+  entidad_id     Int
+  nombre_archivo String   @db.VarChar(255)
+  ruta_archivo   String   @db.VarChar(500)
+  tamanio_bytes  BigInt?
+  subido_por_id  Int
+  created_at     DateTime @default(now())
+
+  tenant     tenants  @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  subido_por usuarios @relation(fields: [subido_por_id], references: [id])
+}
+
+model notificaciones {
+  id                 Int      @id @default(autoincrement())
+  tenant_id          Int
+  usuario_destino_id Int
+  tipo               String   @db.VarChar(50)
+  titulo             String   @db.VarChar(255)
+  mensaje            String?
+  leida              Boolean  @default(false)
+  solicitud_id       Int?
+  created_at         DateTime @default(now())
+
+  tenant          tenants     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  usuario_destino usuarios    @relation(fields: [usuario_destino_id], references: [id])
+  solicitud       solicitudes? @relation(fields: [solicitud_id], references: [id])
+
+  @@index([tenant_id, usuario_destino_id, leida])
+}
+
+model log_auditoria {
+  id               BigInt   @id @default(autoincrement())
+  tenant_id        Int
+  usuario_id       Int
+  accion           String   @db.VarChar(50)
+  entidad          String   @db.VarChar(50)
+  entidad_id       Int?
+  datos_anteriores Json?
+  datos_nuevos     Json?
+  ip_address       String?  @db.VarChar(45)
+  created_at       DateTime @default(now())
+
+  tenant  tenants  @relation(fields: [tenant_id], references: [id])
+  usuario usuarios @relation(fields: [usuario_id], references: [id])
+
+  @@index([tenant_id, created_at])
+}
+
+model configuracion {
+  tenant_id Int
+  clave     String @db.VarChar(100)
+  valor     String
+
+  tenant tenants @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+  @@id([tenant_id, clave])
+}
+
+model proveedores {
+  id              Int      @id @default(autoincrement())
+  tenant_id       Int
+  nombre          String   @db.VarChar(255)
+  cuit            String?  @db.VarChar(13)
+  datos_bancarios String?
+  link_pagina     String?  @db.VarChar(500)
+  telefono        String?  @db.VarChar(50)
+  email           String?  @db.VarChar(255)
+  direccion       String?  @db.VarChar(500)
+  activo          Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  tenant      tenants       @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  solicitudes solicitudes[]
+  compras     compras[]
+
+  @@unique([tenant_id, cuit])
+  @@index([tenant_id, nombre])
+}
+
+model centros_costo {
+  id         Int      @id @default(autoincrement())
+  tenant_id  Int
+  nombre     String   @db.VarChar(150)
+  codigo     String   @db.VarChar(20)
+  activo              Boolean  @default(true)
+  presupuesto_anual   Decimal? @db.Decimal(15, 2)
+  presupuesto_mensual Decimal? @db.Decimal(15, 2)
+  created_at          DateTime @default(now())
+
+  tenant      tenants       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  solicitudes solicitudes[]
+
+  @@unique([tenant_id, codigo])
+}
+
+model delegaciones {
+  id              Int       @id @default(autoincrement())
+  tenant_id       Int
+  delegante_id    Int
+  delegado_id     Int
+  rol_delegado    String    @db.VarChar(50)
+  fecha_inicio    DateTime  @db.Date
+  fecha_fin       DateTime  @db.Date
+  motivo          String?   @db.VarChar(255)
+  activo          Boolean   @default(true)
+  created_at      DateTime  @default(now())
+
+  tenant    tenants  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  delegante usuarios @relation("delegaciones_delegante", fields: [delegante_id], references: [id])
+  delegado  usuarios @relation("delegaciones_delegado", fields: [delegado_id], references: [id])
+
+  @@unique([tenant_id, delegante_id, delegado_id, rol_delegado, fecha_inicio])
+  @@index([tenant_id, delegado_id, activo])
+}
+
+model comentarios {
+  id            Int      @id @default(autoincrement())
+  tenant_id     Int
+  solicitud_id  Int
+  usuario_id    Int
+  mensaje       String
+  created_at    DateTime @default(now())
+
+  tenant    tenants     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  solicitud solicitudes @relation(fields: [solicitud_id], references: [id], onDelete: Cascade)
+  usuario   usuarios    @relation(fields: [usuario_id], references: [id])
+
+  @@index([tenant_id, solicitud_id])
+}
+
+model codigos_invitacion {
+  id         Int      @id @default(autoincrement())
+  tenant_id  Int
+  codigo     String   @unique @db.VarChar(8)
+  creado_por Int
+  activo     Boolean  @default(true)
+  usos       Int      @default(0)
+  max_usos   Int?
+  expira_el  DateTime
+  created_at DateTime @default(now())
+
+  tenant  tenants  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  creador usuarios @relation("codigo_creador", fields: [creado_por], references: [id])
+
+  @@index([tenant_id, activo])
+}
