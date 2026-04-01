@@ -279,9 +279,10 @@ export default function AdminUsuariosPage() {
                 { pattern: /[A-Z]/, message: 'Debe contener al menos una mayúscula' },
                 { pattern: /[a-z]/, message: 'Debe contener al menos una minúscula' },
                 { pattern: /[0-9]/, message: 'Debe contener al menos un número' },
+                { pattern: /[^A-Za-z0-9]/, message: 'Debe contener al menos un carácter especial (!@#$%...)' },
               ]}
             >
-              <Input.Password placeholder="Mínimo 10 caracteres, mayúscula, minúscula y número" />
+              <Input.Password placeholder="Mínimo 10 caracteres, mayúscula, minúscula, número y especial" />
             </Form.Item>
           )}
 
