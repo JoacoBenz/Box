@@ -1,7 +1,7 @@
 import { prisma } from './prisma';
 import { cached } from './cache';
 
-export async function getTenantConfig(tenantId: number, clave: string): Promise<string | null> {
+async function getTenantConfig(tenantId: number, clave: string): Promise<string | null> {
   return cached(`t:${tenantId}:config:${clave}`, 5 * 60 * 1000, async () => {
     const config = await prisma.configuracion.findUnique({
       where: { tenant_id_clave: { tenant_id: tenantId, clave } },
