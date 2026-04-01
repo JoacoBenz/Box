@@ -6,7 +6,7 @@ import { verificarRol, apiError } from '@/lib/permissions';
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession();
-    if (!verificarRol(session.roles, ['admin'])) {
+    if (!verificarRol(session.roles, ['admin', 'director'])) {
       return apiError('FORBIDDEN', 'Sin permisos', 403);
     }
 

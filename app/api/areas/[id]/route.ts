@@ -9,7 +9,7 @@ import { getEffectiveTenantId } from '@/lib/tenant-override';
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { session, effectiveTenantId } = await getEffectiveTenantId(request);
-    if (!verificarRol(session.roles, ['admin'])) {
+    if (!verificarRol(session.roles, ['admin', 'director'])) {
       return Response.json({ error: { code: 'FORBIDDEN', message: 'Sin permiso' } }, { status: 403 });
     }
 
@@ -66,7 +66,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { session, effectiveTenantId } = await getEffectiveTenantId(request);
-    if (!verificarRol(session.roles, ['admin'])) {
+    if (!verificarRol(session.roles, ['admin', 'director'])) {
       return Response.json({ error: { code: 'FORBIDDEN', message: 'Sin permiso' } }, { status: 403 });
     }
 

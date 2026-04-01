@@ -8,7 +8,7 @@ import { centroCostoSchema } from '@/lib/validators';
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession();
-    if (!verificarRol(session.roles, ['admin', 'tesoreria'])) {
+    if (!verificarRol(session.roles, ['admin', 'director', 'tesoreria'])) {
       return Response.json({ error: { code: 'FORBIDDEN', message: 'Sin permisos' } }, { status: 403 });
     }
 

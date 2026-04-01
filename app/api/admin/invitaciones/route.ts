@@ -8,7 +8,7 @@ import { getEffectiveTenantId } from '@/lib/tenant-override';
 export async function GET(request: NextRequest) {
   try {
     const { session, effectiveTenantId } = await getEffectiveTenantId(request);
-    if (!verificarRol(session.roles, ['admin'])) {
+    if (!verificarRol(session.roles, ['admin', 'director'])) {
       return apiError('FORBIDDEN', 'Sin permisos', 403);
     }
 
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { session, effectiveTenantId } = await getEffectiveTenantId(request);
-    if (!verificarRol(session.roles, ['admin'])) {
+    if (!verificarRol(session.roles, ['admin', 'director'])) {
       return apiError('FORBIDDEN', 'Sin permisos', 403);
     }
 

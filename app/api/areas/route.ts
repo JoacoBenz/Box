@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { session, effectiveTenantId } = await getEffectiveTenantId(request);
-    if (!verificarRol(session.roles, ['admin'])) {
+    if (!verificarRol(session.roles, ['admin', 'director'])) {
       return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo administradores pueden crear áreas' } }, { status: 403 });
     }
     if (!effectiveTenantId) {

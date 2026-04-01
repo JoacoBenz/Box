@@ -9,7 +9,7 @@ import { usuarioSchema } from '@/lib/validators';
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession();
-    if (!verificarRol(session.roles, ['admin'])) {
+    if (!verificarRol(session.roles, ['admin', 'director'])) {
       return Response.json({ error: { code: 'FORBIDDEN', message: 'Sin permiso' } }, { status: 403 });
     }
 

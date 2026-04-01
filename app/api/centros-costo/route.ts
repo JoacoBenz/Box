@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { session, effectiveTenantId } = await getEffectiveTenantId(request);
-    if (!verificarRol(session.roles, ['admin', 'tesoreria'])) {
+    if (!verificarRol(session.roles, ['admin', 'director', 'tesoreria'])) {
       return Response.json({ error: { code: 'FORBIDDEN', message: 'Sin permisos para crear centros de costo' } }, { status: 403 });
     }
     if (!effectiveTenantId) {

@@ -84,15 +84,17 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
     {
       type: 'group' as const,
       label: collapsed ? '—' : 'Administración',
-      visible: roles.includes('admin'),
+      visible: roles.includes('admin') || roles.includes('director'),
       children: [
-        { key: '/admin/aprobaciones-org', icon: <AuditOutlined />, label: 'Aprobaciones Org' },
         { key: '/admin/usuarios', icon: <TeamOutlined />, label: 'Usuarios' },
         { key: '/admin/areas', icon: <ApartmentOutlined />, label: 'Áreas' },
         { key: '/admin/centros-costo', icon: <BankOutlined />, label: 'Centros de Costo' },
         { key: '/admin/invitaciones', icon: <KeyOutlined />, label: 'Invitaciones' },
         { key: '/admin/configuracion-sso', icon: <SettingOutlined />, label: 'Config SSO' },
-        { key: '/admin/tenants', icon: <GlobalOutlined />, label: 'Organizaciones' },
+        ...(roles.includes('admin') ? [
+          { key: '/admin/aprobaciones-org', icon: <AuditOutlined />, label: 'Aprobaciones Org' },
+          { key: '/admin/tenants', icon: <GlobalOutlined />, label: 'Organizaciones' },
+        ] : []),
       ],
     },
   ]

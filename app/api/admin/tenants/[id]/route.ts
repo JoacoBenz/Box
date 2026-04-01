@@ -64,17 +64,25 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
       return apiError('VALIDATION', 'No se puede eliminar: la organización tiene solicitudes, compras o proveedores. Desactivala en su lugar.', 400);
     }
 
-    // Delete cascadeable children first, then tenant
-    await prisma.$transaction([
-      prisma.usuarios.deleteMany({ where: { tenant_id: tenantId } }),
-      prisma.areas.deleteMany({ where: { tenant_id: tenantId } }),
-      prisma.centros_costo.deleteMany({ where: { tenant_id: tenantId } }),
-      prisma.configuracion.deleteMany({ where: { tenant_id: tenantId } }),
-      prisma.delegaciones.deleteMany({ where: { tenant_id: tenantId } }),
-      prisma.notificaciones.deleteMany({ where: { tenant_id: tenantId } }),
-      prisma.comentarios.deleteMany({ where: { tenant_id: tenantId } }),
-      prisma.tenants.delete({ where: { id: tenantId } }),
-    ]);
+    // Delete children in correct order (respecting FK constraints), then tenant
+    await prisma.$transaction(async (tx) => {
+      // Delete records that reference usuarios first
+      await tx.codigos_invitacion.deleteMany({ where: { tenant_id: tenantId } });
+      const userIds = (await tx.usuarios.findMany({ where: { tenant_id: tenantId }, select: { id: true } })).map(u => u.id);
+      if (userIds.length > 0) {
+        await tx.usuarios_roles.deleteMany({ where: { usuario_id: { in: userIds } } });
+      }
+      await tx.comentarios.deleteMany({ where: { tenant_id: tenantId } });
+      await tx.notificaciones.deleteMany({ where: { tenant_id: tenantId } });
+      await tx.delegaciones.deleteMany({ where: { tenant_id: tenantId } });
+      await tx.configuracion.deleteMany({ where: { tenant_id: tenantId } });
+      // Clear area responsable FKs before deleting usuarios
+      await tx.areas.updateMany({ where: { tenant_id: tenantId }, data: { responsable_id: null } });
+      await tx.usuarios.deleteMany({ where: { tenant_id: tenantId } });
+      await tx.areas.deleteMany({ where: { tenant_id: tenantId } });
+      await tx.centros_costo.deleteMany({ where: { tenant_id: tenantId } });
+      await tx.tenants.delete({ where: { id: tenantId } });
+    });
 
     return Response.json({ ok: true });
   } catch (error: any) {
