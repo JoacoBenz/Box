@@ -20,9 +20,6 @@ import {
   FieldTimeOutlined,
   AlertOutlined,
   GlobalOutlined,
-  BankOutlined,
-  RiseOutlined,
-  SafetyOutlined,
   UserAddOutlined,
 } from '@ant-design/icons'
 import Link from 'next/link'
@@ -448,20 +445,17 @@ export default function DashboardPage() {
             </>
           )}
 
-          {/* === ADMIN platform metrics === */}
+          {/* === ADMIN platform metrics (6 key metrics, single row) === */}
           {hasAdmin && (
             <>
               <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Organizaciones" value={data.adminPlatform.totalOrganizaciones} icon={<GlobalOutlined />} color="purple" />
+                <MiniStatCard title="Orgs Activas" value={data.adminPlatform.orgActivas} icon={<GlobalOutlined />} color="green" />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Orgs Activas" value={data.adminPlatform.orgActivas} icon={<BankOutlined />} color="green" />
+                <MiniStatCard title="Pendientes Aprob." value={data.adminPlatform.orgPendientes} icon={<ClockCircleOutlined />} color={data.adminPlatform.orgPendientes > 0 ? 'orange' : 'green'} />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Pendientes Aprobaci\u00f3n" value={data.adminPlatform.orgPendientes} icon={<ClockCircleOutlined />} color={data.adminPlatform.orgPendientes > 0 ? 'orange' : 'green'} />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Suspendidas" value={data.adminPlatform.orgSuspendidas} icon={<SafetyOutlined />} color={data.adminPlatform.orgSuspendidas > 0 ? 'red' : 'green'} />
+                <MiniStatCard title="Orgs Dormidas (30d)" value={data.adminPlatform.orgsDormidas} icon={<AlertOutlined />} color={data.adminPlatform.orgsDormidas > 0 ? 'orange' : 'green'} />
               </Col>
               <Col xs={12} sm={8} lg={4}>
                 <MiniStatCard title="Usuarios Plataforma" value={data.adminPlatform.totalUsuariosPlataforma} icon={<TeamOutlined />} color="cyan" />
@@ -470,13 +464,7 @@ export default function DashboardPage() {
                 <MiniStatCard title="Nuevos Usuarios (mes)" value={data.adminPlatform.usuariosNuevosMes} icon={<UserAddOutlined />} color="blue" />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Orgs Nuevas (mes)" value={data.adminPlatform.orgsNuevasMes} icon={<RiseOutlined />} color="purple" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Orgs Dormidas (30d)" value={data.adminPlatform.orgsDormidas} icon={<AlertOutlined />} color={data.adminPlatform.orgsDormidas > 0 ? 'orange' : 'green'} />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Prom. Usuarios/Org" value={data.adminPlatform.promedioUsuariosPorOrg} icon={<TeamOutlined />} color="cyan" />
+                <MiniStatCard title="Prom. Usuarios/Org" value={data.adminPlatform.promedioUsuariosPorOrg} icon={<TeamOutlined />} color="purple" />
               </Col>
             </>
           )}
@@ -527,7 +515,7 @@ export default function DashboardPage() {
                 >
                   <Table
                     dataSource={data.adminPlatform.orgsTopUso}
-                    rowKey="org"
+                    rowKey={(record: any, i) => `org-${i}`}
                     pagination={false}
                     size="small"
                     columns={[
