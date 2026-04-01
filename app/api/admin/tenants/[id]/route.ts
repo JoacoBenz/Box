@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { verificarRol, apiError } from '@/lib/permissions';
+import { logApiError } from '@/lib/logger';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -32,7 +33,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return Response.json(updated);
   } catch (error: any) {
     if (error.message === 'No autenticado') return apiError('UNAUTHORIZED', 'No autenticado', 401);
-    console.error('Error updating tenant:', error);
+    logApiError('/api/admin/tenants/[id]', 'PATCH', error);
     return apiError('INTERNAL', 'Error interno', 500);
   }
 }
@@ -78,7 +79,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     return Response.json({ ok: true });
   } catch (error: any) {
     if (error.message === 'No autenticado') return apiError('UNAUTHORIZED', 'No autenticado', 401);
-    console.error('Error deleting tenant:', error);
+    logApiError('/api/admin/tenants/[id]', 'DELETE', error);
     return apiError('INTERNAL', 'Error interno', 500);
   }
 }

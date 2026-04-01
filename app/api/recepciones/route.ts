@@ -7,6 +7,7 @@ import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { recepcionSchema } from '@/lib/validators';
 import { uploadFile } from '@/lib/supabase';
 import { calcularMatching } from '@/lib/matching';
+import { logApiError } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -145,7 +146,7 @@ export async function POST(request: NextRequest) {
             },
           });
         } catch (uploadErr) {
-          console.error('Error subiendo remito:', uploadErr);
+          logApiError('/api/recepciones', 'POST', uploadErr);
         }
       }
     }
@@ -194,7 +195,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ message: conforme ? 'Recepción confirmada y solicitud cerrada' : 'Recepción registrada con observaciones' }, { status: 201 });
   } catch (error: any) {
     if (error.message === 'No autenticado') return Response.json({ error: { code: 'UNAUTHORIZED', message: 'No autenticado' } }, { status: 401 });
-    console.error(error);
+    logApiError('/api/recepciones', 'POST', error);
     return Response.json({ error: { code: 'INTERNAL', message: 'Error interno' } }, { status: 500 });
   }
 }

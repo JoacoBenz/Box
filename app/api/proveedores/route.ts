@@ -4,6 +4,7 @@ import { tenantPrisma, prisma } from '@/lib/prisma';
 import { proveedorSchema } from '@/lib/validators';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { getEffectiveTenantId } from '@/lib/tenant-override';
+import { logApiError } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
     return Response.json(proveedores);
   } catch (error: any) {
     if (error.message === 'No autenticado') return Response.json({ error: { code: 'UNAUTHORIZED', message: 'No autenticado' } }, { status: 401 });
-    console.error(error);
+    logApiError('/api/proveedores', 'API', error);
     return Response.json({ error: { code: 'INTERNAL', message: 'Error interno' } }, { status: 500 });
   }
 }
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
     return Response.json(proveedor, { status: 201 });
   } catch (error: any) {
     if (error.message === 'No autenticado') return Response.json({ error: { code: 'UNAUTHORIZED', message: 'No autenticado' } }, { status: 401 });
-    console.error(error);
+    logApiError('/api/proveedores', 'API', error);
     return Response.json({ error: { code: 'INTERNAL', message: 'Error interno' } }, { status: 500 });
   }
 }

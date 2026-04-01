@@ -6,6 +6,7 @@ import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { crearNotificacion } from '@/lib/notifications';
 import { compraSchema } from '@/lib/validators';
 import { uploadFile } from '@/lib/supabase';
+import { logApiError } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
         },
       });
     } catch (uploadErr) {
-      console.error('Error subiendo comprobante:', uploadErr);
+      logApiError('/api/compras', 'POST', uploadErr);
       uploadWarning = 'La compra se registró correctamente, pero el comprobante no pudo subirse. Podés adjuntarlo después.';
     }
 
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ ...compra, warning: uploadWarning }, { status: 201 });
   } catch (error: any) {
     if (error.message === 'No autenticado') return Response.json({ error: { code: 'UNAUTHORIZED', message: 'No autenticado' } }, { status: 401 });
-    console.error(error);
+    logApiError('/api/compras', 'POST', error);
     return Response.json({ error: { code: 'INTERNAL', message: 'Error interno' } }, { status: 500 });
   }
 }

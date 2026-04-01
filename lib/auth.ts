@@ -7,6 +7,7 @@ import { checkRateLimit } from './rate-limit';
 import { getRolesEfectivos } from './delegaciones';
 import { isAccountLocked, recordFailedLogin, clearFailedAttempts } from './account-lockout';
 import { cached } from './cache';
+import { logLoginFailed, logAccountLocked, logRateLimited, logLoginSuccess } from './logger';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -23,11 +24,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         // Check account lockout
         const lockout = isAccountLocked(email);
-        if (lockout.locked) return null;
+        if (lockout.locked) {
+          logAccountLocked(email, 'unknown', lockout.remainingMs);
+          return null;
+        }
 
         // Check rate limit
         const rateLimit = checkRateLimit(`login:${email}`, 10, 60_000);
-        if (!rateLimit.allowed) return null;
+        if (!rateLimit.allowed) {
+          logRateLimited(`login:${email}`, 'unknown');
+          return null;
+        }
 
 const usuario = await prisma.usuarios.findFirst({
           where: {
@@ -44,7 +51,9 @@ const usuario = await prisma.usuarios.findFirst({
         });
 
         if (!usuario) {
-          recordFailedLogin(email);
+          const attempt = recordFailedLogin(email);
+          logLoginFailed(email, 'unknown', attempt.attemptsRemaining);
+          if (attempt.locked) logAccountLocked(email, 'unknown', 15 * 60 * 1000);
           return null;
         }
 
@@ -53,11 +62,14 @@ const usuario = await prisma.usuarios.findFirst({
           usuario.password_hash
         );
         if (!passwordMatch) {
-          recordFailedLogin(email);
+          const attempt = recordFailedLogin(email);
+          logLoginFailed(email, 'unknown', attempt.attemptsRemaining);
+          if (attempt.locked) logAccountLocked(email, 'unknown', 15 * 60 * 1000);
           return null;
         }
 
         clearFailedAttempts(email);
+        logLoginSuccess(email, 'unknown', usuario.id);
 
         return {
           id: String(usuario.id),

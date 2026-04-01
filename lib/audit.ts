@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { logApiError } from './logger';
 
 export function getClientIp(request: Request): string {
   return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -32,6 +33,6 @@ export async function registrarAuditoria(entry: AuditEntry): Promise<void> {
       },
     });
   } catch (error) {
-    console.error('Error escribiendo auditoría:', error);
+    logApiError('audit', 'registrarAuditoria', error, entry.usuarioId, entry.tenantId);
   }
 }

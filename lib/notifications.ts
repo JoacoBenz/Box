@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { logNotificationError } from './logger';
 
 interface NotificationData {
   tenantId: number;
@@ -23,7 +24,7 @@ export async function crearNotificacion(data: NotificationData): Promise<void> {
       },
     });
   } catch (error) {
-    console.error('Error creando notificación:', error);
+    logNotificationError('crearNotificacion', error, data.destinatarioId, data.solicitudId);
   }
 }
 
@@ -60,6 +61,6 @@ export async function notificarPorRol(
       })),
     });
   } catch (error) {
-    console.error('Error creando notificaciones por rol:', error);
+    logNotificationError(`notificarPorRol:${rolNombre}`, error, undefined, solicitudId);
   }
 }

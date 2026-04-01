@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { registroSchema } from '@/lib/validators';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { logApiError } from '@/lib/logger';
 
 function slugify(text: string): string {
   return text
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest) {
 
     return Response.json({ message: 'Organización registrada exitosamente' }, { status: 201 });
   } catch (error) {
-    console.error('Error en registro:', error);
+    logApiError('/api/registro', 'POST', error);
     return Response.json({ error: { code: 'INTERNAL', message: 'Error interno del servidor' } }, { status: 500 });
   }
 }

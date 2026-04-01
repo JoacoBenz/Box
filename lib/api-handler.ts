@@ -4,6 +4,7 @@ import { tenantPrisma } from './prisma';
 import { verificarRol, apiError } from './permissions';
 import { getClientIp } from './audit';
 import type { RolNombre } from '@/types';
+import { logApiError } from './logger';
 
 interface HandlerContext {
   session: Awaited<ReturnType<typeof getServerSession>>;
@@ -48,7 +49,8 @@ export function withAuth(options: ApiHandlerOptions, handler: ApiHandler) {
       if (error.message === 'No autenticado') {
         return apiError('UNAUTHORIZED', 'Sesión expirada. Iniciá sesión nuevamente.', 401);
       }
-      console.error('API Error:', error);
+      const url = new URL(request.url);
+      logApiError(url.pathname, request.method, error);
       return apiError('INTERNAL', 'Error interno del servidor', 500);
     }
   };

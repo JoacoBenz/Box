@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
+import { logApiError } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   const secret = request.headers.get('x-cron-secret');
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     return Response.json({ ok: true, alertas_enviadas: alertas });
   } catch (error) {
-    console.error('Error en cron alertas:', error);
+    logApiError('/api/cron/alertas', 'POST', error);
     return Response.json({ error: 'Error interno' }, { status: 500 });
   }
 }

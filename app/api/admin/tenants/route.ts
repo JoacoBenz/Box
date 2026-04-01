@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { verificarRol, apiError } from '@/lib/permissions';
+import { logApiError } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -56,7 +57,7 @@ export async function GET() {
     return Response.json(tenantsWithStats);
   } catch (error: any) {
     if (error.message === 'No autenticado') return apiError('UNAUTHORIZED', 'No autenticado', 401);
-    console.error('Error fetching tenants:', error);
+    logApiError('/api/admin/tenants', 'GET', error);
     return apiError('INTERNAL', 'Error interno', 500);
   }
 }
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
     return Response.json(tenant, { status: 201 });
   } catch (error: any) {
     if (error.message === 'No autenticado') return apiError('UNAUTHORIZED', 'No autenticado', 401);
-    console.error('Error creating tenant:', error);
+    logApiError('/api/admin/tenants', 'POST', error);
     return apiError('INTERNAL', 'Error interno', 500);
   }
 }

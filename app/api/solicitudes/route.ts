@@ -7,6 +7,7 @@ import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { solicitudSchema } from '@/lib/validators';
 import { getTenantConfigBool } from '@/lib/tenant-config';
 import { getEffectiveTenantId } from '@/lib/tenant-override';
+import { logApiError } from '@/lib/logger';
 
 async function generarNumeroSolicitud(tenantId: number): Promise<string> {
   const año = new Date().getFullYear();
@@ -106,7 +107,7 @@ export async function GET(request: NextRequest) {
     return Response.json({ data, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error: any) {
     if (error.message === 'No autenticado') return Response.json({ error: { code: 'UNAUTHORIZED', message: 'No autenticado' } }, { status: 401 });
-    console.error(error);
+    logApiError('/api/solicitudes', 'API', error);
     return Response.json({ error: { code: 'INTERNAL', message: 'Error interno' } }, { status: 500 });
   }
 }
@@ -221,7 +222,7 @@ export async function POST(request: NextRequest) {
     return Response.json(solicitud, { status: 201 });
   } catch (error: any) {
     if (error.message === 'No autenticado') return Response.json({ error: { code: 'UNAUTHORIZED', message: 'No autenticado' } }, { status: 401 });
-    console.error(error);
+    logApiError('/api/solicitudes', 'API', error);
     return Response.json({ error: { code: 'INTERNAL', message: 'Error interno' } }, { status: 500 });
   }
 }
