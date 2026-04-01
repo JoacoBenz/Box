@@ -275,16 +275,18 @@ export default function AdminUsuariosPage() {
               name="password"
               rules={[
                 { required: true, message: 'La contraseña es obligatoria' },
-                { min: 8, message: 'Mínimo 8 caracteres' },
+                { min: 10, message: 'Mínimo 10 caracteres' },
+                { pattern: /[A-Z]/, message: 'Debe contener al menos una mayúscula' },
+                { pattern: /[a-z]/, message: 'Debe contener al menos una minúscula' },
+                { pattern: /[0-9]/, message: 'Debe contener al menos un número' },
               ]}
             >
-              <Input.Password placeholder="Mínimo 8 caracteres" />
+              <Input.Password placeholder="Mínimo 10 caracteres, mayúscula, minúscula y número" />
             </Form.Item>
           )}
 
-          <Form.Item label="Área" name="area_id">
+          <Form.Item label="Área" name="area_id" rules={[{ required: true, message: 'El área es obligatoria' }]}>
             <Select
-              allowClear
               placeholder="Seleccionar área"
               options={areas.map((a) => ({ value: a.id, label: a.nombre }))}
             />
