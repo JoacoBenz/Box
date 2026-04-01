@@ -262,44 +262,64 @@ export async function GET(request: Request) {
       result.comprasSinRecepcion = parseInt(comprasSinRecepcion[0]?.cantidad ?? '0');
     }
 
-    // ── Admin section ──
+    // ── Admin section (platform-level metrics) ──
     if (roles.includes('admin')) {
-      const hace7Dias = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      const [totalUsuarios, totalAreas, solicitudesMes, solicitudesPendientesTotal, urgentesAbiertas, tasaRechazoData, staleCount] = await Promise.all([
-        db.usuarios.count({ where: { activo: true } }),
-        db.areas.count({ where: { activo: true } }),
-        db.solicitudes.count({ where: { created_at: { gte: inicioMes } } }),
-        db.solicitudes.count({
-          where: { estado: { notIn: ['cerrada', 'rechazada', 'anulada', 'borrador'] } },
-        }),
-        db.solicitudes.count({
-          where: { urgencia: { in: ['urgente', 'critica'] }, estado: { notIn: ['cerrada', 'rechazada', 'anulada'] } },
-        }),
-        // Tasa de rechazo del mes
-        Promise.all([
-          db.solicitudes.count({ where: { estado: 'rechazada', fecha_rechazo: { gte: inicioMes } } }),
-          db.solicitudes.count({ where: { created_at: { gte: inicioMes }, estado: { notIn: ['borrador'] } } }),
-        ]),
-        // Stale: >7 días sin movimiento
-        db.solicitudes.count({
-          where: {
-            estado: { notIn: ['cerrada', 'rechazada', 'anulada', 'borrador'] },
-            updated_at: { lt: hace7Dias },
-          },
-        }),
+      const [
+        totalOrganizaciones,
+        orgActivas,
+        orgPendientes,
+        orgSuspendidas,
+        totalUsuariosPlataforma,
+        usuariosNuevosMes,
+        registrosMesData,
+        orgsPorActividad,
+      ] = await Promise.all([
+        prisma.tenants.count(),
+        prisma.tenants.count({ where: { estado: 'activo', desactivado: false } }),
+        prisma.tenants.count({ where: { estado: 'pendiente' } }),
+        prisma.tenants.count({ where: { OR: [{ estado: 'suspendido' }, { desactivado: true }] } }),
+        prisma.usuarios.count({ where: { activo: true } }),
+        prisma.usuarios.count({ where: { created_at: { gte: inicioMes } } }),
+        // Registros por mes (últimos 6 meses)
+        prisma.$queryRaw<{ mes: string; cantidad: string }[]>`
+          SELECT TO_CHAR(fecha_registro, 'YYYY-MM') AS mes, COUNT(*)::text AS cantidad
+          FROM tenants
+          WHERE fecha_registro >= (CURRENT_DATE - INTERVAL '6 months')
+          GROUP BY TO_CHAR(fecha_registro, 'YYYY-MM')
+          ORDER BY mes ASC
+        `,
+        // Top 5 orgs por actividad (solicitudes este mes)
+        prisma.$queryRaw<{ org: string; usuarios: string; solicitudes: string; compras_total: string }[]>`
+          SELECT t.nombre AS org,
+                 (SELECT COUNT(*)::text FROM usuarios u WHERE u.tenant_id = t.id AND u.activo = true) AS usuarios,
+                 (SELECT COUNT(*)::text FROM solicitudes s WHERE s.tenant_id = t.id AND s.created_at >= ${inicioMes}) AS solicitudes,
+                 (SELECT COALESCE(SUM(c.monto_total), 0)::text FROM compras c WHERE c.tenant_id = t.id AND c.fecha_compra >= ${inicioMes}) AS compras_total
+          FROM tenants t
+          WHERE t.estado = 'activo' AND t.desactivado = false
+          ORDER BY (SELECT COUNT(*) FROM solicitudes s WHERE s.tenant_id = t.id AND s.created_at >= ${inicioMes}) DESC
+          LIMIT 5
+        `,
       ]);
-      const [rechazadasMes, totalMes] = tasaRechazoData;
-      result.totalUsuarios = totalUsuarios;
-      result.totalAreas = totalAreas;
-      result.solicitudesMes = solicitudesMes;
-      result.solicitudesPendientesTotal = solicitudesPendientesTotal;
-      result.urgentesAbiertas = urgentesAbiertas;
-      result.tasaRechazoMes = totalMes > 0 ? Math.round((rechazadasMes / totalMes) * 100) : 0;
-      result.staleCount = staleCount;
+
+      result.adminPlatform = {
+        totalOrganizaciones,
+        orgActivas,
+        orgPendientes,
+        orgSuspendidas,
+        totalUsuariosPlataforma,
+        usuariosNuevosMes,
+        registrosMes: registrosMesData.map(r => ({ mes: r.mes, cantidad: parseInt(r.cantidad) })),
+        orgsPorActividad: orgsPorActividad.map(r => ({
+          org: r.org,
+          usuarios: parseInt(r.usuarios),
+          solicitudes: parseInt(r.solicitudes),
+          comprasTotal: parseFloat(r.compras_total),
+        })),
+      };
     }
 
-    // ── Analytics (director, tesoreria, compras, admin) ──
-    const hasAnalytics = roles.includes('director') || roles.includes('tesoreria') || roles.includes('compras') || roles.includes('admin');
+    // ── Analytics (director, tesoreria, compras — NOT admin, who has platform-level metrics) ──
+    const hasAnalytics = roles.includes('director') || roles.includes('tesoreria') || roles.includes('compras');
     if (hasAnalytics) {
       // Area filter for director — applied to analytics queries
       const areaJoinFilter = directorAreaId
