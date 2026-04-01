@@ -6,7 +6,7 @@ vi.mock('@/lib/prisma', () => ({
   tenantPrisma: () => ({}),
 }));
 
-import { verificarRol, verificarSegregacion } from '@/lib/permissions';
+import { verificarRol, verificarSegregacion, apiError } from '@/lib/permissions';
 
 // ─── verificarRol ─────────────────────────────────────────────────────────────
 describe('verificarRol', () => {
@@ -203,5 +203,45 @@ describe('verificarSegregacion', () => {
       // User 1 can't approve own
       expect(verificarSegregacion(solicitud, 1, 'aprobar').permitido).toBe(false);
     });
+  });
+});
+
+// ─── apiError ─────────────────────────────────────────────────────────────────
+describe('apiError', () => {
+  it('returns a Response with correct status and error body', async () => {
+    const response = apiError('NOT_FOUND', 'Recurso no encontrado', 404);
+    expect(response).toBeInstanceOf(Response);
+    expect(response.status).toBe(404);
+    const body = await response.json();
+    expect(body.error.code).toBe('NOT_FOUND');
+    expect(body.error.message).toBe('Recurso no encontrado');
+  });
+
+  it('returns 400 for validation errors', async () => {
+    const response = apiError('VALIDATION', 'Campo inválido', 400);
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 403 for forbidden', async () => {
+    const response = apiError('FORBIDDEN', 'Sin permisos', 403);
+    expect(response.status).toBe(403);
+  });
+
+  it('includes details array when provided', async () => {
+    const details = [
+      { field: 'email', message: 'Email inválido' },
+      { field: 'nombre', message: 'Nombre requerido' },
+    ];
+    const response = apiError('VALIDATION', 'Errores de validación', 400, details);
+    const body = await response.json();
+    expect(body.error.details).toHaveLength(2);
+    expect(body.error.details[0].field).toBe('email');
+    expect(body.error.details[1].field).toBe('nombre');
+  });
+
+  it('omits details when not provided', async () => {
+    const response = apiError('ERROR', 'Error genérico', 500);
+    const body = await response.json();
+    expect(body.error.details).toBeUndefined();
   });
 });
