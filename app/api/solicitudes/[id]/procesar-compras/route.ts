@@ -1,7 +1,7 @@
 import { withAuth, validateBody } from '@/lib/api-handler';
 import { verificarSegregacion, apiError } from '@/lib/permissions';
 import { registrarAuditoria } from '@/lib/audit';
-import { crearNotificacion } from '@/lib/notifications';
+import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { procesarComprasSchema } from '@/lib/validators';
 
 export const POST = withAuth({ roles: ['compras'] }, async (request, { session, db, ip }, params) => {
@@ -9,8 +9,8 @@ export const POST = withAuth({ roles: ['compras'] }, async (request, { session, 
 
   const solicitud = await db.solicitudes.findFirst({ where: { id: solicitudId } });
   if (!solicitud) return apiError('NOT_FOUND', 'No encontrada', 404);
-  if (!['aprobada', 'en_compras'].includes(solicitud.estado)) {
-    return apiError('BAD_REQUEST', 'Solo se pueden procesar solicitudes aprobadas', 400);
+  if (solicitud.estado !== 'en_compras') {
+    return apiError('BAD_REQUEST', 'Solo se pueden procesar solicitudes en compras', 400);
   }
 
   const seg = verificarSegregacion(solicitud, session.userId, 'procesar_compras');
@@ -29,26 +29,41 @@ export const POST = withAuth({ roles: ['compras'] }, async (request, { session, 
     }
   }
 
+  // Validate dia_pago_programado is required and not in the past
+  const diaPagoStr = validation.data.dia_pago_programado;
+  if (!diaPagoStr) {
+    return apiError('BAD_REQUEST', 'La fecha de pago es obligatoria', 400);
+  }
+  const diaPago = new Date(diaPagoStr);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (diaPago < today) {
+    return apiError('BAD_REQUEST', 'La fecha de pago no puede ser en el pasado', 400);
+  }
+
   await db.solicitudes.update({
     where: { id: solicitudId },
     data: {
-      estado: 'en_compras',
+      estado: 'pago_programado',
       procesado_por_id: session.userId,
       fecha_procesamiento: new Date(),
       prioridad_compra: validation.data.prioridad_compra,
       observaciones_compras: validation.data.observaciones ?? null,
+      dia_pago_programado: diaPago,
     },
   });
 
+  const fechaStr = diaPago.toLocaleDateString('es-AR');
   await crearNotificacion({
     tenantId: session.tenantId,
     destinatarioId: solicitud.solicitante_id,
-    tipo: 'solicitud_en_compras',
-    titulo: 'Tu solicitud está siendo procesada',
-    mensaje: `El sector Compras está procesando: ${solicitud.titulo}`,
+    tipo: 'pago_programado',
+    titulo: 'Pago programado',
+    mensaje: `El pago de "${solicitud.titulo}" fue programado para el ${fechaStr}`,
     solicitudId,
   });
+  await notificarPorRol(session.tenantId, 'tesoreria', 'Pago programado para ejecutar', `Pago de "${solicitud.titulo}" programado para el ${fechaStr}`, solicitudId);
 
-  await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'procesar_compras', entidad: 'solicitud', entidadId: solicitudId, datosNuevos: { prioridad_compra: validation.data.prioridad_compra, observaciones: validation.data.observaciones }, ipAddress: ip });
-  return Response.json({ message: 'Solicitud en procesamiento' });
+  await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'programar_pago', entidad: 'solicitud', entidadId: solicitudId, datosNuevos: { prioridad_compra: validation.data.prioridad_compra, observaciones: validation.data.observaciones, dia_pago_programado: diaPagoStr }, ipAddress: ip });
+  return Response.json({ message: 'Pago programado' });
 });

@@ -47,15 +47,23 @@ interface SolicitudSummary {
   titulo: string
   estado: string
   urgencia: string
-  monto_estimado_total: number | null
+  items_solicitud?: Array<{ cantidad: number; precio_estimado: number | null }>
   area: { nombre: string } | null
   solicitante: { nombre: string }
   proveedor?: ProveedorData | null
   proveedor_id?: number | null
+  dia_pago_programado?: string | null
+}
+
+interface Archivo {
+  id: number
+  nombre_archivo: string
+  tamanio_bytes: number | null
 }
 
 interface Props {
   solicitud: SolicitudSummary
+  archivos?: Archivo[]
 }
 
 interface FormValues {
@@ -69,7 +77,7 @@ interface FormValues {
   observaciones?: string
 }
 
-export default function RegistrarCompraForm({ solicitud }: Props) {
+export default function RegistrarCompraForm({ solicitud, archivos = [] }: Props) {
   const { message } = App.useApp()
   const router = useRouter()
   const [form] = Form.useForm<FormValues>()
@@ -78,6 +86,8 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
   const medioPago = Form.useWatch('medio_pago', form)
 
   const prov = solicitud.proveedor
+  const pagoDate = solicitud.dia_pago_programado ? dayjs(solicitud.dia_pago_programado) : null
+  const canSubmit = !pagoDate || !pagoDate.startOf('day').isAfter(dayjs().startOf('day'))
 
   // Auto-fill proveedor fields from solicitud's proveedor
   useEffect(() => {
@@ -164,9 +174,12 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
           <Descriptions.Item label="Urgencia">
             {urgenciaInfo && <Tag color={urgenciaInfo.color}>{urgenciaInfo.label}</Tag>}
           </Descriptions.Item>
-          {solicitud.monto_estimado_total != null && (
-            <Descriptions.Item label="Monto Estimado">
-              ${Number(solicitud.monto_estimado_total).toFixed(2)}
+          {pagoDate && (
+            <Descriptions.Item label="Fecha de Pago Programado">
+              <Tag color={canSubmit ? 'green' : 'orange'}>
+                {pagoDate.format('DD/MM/YYYY')}
+              </Tag>
+              {!canSubmit && <span style={{ color: '#d46b08', fontSize: 12, marginLeft: 8 }}>Aún no habilitado</span>}
             </Descriptions.Item>
           )}
         </Descriptions>
@@ -175,6 +188,18 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
       {/* Proveedor info from solicitud (read-only) */}
       {prov && (
         <ProveedorInfoCard proveedor={prov} style={{ marginBottom: 24 }} />
+      )}
+
+      {/* Archivos adjuntos */}
+      {archivos.length > 0 && (
+        <Card size="small" title={<span style={{ fontWeight: 600, color: '#1e293b' }}>Presupuesto / Archivos</span>} style={{ marginBottom: 24, borderRadius: 12 }}>
+          {archivos.map((a) => (
+            <div key={a.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0' }}>
+              <span style={{ fontSize: 13, color: '#334155' }}>{a.nombre_archivo}</span>
+              <a href={`/api/archivos/${a.id}`} target="_blank" rel="noopener noreferrer" style={{ color: '#4f46e5', fontWeight: 600, fontSize: 13 }}>Descargar</a>
+            </div>
+          ))}
+        </Card>
       )}
 
       {/* Purchase form */}
@@ -224,17 +249,19 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
                 { required: true, message: 'El monto es obligatorio' },
                 { type: 'number', min: 0.01, message: 'El monto debe ser mayor a 0' },
                 { type: 'number', max: 999_999_999, message: 'Monto excesivo' },
-                ...(solicitud.monto_estimado_total
-                  ? [{
-                      validator: (_: any, value: number) => {
-                        if (!value) return Promise.resolve();
-                        const estimado = Number(solicitud.monto_estimado_total);
-                        if (value > estimado * 3)
-                          return Promise.reject(`El monto ($${value.toFixed(2)}) supera 3x el estimado ($${estimado.toFixed(2)}). Verificá si es correcto.`);
-                        return Promise.resolve();
-                      },
-                    }]
-                  : []),
+                ...(() => {
+                  const totalEstimado = (solicitud.items_solicitud ?? []).reduce((acc, item) => acc + Number(item.cantidad) * Number(item.precio_estimado ?? 0), 0);
+                  return totalEstimado > 0
+                    ? [{
+                        validator: (_: any, value: number) => {
+                          if (!value) return Promise.resolve();
+                          if (value > totalEstimado * 3)
+                            return Promise.reject(`El monto ($${value.toFixed(2)}) supera 3x el estimado ($${totalEstimado.toFixed(2)}). Verificá si es correcto.`);
+                          return Promise.resolve();
+                        },
+                      }]
+                    : [];
+                })(),
               ]}
             >
               <InputNumber min={0.01} precision={2} prefix="$" style={{ width: 180 }} placeholder="0.00" />
@@ -350,9 +377,9 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
             <AnimatedSubmitButton
               variant="send"
               onClick={handleSubmit}
-              disabled={loading}
+              disabled={loading || !canSubmit}
             >
-              Registrar Compra
+              {canSubmit ? 'Registrar Pago' : `Habilitado el ${pagoDate?.format('DD/MM/YYYY') ?? ''}`}
             </AnimatedSubmitButton>
             <Button size="large" onClick={() => router.push('/compras')} disabled={loading}>
               Cancelar

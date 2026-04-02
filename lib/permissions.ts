@@ -53,6 +53,11 @@ export async function verificarResponsableDeArea(
   return !!area;
 }
 
+/** True when the caller is responsable_area but NOT admin or director */
+export function isOnlyResponsable(roles: string[]): boolean {
+  return roles.includes('responsable_area') && !roles.includes('admin') && !roles.includes('director');
+}
+
 export function apiError(code: string, message: string | undefined, status: number, details?: { field: string; message: string }[]) {
   return Response.json({ error: { code, message: message ?? 'Error', details } }, { status });
 }

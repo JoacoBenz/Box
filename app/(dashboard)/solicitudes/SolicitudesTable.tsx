@@ -17,7 +17,6 @@ interface Solicitud {
   titulo: string
   urgencia: string
   estado: string
-  monto_estimado_total: number | string | null
   fecha_envio: string | null
   created_at: string
   area: { id: number; nombre: string } | null
@@ -27,10 +26,6 @@ interface Solicitud {
 interface Props {
   roles: string[]
   areas: { id: number; nombre: string }[]
-}
-
-function formatMoney(amount: number): string {
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount)
 }
 
 export default function SolicitudesTable({ roles, areas }: Props) {
@@ -143,17 +138,6 @@ export default function SolicitudesTable({ roles, areas }: Props) {
       key: 'area',
       width: 140,
       render: (_, r) => <Text type="secondary" style={{ fontSize: 13 }}>{r.area?.nombre ?? '—'}</Text>,
-    },
-    {
-      title: 'Monto Est.',
-      dataIndex: 'monto_estimado_total',
-      key: 'monto',
-      width: 130,
-      align: 'right' as const,
-      render: (val: number | string | null) => {
-        if (!val) return <Text type="secondary">—</Text>
-        return <Text strong style={{ fontSize: 13 }}>{formatMoney(Number(val))}</Text>
-      },
     },
     {
       title: 'Urgencia',

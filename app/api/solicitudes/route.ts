@@ -4,6 +4,7 @@ import { registrarAuditoria } from '@/lib/audit';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { solicitudSchema } from '@/lib/validators';
 import { getTenantConfigBool } from '@/lib/tenant-config';
+import { verificarResponsableDeArea } from '@/lib/permissions';
 
 async function generarNumeroSolicitud(tenantId: number): Promise<string> {
   const año = new Date().getFullYear();
@@ -38,7 +39,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
   const where: any = {};
 
   // Role-based visibility filter
-  if (session.roles.includes('director') || session.roles.includes('tesoreria') || session.roles.includes('admin')) {
+  if (session.roles.includes('director') || session.roles.includes('tesoreria') || session.roles.includes('compras') || session.roles.includes('admin')) {
     // sees all
   } else if (session.roles.includes('responsable_area')) {
     // Find all areas where this user is the designated responsable
@@ -91,6 +92,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       include: {
         solicitante: { select: { id: true, nombre: true } },
         area: { select: { id: true, nombre: true } },
+        centro_costo: { select: { id: true, nombre: true, codigo: true } },
       },
     }),
     db.solicitudes.count({ where }),
@@ -111,10 +113,6 @@ export const POST = withAuth({ roles: ['solicitante'] }, async (request, { sessi
 
   const { titulo, descripcion, justificacion, urgencia, proveedor_sugerido, proveedor_id, centro_costo_id, items } = parsed.data;
 
-  const montoTotal = items.reduce((acc, item) => {
-    return acc + (item.precio_estimado ? Number(item.precio_estimado) * Number(item.cantidad) : 0);
-  }, 0);
-
   const solicitud = await prisma.$transaction(async (tx) => {
     const numero = await generarNumeroSolicitud(session.tenantId);
     const estado = enviar ? 'enviada' : 'borrador';
@@ -134,7 +132,6 @@ export const POST = withAuth({ roles: ['solicitante'] }, async (request, { sessi
         area_id: session.areaId!,
         estado,
         fecha_envio: enviar ? new Date() : null,
-        monto_estimado_total: montoTotal > 0 ? montoTotal : null,
       },
     });
 
@@ -154,8 +151,29 @@ export const POST = withAuth({ roles: ['solicitante'] }, async (request, { sessi
   });
 
   if (enviar) {
+    const esResponsableDelArea = session.roles.includes('responsable_area')
+      && await verificarResponsableDeArea(session.tenantId, session.userId, session.areaId!);
     const requiereValidacion = await getTenantConfigBool(session.tenantId, 'requiere_validacion_responsable', true);
-    if (!requiereValidacion) {
+    const skipValidacion = !requiereValidacion || esResponsableDelArea;
+
+    if (skipValidacion) {
+      // Auto-validate: go directly to validada for director approval
+      await prisma.solicitudes.update({
+        where: { id: solicitud.id },
+        data: {
+          estado: 'validada',
+          validado_por_id: esResponsableDelArea ? session.userId : null,
+          fecha_validacion: esResponsableDelArea ? new Date() : null,
+        },
+      });
+      if (esResponsableDelArea) {
+        await registrarAuditoria({
+          tenantId: session.tenantId, usuarioId: session.userId,
+          accion: 'validar_solicitud', entidad: 'solicitud', entidadId: solicitud.id,
+          datosNuevos: { automatico: true },
+          ipAddress: ip,
+        });
+      }
       await notificarPorRol(session.tenantId, 'director', 'Nueva solicitud para aprobar', `${session.nombre} solicita: ${titulo}`, solicitud.id);
     } else {
       const area = await prisma.areas.findFirst({ where: { id: session.areaId!, tenant_id: session.tenantId } });

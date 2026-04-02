@@ -36,7 +36,7 @@ export async function verificarPresupuesto(
     where: {
       solicitud: {
         centro_costo_id: centroCostoId,
-        estado: { in: ['comprada', 'recibida', 'recibida_con_obs', 'cerrada'] },
+        estado: { in: ['abonada', 'recibida', 'recibida_con_obs', 'cerrada'] },
       },
       fecha_compra: { gte: startOfYear },
     },

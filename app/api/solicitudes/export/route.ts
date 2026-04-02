@@ -22,7 +22,7 @@ export const GET = withAdminOverride({ roles: ['director', 'tesoreria', 'compras
   // Build CSV
   const headers = [
     'Número', 'Título', 'Estado', 'Urgencia', 'Área', 'Solicitante',
-    'Centro de Costo', 'Monto Estimado', 'Monto Compra', 'Proveedor',
+    'Centro de Costo', 'Monto Compra', 'Proveedor',
     'Fecha Envío', 'Fecha Aprobación', 'Fecha Compra', 'Creado'
   ];
 
@@ -34,7 +34,6 @@ export const GET = withAdminOverride({ roles: ['director', 'tesoreria', 'compras
     s.area?.nombre ?? '',
     s.solicitante?.nombre ?? '',
     s.centro_costo ? `${s.centro_costo.codigo} - ${s.centro_costo.nombre}` : '',
-    s.monto_estimado_total ?? '',
     s.compras[0]?.monto_total ?? '',
     s.compras[0]?.proveedor_nombre ?? '',
     s.fecha_envio ? new Date(s.fecha_envio).toLocaleDateString('es-AR') : '',

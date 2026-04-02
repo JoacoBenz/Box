@@ -24,7 +24,7 @@ export const POST = withAdminOverride({ roles: ['admin', 'director'] }, async (r
   const validation = validateBody(areaSchema, body);
   if (!validation.success) return validation.response;
 
-  const { nombre, responsable_id } = validation.data;
+  const { nombre, responsable_id, presupuesto_anual, presupuesto_mensual } = validation.data;
   const db = tenantPrisma(effectiveTenantId);
 
   // Check name uniqueness
@@ -39,7 +39,7 @@ export const POST = withAdminOverride({ roles: ['admin', 'director'] }, async (r
     if (!user) return Response.json({ error: { code: 'NOT_FOUND', message: 'Responsable no encontrado' } }, { status: 404 });
   }
 
-  const area = await db.areas.create({ data: { tenant_id: effectiveTenantId, nombre, responsable_id: responsable_id ?? null } });
+  const area = await db.areas.create({ data: { tenant_id: effectiveTenantId, nombre, responsable_id: responsable_id ?? null, presupuesto_anual: presupuesto_anual ?? null, presupuesto_mensual: presupuesto_mensual ?? null } });
 
   await registrarAuditoria({ tenantId: effectiveTenantId, usuarioId: session.userId, accion: 'crear_area', entidad: 'area', entidadId: area.id, datosNuevos: { nombre }, ipAddress: ip });
 

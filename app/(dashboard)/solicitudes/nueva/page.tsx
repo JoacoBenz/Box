@@ -11,10 +11,11 @@ import {
   Button,
   Card,
   Space,
-  Divider,
+  Upload,
+  Alert,
   Typography,
 } from 'antd'
-import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons'
+import { PlusOutlined, MinusCircleOutlined, UploadOutlined } from '@ant-design/icons'
 import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
 import ProveedorSelect from '@/components/ProveedorSelect'
 import ProveedorInfoCard from '@/components/ProveedorInfoCard'
@@ -37,8 +38,40 @@ interface SolicitudFormValues {
   urgencia: 'normal' | 'urgente' | 'critica'
   proveedor_id?: number | null
   centro_costo_id?: number | null
-  monto_estimado_total?: number
   items: ItemForm[]
+}
+
+function TotalItems({ form }: { form: ReturnType<typeof Form.useForm<any>>[0] }) {
+  const items = Form.useWatch('items', form) as ItemForm[] | undefined
+  const total = (items ?? []).reduce((acc, item) => {
+    if (item?.precio_estimado && item?.cantidad) {
+      return acc + Number(item.precio_estimado) * Number(item.cantidad)
+    }
+    return acc
+  }, 0)
+
+  if (total <= 0) return null
+
+  return (
+    <div style={{
+      marginTop: 16,
+      padding: '12px 16px',
+      background: '#f0fdf4',
+      borderRadius: 8,
+      border: '1px solid #bbf7d0',
+      display: 'flex',
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      gap: 12,
+    }}>
+      <span style={{ fontWeight: 600, color: '#15803d', fontSize: 15 }}>
+        Total Estimado:
+      </span>
+      <span style={{ fontWeight: 700, color: '#15803d', fontSize: 17 }}>
+        ${total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </span>
+    </div>
+  )
 }
 
 export default function NuevaSolicitudPage() {
@@ -47,10 +80,22 @@ export default function NuevaSolicitudPage() {
   const [form] = Form.useForm<SolicitudFormValues>()
   const [loading, setLoading] = useState<'borrador' | 'enviar' | null>(null)
   const [selectedProveedor, setSelectedProveedor] = useState<any>(null)
-  const [centrosCosto, setCentrosCosto] = useState<{ id: number; nombre: string; codigo: string }[]>([])
+  const [presupuestoFile, setPresupuestoFile] = useState<File | null>(null)
+  const [centrosCosto, setCentrosCosto] = useState<{ id: number; nombre: string; codigo: string; area_id: number | null; area?: { nombre: string } | null }[]>([])
+  const [sessionAreaId, setSessionAreaId] = useState<number | null>(null)
+  const [esResponsable, setEsResponsable] = useState(false)
   useEffect(() => {
+    // Fetch session to get user's area and default centro_costo
+    fetch('/api/auth/session').then(r => r.json()).then(s => {
+      const areaId = s?.user?.areaId ?? null
+      const ccId = s?.user?.centroCostoId ?? null
+      const roles: string[] = s?.user?.roles ?? []
+      setSessionAreaId(areaId)
+      setEsResponsable(roles.includes('responsable_area'))
+      if (ccId) form.setFieldValue('centro_costo_id', ccId)
+    }).catch(() => {})
     fetch('/api/centros-costo').then(r => r.ok ? r.json() : []).then(setCentrosCosto).catch(() => {})
-  }, [])
+  }, [form])
 
   async function handleSubmit(accion: 'borrador' | 'enviar') {
     try {
@@ -68,6 +113,17 @@ export default function NuevaSolicitudPage() {
       if (!res.ok) {
         const err = await res.json()
         throw new Error(err?.error?.message ?? 'Error al guardar la solicitud')
+      }
+
+      const solicitud = await res.json()
+
+      // Upload presupuesto file if provided
+      if (presupuestoFile) {
+        const formData = new FormData()
+        formData.append('archivo', presupuestoFile)
+        formData.append('entidad', 'solicitud')
+        formData.append('entidad_id', String(solicitud.id))
+        await fetch('/api/archivos', { method: 'POST', body: formData })
       }
 
       message.success(
@@ -148,26 +204,36 @@ export default function NuevaSolicitudPage() {
             <ProveedorInfoCard proveedor={selectedProveedor} style={{ marginBottom: 16 }} />
           )}
 
-          <Form.Item label="Monto Estimado Total" name="monto_estimado_total">
-            <InputNumber
-              min={0}
-              precision={2}
-              prefix="$"
-              style={{ width: 200 }}
-              placeholder="0.00"
-            />
+          <Form.Item label="Presupuesto (opcional)">
+            <Upload
+              beforeUpload={(file) => { setPresupuestoFile(file); return false }}
+              onRemove={() => setPresupuestoFile(null)}
+              maxCount={1}
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+              fileList={presupuestoFile ? [{ uid: '-1', name: presupuestoFile.name, status: 'done' as const }] : []}
+            >
+              <Button icon={<UploadOutlined />}>Adjuntar presupuesto</Button>
+            </Upload>
           </Form.Item>
 
-          {centrosCosto.length > 0 && (
-            <Form.Item label="Centro de Costo" name="centro_costo_id">
-              <Select
-                allowClear
-                placeholder="Seleccionar centro de costo"
-                style={{ width: 300 }}
-                options={centrosCosto.map(c => ({ value: c.id, label: `${c.codigo} — ${c.nombre}` }))}
-              />
-            </Form.Item>
-          )}
+          {(() => {
+            const filtered = centrosCosto.filter(cc => !cc.area_id || cc.area_id === sessionAreaId)
+            return filtered.length > 0 ? (
+              <Form.Item label="Centro de Costo" name="centro_costo_id">
+                <Select
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  placeholder="Seleccionar centro de costo"
+                  style={{ width: '100%' }}
+                  options={filtered.map(c => ({
+                    value: c.id,
+                    label: `${c.codigo} — ${c.nombre}`,
+                  }))}
+                />
+              </Form.Item>
+            ) : null
+          })()}
         </Card>
 
         <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Items Solicitados</span>} style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
@@ -277,7 +343,18 @@ export default function NuevaSolicitudPage() {
               </>
             )}
           </Form.List>
+
+          <TotalItems form={form} />
         </Card>
+
+        {esResponsable && (
+          <Alert
+            type="warning"
+            showIcon
+            title="Como responsable de área, esta solicitud irá directamente a Dirección para aprobación. Asegurate de que todos los datos sean correctos."
+            style={{ borderRadius: 10 }}
+          />
+        )}
 
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', paddingTop: 8 }}>
           <Button

@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const comprasSinRecepcion = await prisma.compras.findMany({
       where: {
         created_at: { lt: hace24h },
-        solicitud: { estado: 'comprada' },
+        solicitud: { estado: 'abonada' },
       },
       include: {
         solicitud: { select: { id: true, titulo: true, tenant_id: true, solicitante_id: true } },
@@ -43,10 +43,10 @@ export async function POST(request: NextRequest) {
       alertas++;
     }));
 
-    // Alerta 2: Solicitudes en estado 'comprada' hace >5 días sin recepción
+    // Alerta 2: Solicitudes en estado 'abonada' hace >5 días sin recepción
     const solicitudesCompradas = await prisma.solicitudes.findMany({
       where: {
-        estado: 'comprada',
+        estado: 'abonada',
         updated_at: { lt: hace5dias },
       },
       select: { id: true, titulo: true, tenant_id: true, solicitante_id: true },
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         destinatarioId: sol.solicitante_id,
         tipo: 'alerta_recepcion_vencida',
         titulo: 'Recepción vencida',
-        mensaje: `La solicitud "${sol.titulo}" lleva más de 5 días en estado "Comprada" sin confirmar recepción. Por favor confirmá o reportá si hubo algún problema.`,
+        mensaje: `La solicitud "${sol.titulo}" lleva más de 5 días en estado "Abonada" sin confirmar recepción. Por favor confirmá o reportá si hubo algún problema.`,
         solicitudId: sol.id,
       });
       alertas++;

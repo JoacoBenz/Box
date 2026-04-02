@@ -1,8 +1,9 @@
 import { withAdminOverride } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
 import { registrarAuditoria } from '@/lib/audit';
+import { isOnlyResponsable } from '@/lib/permissions';
 
-export const PATCH = withAdminOverride({ roles: ['admin', 'director'] }, async (request, { session, db, ip, effectiveTenantId }, params) => {
+export const PATCH = withAdminOverride({ roles: ['admin', 'director', 'responsable_area'] }, async (request, { session, db, ip, effectiveTenantId }, params) => {
   const userId = parseInt(params.id);
 
   const usuario = await db.usuarios.findFirst({ where: { id: userId }, include: { usuarios_roles: { include: { rol: true } } } });
@@ -10,6 +11,17 @@ export const PATCH = withAdminOverride({ roles: ['admin', 'director'] }, async (
 
   const body = await request.json().catch(() => ({}));
   const nuevoActivo = typeof body.activo === 'boolean' ? body.activo : !usuario.activo;
+
+  // Responsable de área: can only deactivate solicitantes in their area
+  if (isOnlyResponsable(session.roles)) {
+    if (usuario.area_id !== session.areaId) {
+      return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo podés modificar usuarios de tu área' } }, { status: 403 });
+    }
+    const targetRoles = usuario.usuarios_roles.map(ur => ur.rol.nombre);
+    if (targetRoles.some(r => r !== 'solicitante')) {
+      return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo podés modificar usuarios con rol solicitante' } }, { status: 403 });
+    }
+  }
 
   // Directors cannot deactivate/activate admin users
   const targetIsAdmin = usuario.usuarios_roles.some(ur => ur.rol.nombre === 'admin');

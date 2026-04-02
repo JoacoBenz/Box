@@ -11,6 +11,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
     include: {
       solicitante: { select: { id: true, nombre: true, email: true } },
       area: { select: { id: true, nombre: true } },
+      centro_costo: { select: { id: true, nombre: true, codigo: true } },
       validado_por: { select: { id: true, nombre: true } },
       aprobado_por: { select: { id: true, nombre: true } },
       rechazado_por: { select: { id: true, nombre: true } },
@@ -26,7 +27,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
   const { userId, roles, areaId } = session;
   const esSolicitante = solicitud.solicitante_id === userId;
   const esResponsableArea = solicitud.area_id === areaId;
-  const tieneAcceso = esSolicitante || esResponsableArea || roles.includes('director') || roles.includes('tesoreria') || roles.includes('admin');
+  const tieneAcceso = esSolicitante || esResponsableArea || roles.includes('director') || roles.includes('tesoreria') || roles.includes('compras') || roles.includes('admin');
   if (!tieneAcceso) return Response.json({ error: { code: 'FORBIDDEN', message: 'Sin acceso a esta solicitud' } }, { status: 403 });
 
   // Add archivos
@@ -58,7 +59,7 @@ export const PATCH = withAuth({}, async (request, { session, db, ip }, params) =
     return Response.json({ error: { code: 'VALIDATION_ERROR', message: 'Datos inválidos', details: [{ field: 'items', message: 'Agregá al menos un ítem' }] } }, { status: 400 });
   }
 
-  const { titulo, descripcion, justificacion, urgencia, proveedor_sugerido, proveedor_id, items } = parsed.data;
+  const { titulo, descripcion, justificacion, urgencia, proveedor_sugerido, proveedor_id, centro_costo_id, items } = parsed.data;
 
   const anterior = { ...solicitud };
 
@@ -70,11 +71,7 @@ export const PATCH = withAuth({}, async (request, { session, db, ip }, params) =
     if (urgencia !== undefined) updateData.urgencia = urgencia;
     if (proveedor_sugerido !== undefined) updateData.proveedor_sugerido = proveedor_sugerido ?? null;
     if (proveedor_id !== undefined) updateData.proveedor_id = proveedor_id ?? null;
-
-    if (items !== undefined) {
-      const montoTotal = items.reduce((acc, item) => acc + (item.precio_estimado ? Number(item.precio_estimado) * Number(item.cantidad) : 0), 0);
-      updateData.monto_estimado_total = montoTotal > 0 ? montoTotal : null;
-    }
+    if (centro_costo_id !== undefined) updateData.centro_costo_id = centro_costo_id ?? null;
 
     if (Object.keys(updateData).length > 0) {
       await tx.solicitudes.update({ where: { id: solicitudId }, data: updateData });

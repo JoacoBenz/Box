@@ -1,6 +1,6 @@
 'use client'
 
-import { Form, Input, InputNumber, Tag, Button, Space, Popconfirm } from 'antd'
+import { Form, Input, InputNumber, Select, Tag, Button, Space, Popconfirm } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import AdminCrudTable from '@/components/admin/AdminCrudTable'
 
@@ -11,7 +11,13 @@ interface CentroCosto {
   activo: boolean
   presupuesto_anual: number | null
   presupuesto_mensual: number | null
+  area: { id: number; nombre: string } | null
   tenant?: { id: number; nombre: string }
+}
+
+interface AreaOption {
+  id: number
+  nombre: string
 }
 
 export default function CentrosCostoPage() {
@@ -19,6 +25,8 @@ export default function CentrosCostoPage() {
     <AdminCrudTable<CentroCosto>
       title="Centros de Costo"
       apiUrl="/api/centros-costo"
+      secondaryApiUrl="/api/areas"
+      extractSecondaryData={(data) => (data ?? []).map((a: any) => ({ id: a.id, nombre: a.nombre }))}
       entityName="Centro de Costo"
       createLabel="+ Nuevo Centro de Costo"
       useFormSubmit
@@ -27,6 +35,7 @@ export default function CentrosCostoPage() {
         codigo: item.codigo,
         presupuesto_anual: item.presupuesto_anual,
         presupuesto_mensual: item.presupuesto_mensual,
+        area_id: item.area?.id ?? null,
       })}
       patchUrl={(item) => `/api/centros-costo/${item.id}`}
       columns={(selectedTenant, { openEdit, handleDeactivate }) => [
@@ -38,6 +47,12 @@ export default function CentrosCostoPage() {
         }] : []),
         { title: 'Código', dataIndex: 'codigo', width: 120, render: (val: string) => <Tag>{val}</Tag> },
         { title: 'Nombre', dataIndex: 'nombre' },
+        {
+          title: 'Área',
+          key: 'area',
+          width: 160,
+          render: (_: unknown, r: CentroCosto) => r.area?.nombre ?? <span style={{ color: '#bbb' }}>General</span>,
+        },
         {
           title: 'Presupuesto Anual',
           dataIndex: 'presupuesto_anual',
@@ -77,8 +92,17 @@ export default function CentrosCostoPage() {
           ),
         }] : []),
       ]}
-      renderForm={() => (
+      renderForm={(_form, _editing, areas: AreaOption[]) => (
         <>
+          <Form.Item name="area_id" label="Área asociada">
+            <Select
+              placeholder="Sin área (general)"
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              options={areas.map((a) => ({ value: a.id, label: a.nombre }))}
+            />
+          </Form.Item>
           <Form.Item
             name="codigo"
             label="Código"

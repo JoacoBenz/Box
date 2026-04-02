@@ -3,31 +3,37 @@ import { withAdminOverride, validateBody } from '@/lib/api-handler';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { registrarAuditoria } from '@/lib/audit';
 import { usuarioSchema } from '@/lib/validators';
+import { isOnlyResponsable } from '@/lib/permissions';
 
-export const GET = withAdminOverride({ roles: ['admin', 'director'] }, async (request, { session, db, effectiveTenantId }) => {
+export const GET = withAdminOverride({ roles: ['admin', 'director', 'responsable_area'] }, async (request, { session, db, effectiveTenantId }) => {
   const { searchParams } = new URL(request.url);
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1'));
   const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') ?? '50')));
 
+  // Responsable de área only sees users in their area
+  const areaFilter = isOnlyResponsable(session.roles) ? { area_id: session.areaId! } : {};
+
   const [usuarios, total] = await Promise.all([
     db.usuarios.findMany({
+      where: areaFilter,
       orderBy: { nombre: 'asc' },
       skip: (page - 1) * pageSize,
       take: pageSize,
       include: {
         area: { select: { id: true, nombre: true } },
+        centro_costo: { select: { id: true, nombre: true, codigo: true } },
         usuarios_roles: { include: { rol: { select: { id: true, nombre: true } } } },
         ...(!effectiveTenantId && { tenant: { select: { id: true, nombre: true } } }),
       },
     }),
-    db.usuarios.count(),
+    db.usuarios.count({ where: areaFilter }),
   ]);
 
   const data = usuarios.map(u => ({ ...u, password_hash: undefined }));
   return Response.json({ data, total, page, pageSize });
 });
 
-export const POST = withAdminOverride({ roles: ['admin', 'director'] }, async (request, { session, effectiveTenantId, ip }) => {
+export const POST = withAdminOverride({ roles: ['admin', 'director', 'responsable_area'] }, async (request, { session, effectiveTenantId, ip }) => {
   if (!effectiveTenantId) {
     return Response.json({ error: { code: 'BAD_REQUEST', message: 'Seleccioná una organización antes de crear' } }, { status: 400 });
   }
@@ -36,9 +42,21 @@ export const POST = withAdminOverride({ roles: ['admin', 'director'] }, async (r
   const parsed = validateBody(usuarioSchema, body);
   if (!parsed.success) return parsed.response;
 
-  const { nombre, email, password, area_id, roles: roleNames } = parsed.data;
+  let { nombre, email, password, area_id, centro_costo_id, roles: roleNames } = parsed.data;
   if (!password) {
     return Response.json({ error: { code: 'VALIDATION_ERROR', message: 'La contraseña es obligatoria para nuevos usuarios' } }, { status: 400 });
+  }
+
+  // Responsable de área: can only create solicitantes in their own area
+  if (isOnlyResponsable(session.roles)) {
+    if (!session.areaId) {
+      return Response.json({ error: { code: 'FORBIDDEN', message: 'No tenés un área asignada' } }, { status: 403 });
+    }
+    if (roleNames.length !== 1 || roleNames[0] !== 'solicitante') {
+      return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo podés asignar el rol solicitante' } }, { status: 403 });
+    }
+    // Force area to responsable's own area
+    area_id = session.areaId;
   }
 
   // Directors cannot assign the admin role
@@ -63,7 +81,7 @@ export const POST = withAdminOverride({ roles: ['admin', 'director'] }, async (r
 
   const usuario = await prisma.$transaction(async (tx) => {
     const newUser = await tx.usuarios.create({
-      data: { tenant_id: effectiveTenantId, nombre, email, password_hash: passwordHash, area_id },
+      data: { tenant_id: effectiveTenantId, nombre, email, password_hash: passwordHash, area_id, centro_costo_id: centro_costo_id ?? null },
     });
     await tx.usuarios_roles.createMany({
       data: rolesData.map(r => ({ usuario_id: newUser.id, rol_id: r.id })),

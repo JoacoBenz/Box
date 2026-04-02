@@ -15,7 +15,6 @@ interface Solicitud {
   titulo: string
   urgencia: string
   estado: string
-  monto_estimado_total: number | null
   fecha_validacion: string | null
   area: { nombre: string } | null
   solicitante: { nombre: string }
@@ -29,7 +28,7 @@ export default function AprobacionesPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/solicitudes?estado=validada,enviada&limit=100')
+      const res = await fetch('/api/solicitudes?estado=validada&limit=100')
       if (res.ok) {
         const data = await res.json()
         setSolicitudes(data.data ?? [])
@@ -76,13 +75,6 @@ export default function AprobacionesPage() {
         const u = URGENCIAS[val as UrgenciaSolicitud]
         return u ? <Tag color={u.color}>{u.label}</Tag> : <Tag>{val}</Tag>
       },
-    },
-    {
-      title: 'Monto Est.',
-      dataIndex: 'monto_estimado_total',
-      key: 'monto_estimado_total',
-      width: 130,
-      render: (val: number | null) => (val != null ? `$${Number(val).toFixed(2)}` : '—'),
     },
   ]
 

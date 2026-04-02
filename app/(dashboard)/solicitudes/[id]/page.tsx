@@ -31,6 +31,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
     where: { id: Number(id), ...(tenantId ? { tenant_id: tenantId } : {}) },
     include: {
       area: true,
+      centro_costo: { select: { id: true, nombre: true, codigo: true } },
       solicitante: { select: { id: true, nombre: true, email: true } },
       proveedor: true,
       validado_por: { select: { id: true, nombre: true, email: true } },
@@ -51,6 +52,28 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
   })
 
   if (!solicitud) notFound()
+
+  // Fetch all archivos: from solicitud, compras, and recepciones
+  const compraIds = solicitud.compras.map((c) => c.id)
+  const recepcionIds = solicitud.recepciones.map((r) => r.id)
+  const tenantFilter = tenantId ? { tenant_id: tenantId } : {}
+
+  const allArchivos = await prisma.archivos.findMany({
+    where: {
+      ...tenantFilter,
+      OR: [
+        { entidad: 'solicitud', entidad_id: solicitud.id },
+        ...(compraIds.length > 0 ? [{ entidad: 'compra', entidad_id: { in: compraIds } }] : []),
+        ...(recepcionIds.length > 0 ? [{ entidad: 'recepcion', entidad_id: { in: recepcionIds } }] : []),
+      ],
+    },
+    include: { subido_por: { select: { nombre: true } } },
+    orderBy: { created_at: 'asc' },
+  })
+
+  const archivosSolicitud = allArchivos.filter((a) => a.entidad === 'solicitud')
+  const archivosCompra = allArchivos.filter((a) => a.entidad === 'compra')
+  const archivosRecepcion = allArchivos.filter((a) => a.entidad === 'recepcion')
 
   // Check if session user is the designated responsable of this solicitud's area
   const isAreaResponsable = solicitud.area?.responsable_id === sessionUserId
@@ -78,7 +101,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
     validada: '#ecfeff',
     aprobada: '#f0fdf4',
     rechazada: '#fef2f2',
-    comprada: '#faf5ff',
+    abonada: '#faf5ff',
     recibida: '#f7fee7',
     recibida_con_obs: '#fff7ed',
     cerrada: '#f1f5f9',
@@ -135,6 +158,11 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
         <Descriptions column={2} bordered size="small">
           <Descriptions.Item label="Solicitante">{solicitud.solicitante.nombre}</Descriptions.Item>
           <Descriptions.Item label="Área">{solicitud.area?.nombre ?? '—'}</Descriptions.Item>
+          {solicitud.centro_costo && (
+            <Descriptions.Item label="Centro de Costo" span={2}>
+              <Tag color="blue">{solicitud.centro_costo.codigo}</Tag> {solicitud.centro_costo.nombre}
+            </Descriptions.Item>
+          )}
           <Descriptions.Item label="Fecha Creación">
             {new Date(solicitud.created_at).toLocaleDateString('es-AR')}
           </Descriptions.Item>
@@ -146,11 +174,6 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
           {!solicitud.proveedor && solicitud.proveedor_sugerido && (
             <Descriptions.Item label="Proveedor Sugerido" span={2}>
               {solicitud.proveedor_sugerido}
-            </Descriptions.Item>
-          )}
-          {solicitud.monto_estimado_total != null && (
-            <Descriptions.Item label="Monto Estimado" span={2}>
-              ${Number(solicitud.monto_estimado_total).toFixed(2)}
             </Descriptions.Item>
           )}
           <Descriptions.Item label="Descripción" span={2}>
@@ -216,7 +239,54 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
       {/* Items */}
       <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Ítems Solicitados</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
         <ItemsTable items={items} />
+        {(() => {
+          const total = items.reduce((acc, item) => acc + (item.precio_estimado != null ? item.precio_estimado * item.cantidad : 0), 0)
+          return total > 0 ? (
+            <div style={{
+              marginTop: 12,
+              padding: '12px 16px',
+              background: '#f0fdf4',
+              borderRadius: 8,
+              border: '1px solid #bbf7d0',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              gap: 12,
+            }}>
+              <span style={{ fontWeight: 600, color: '#15803d', fontSize: 15 }}>Total Estimado:</span>
+              <span style={{ fontWeight: 700, color: '#15803d', fontSize: 17 }}>
+                ${total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+          ) : null
+        })()}
       </Card>
+
+      {/* Archivos adjuntos — all stages */}
+      {allArchivos.length > 0 && (
+        <Card
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 18 }}>📎</span>
+              <span style={{ fontWeight: 700, color: '#1e293b' }}>Documentos Adjuntos</span>
+              <Tag style={{ marginLeft: 4 }}>{allArchivos.length}</Tag>
+            </div>
+          }
+          style={{ marginBottom: 24, borderRadius: 16 }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {archivosSolicitud.length > 0 && (
+              <ArchivoGroup label="Solicitud" color="#4f46e5" bg="#eef2ff" archivos={archivosSolicitud} />
+            )}
+            {archivosCompra.length > 0 && (
+              <ArchivoGroup label="Comprobante de Pago" color="#0891b2" bg="#ecfeff" archivos={archivosCompra} />
+            )}
+            {archivosRecepcion.length > 0 && (
+              <ArchivoGroup label="Recepción / Remito" color="#16a34a" bg="#f0fdf4" archivos={archivosRecepcion} />
+            )}
+          </div>
+        </Card>
+      )}
 
       {/* Compra info */}
       {solicitud.compras.length > 0 && (
@@ -285,6 +355,87 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
 
       {/* Comentarios */}
       <ComentariosSection solicitudId={solicitud.id} />
+    </div>
+  )
+}
+
+/* ---------- Archivo helpers ---------- */
+
+const FILE_ICONS: Record<string, string> = {
+  pdf: '📄',
+  jpg: '🖼️',
+  jpeg: '🖼️',
+  png: '🖼️',
+  doc: '📝',
+  docx: '📝',
+  xls: '📊',
+  xlsx: '📊',
+}
+
+function getFileIcon(name: string) {
+  const ext = name.split('.').pop()?.toLowerCase() ?? ''
+  return FILE_ICONS[ext] ?? '📎'
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+interface ArchivoRow {
+  id: number
+  nombre_archivo: string
+  tamanio_bytes: bigint | null
+  created_at: Date
+  subido_por: { nombre: string } | null
+}
+
+function ArchivoGroup({ label, color, bg, archivos }: { label: string; color: string; bg: string; archivos: ArchivoRow[] }) {
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+        <div style={{ width: 3, height: 16, borderRadius: 2, background: color }} />
+        <span style={{ fontSize: 13, fontWeight: 600, color, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {archivos.map((a) => (
+          <a
+            key={a.id}
+            href={`/api/archivos/${a.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: 'none', color: 'inherit' }}
+          >
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '10px 14px',
+              background: bg,
+              borderRadius: 10,
+              border: `1px solid ${color}20`,
+              cursor: 'pointer',
+              transition: 'box-shadow 0.15s',
+            }}
+            >
+              <span style={{ fontSize: 22, lineHeight: 1 }}>{getFileIcon(a.nombre_archivo)}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {a.nombre_archivo}
+                </div>
+                <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+                  {a.subido_por?.nombre ?? 'Usuario'}
+                  {' · '}
+                  {new Date(a.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  {a.tamanio_bytes ? ` · ${formatBytes(Number(a.tamanio_bytes))}` : ''}
+                </div>
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 600, color, whiteSpace: 'nowrap' }}>Descargar ↓</span>
+            </div>
+          </a>
+        ))}
+      </div>
     </div>
   )
 }

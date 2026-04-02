@@ -105,12 +105,18 @@ export async function POST(request: NextRequest) {
         data: { responsable_id: usuario.id },
       });
 
+      // Extract domain from director's email for SSO auto-config
+      const emailDomain = email.split('@')[1] ?? '';
+
       // Initial config
       await tx.configuracion.createMany({
         data: [
           { tenant_id: newTenant.id, clave: 'moneda', valor: 'ARS' },
           { tenant_id: newTenant.id, clave: 'umbral_aprobacion_responsable', valor: '0' },
           { tenant_id: newTenant.id, clave: 'umbral_aprobacion_director', valor: '999999999' },
+          { tenant_id: newTenant.id, clave: 'sso_dominio', valor: emailDomain },
+          { tenant_id: newTenant.id, clave: 'sso_google_habilitado', valor: 'true' },
+          { tenant_id: newTenant.id, clave: 'sso_microsoft_habilitado', valor: 'true' },
         ],
       });
 

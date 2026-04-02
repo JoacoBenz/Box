@@ -23,7 +23,7 @@ export const PATCH = withAdminOverride({ roles: ['admin', 'director', 'tesoreria
   const validation = validateBody(centroCostoSchema.partial(), body);
   if (!validation.success) return validation.response;
 
-  const { nombre, codigo, presupuesto_anual, presupuesto_mensual } = validation.data;
+  const { nombre, codigo, presupuesto_anual, presupuesto_mensual, area_id } = validation.data;
 
   // Duplicate checks on edit (exclude self)
   if (codigo) {
@@ -43,6 +43,7 @@ export const PATCH = withAdminOverride({ roles: ['admin', 'director', 'tesoreria
       ...(codigo && { codigo: codigo.toUpperCase() }),
       ...(presupuesto_anual !== undefined && { presupuesto_anual }),
       ...(presupuesto_mensual !== undefined && { presupuesto_mensual }),
+      ...(area_id !== undefined && { area_id: area_id ?? null }),
     },
   });
 

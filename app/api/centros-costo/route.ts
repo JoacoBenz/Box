@@ -4,10 +4,19 @@ import { centroCostoSchema } from '@/lib/validators';
 import { tenantPrisma } from '@/lib/prisma';
 
 export const GET = withAdminOverride({}, async (request, { db, effectiveTenantId }) => {
+  const url = new URL(request.url);
+  const areaIdParam = url.searchParams.get('area_id');
+
   const centros = await db.centros_costo.findMany({
-    where: { activo: true },
+    where: {
+      activo: true,
+      ...(areaIdParam ? { area_id: parseInt(areaIdParam) } : {}),
+    },
     orderBy: { nombre: 'asc' },
-    ...(!effectiveTenantId && { include: { tenant: { select: { id: true, nombre: true } } } }),
+    include: {
+      area: { select: { id: true, nombre: true } },
+      ...(!effectiveTenantId && { tenant: { select: { id: true, nombre: true } } }),
+    },
   });
   return Response.json(centros);
 });
@@ -21,7 +30,7 @@ export const POST = withAdminOverride({ roles: ['admin', 'director', 'tesoreria'
   const validation = validateBody(centroCostoSchema, body);
   if (!validation.success) return validation.response;
 
-  const { nombre, codigo, presupuesto_anual, presupuesto_mensual } = validation.data;
+  const { nombre, codigo, presupuesto_anual, presupuesto_mensual, area_id } = validation.data;
   const db = tenantPrisma(effectiveTenantId);
 
   const codigoUpper = codigo.toUpperCase();
@@ -43,6 +52,7 @@ export const POST = withAdminOverride({ roles: ['admin', 'director', 'tesoreria'
       codigo: codigoUpper,
       ...(presupuesto_anual !== undefined && { presupuesto_anual }),
       ...(presupuesto_mensual !== undefined && { presupuesto_mensual }),
+      ...(area_id !== undefined && { area_id: area_id ?? null }),
     },
   });
 

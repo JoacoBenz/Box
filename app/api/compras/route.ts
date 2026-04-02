@@ -56,7 +56,7 @@ export const POST = withAuth({ roles: ['tesoreria', 'compras', 'solicitante'] },
     select: { id: true, estado: true, solicitante_id: true, validado_por_id: true, aprobado_por_id: true, proveedor_id: true, area_id: true, titulo: true, numero: true },
   });
   if (!solicitud) return Response.json({ error: { code: 'NOT_FOUND', message: 'Solicitud no encontrada' } }, { status: 404 });
-  const estadosPermitidos = ['aprobada', 'pago_programado', 'en_compras'];
+  const estadosPermitidos = ['pago_programado'];
   if (!estadosPermitidos.includes(solicitud.estado)) {
     return Response.json({ error: { code: 'BAD_REQUEST', message: 'Esta solicitud no está lista para registrar la compra' } }, { status: 400 });
   }
@@ -91,7 +91,7 @@ export const POST = withAuth({ roles: ['tesoreria', 'compras', 'solicitante'] },
       },
     });
 
-    await tx.solicitudes.update({ where: { id: parsed.data.solicitud_id }, data: { estado: 'comprada' } });
+    await tx.solicitudes.update({ where: { id: parsed.data.solicitud_id }, data: { estado: 'abonada' } });
 
     return nuevaCompra;
   });
@@ -116,7 +116,7 @@ export const POST = withAuth({ roles: ['tesoreria', 'compras', 'solicitante'] },
     uploadWarning = 'La compra se registró correctamente, pero el comprobante no pudo subirse. Podés adjuntarlo después.';
   }
 
-  await crearNotificacion({ tenantId: session.tenantId, destinatarioId: solicitud.solicitante_id, tipo: 'compra_registrada', titulo: 'Tu pedido fue comprado', mensaje: `Tesorería compró "${solicitud.titulo}" a ${parsed.data.proveedor_nombre} por $${parsed.data.monto_total}. Confirmá la recepción cuando lo recibas.`, solicitudId: solicitud.id });
+  await crearNotificacion({ tenantId: session.tenantId, destinatarioId: solicitud.solicitante_id, tipo: 'compra_registrada', titulo: 'Tu pedido fue comprado', mensaje: `Se abonó "${solicitud.titulo}" a ${parsed.data.proveedor_nombre} por $${parsed.data.monto_total}. Confirmá la recepción cuando lo recibas.`, solicitudId: solicitud.id });
 
   const area = await prisma.areas.findFirst({ where: { id: solicitud.area_id, tenant_id: session.tenantId } });
   if (area?.responsable_id && area.responsable_id !== solicitud.solicitante_id) {

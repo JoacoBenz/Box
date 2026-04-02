@@ -81,6 +81,7 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
       visible: roles.includes('compras'),
     },
     { key: '/proveedores', icon: <ShopOutlined />, label: 'Proveedores', visible: true },
+    { key: '/mi-area/usuarios', icon: <TeamOutlined />, label: 'Usuarios de mi Área', visible: roles.includes('responsable_area') && !roles.includes('admin') && !roles.includes('director') },
     {
       type: 'group' as const,
       label: collapsed ? '—' : 'Administración',
@@ -90,8 +91,8 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
         { key: '/gestion/areas', icon: <ApartmentOutlined />, label: 'Áreas' },
         { key: '/gestion/centros-costo', icon: <BankOutlined />, label: 'Centros de Costo' },
         { key: '/gestion/invitaciones', icon: <KeyOutlined />, label: 'Invitaciones' },
-        { key: '/gestion/configuracion-sso', icon: <SettingOutlined />, label: 'Config SSO' },
         ...(roles.includes('admin') ? [
+          { key: '/gestion/configuracion-sso', icon: <SettingOutlined />, label: 'Config SSO' },
           { key: '/gestion/aprobaciones-org', icon: <AuditOutlined />, label: 'Aprobaciones Org' },
           { key: '/gestion/tenants', icon: <GlobalOutlined />, label: 'Organizaciones' },
         ] : []),
@@ -130,6 +131,12 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
         style={{
           background: 'linear-gradient(180deg, #fafbff 0%, #f1f0ff 100%)',
           borderRight: 'none',
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          zIndex: 100,
+          overflow: 'auto',
         }}
       >
         <div style={{

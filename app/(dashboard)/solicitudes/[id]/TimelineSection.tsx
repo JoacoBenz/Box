@@ -68,14 +68,15 @@ export default function TimelineSection({ solicitudId }: { solicitudId: number }
         items={events.map(e => {
           const config = ACTION_CONFIG[e.accion] ?? { label: e.accion, color: 'default', icon: <ClockCircleOutlined /> }
           const detail = e.detalles?.motivo || e.detalles?.observaciones || e.detalles?.prioridad_compra || null
+          const isAuto = e.accion === 'validar_solicitud' && e.detalles?.automatico === true
 
           return {
             color: config.color,
-            dot: config.icon,
-            children: (
+            icon: config.icon,
+            content: (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <Tag color={config.color}>{config.label}</Tag>
+                  <Tag color={config.color}>{config.label}{isAuto ? ' (a.)' : ''}</Tag>
                   <Text type="secondary" style={{ fontSize: 12 }}>{formatDate(e.fecha)}</Text>
                 </div>
                 <Text style={{ fontSize: 13 }}>por <strong>{e.usuario}</strong></Text>

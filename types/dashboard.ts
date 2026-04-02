@@ -10,7 +10,6 @@ export interface SolicitudResumen {
   created_at: string;
   prioridad_compra?: string | null;
   dia_pago_programado?: string | null;
-  monto_estimado_total?: number | null;
 }
 
 export interface EstadoCantidad {
@@ -80,7 +79,6 @@ export interface DashboardData {
   solicitudesDevueltas?: number;
   recepcionesPendientes?: number;
   solicitudesMesSolicitante?: number;
-  montoSolicitadoMes?: number;
   tasaAprobacion?: number;
   misSolicitudesPorEstado?: EstadoCantidad[];
 
@@ -97,7 +95,6 @@ export interface DashboardData {
   pendientesAprobar?: number;
   aprobadasSemana?: number;
   rechazadasSemana?: number;
-  montoPendienteAprobar?: number;
   urgentesPendientesDir?: number;
 
   // Compras
@@ -113,7 +110,6 @@ export interface DashboardData {
   recepcionesConObs?: number;
   pagoProgramadoProximo?: number;
   ultimasCompras?: any[];
-  montoPagosProximos?: number;
   comprasSinRecepcion?: number;
 
   // Analytics

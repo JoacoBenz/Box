@@ -24,7 +24,6 @@ interface Solicitud {
   titulo: string
   estado: string
   urgencia: string
-  monto_estimado_total: number | null
   created_at: string
   solicitante: { nombre: string }
   area: { nombre: string }
@@ -76,7 +75,6 @@ export default function ProveedorComprasPage() {
   }, [fetchData])
 
   const totalCompras = compras.reduce((sum, c) => sum + Number(c.monto_total), 0)
-  const totalEstimado = solicitudes.reduce((sum, s) => sum + Number(s.monto_estimado_total ?? 0), 0)
 
   const solicitudColumns: ColumnsType<Solicitud> = [
     {
@@ -110,14 +108,6 @@ export default function ProveedorComprasPage() {
         const cfg = URGENCIAS[u as UrgenciaSolicitud]
         return <Tag color={cfg?.color ?? 'default'}>{cfg?.label ?? u}</Tag>
       },
-    },
-    {
-      title: 'Monto Est.',
-      dataIndex: 'monto_estimado_total',
-      key: 'monto',
-      width: 120,
-      align: 'right' as const,
-      render: (v: number | null) => v != null ? `$ ${Number(v).toLocaleString('es-AR')}` : '—',
     },
     {
       title: 'Área',
@@ -229,15 +219,6 @@ export default function ProveedorComprasPage() {
             value={totalCompras}
             precision={2}
             prefix={<DollarOutlined style={{ color: '#f59e0b' }} />}
-            formatter={(val) => `$ ${Number(val).toLocaleString('es-AR')}`}
-          />
-        </Card>
-        <Card size="middle" style={{ minWidth: 180, borderColor: '#e2e8f0' }}>
-          <Statistic
-            title={<Text type="secondary" style={{ fontSize: 12 }}>Total Estimado</Text>}
-            value={totalEstimado}
-            precision={2}
-            prefix={<DollarOutlined style={{ color: '#94a3b8' }} />}
             formatter={(val) => `$ ${Number(val).toLocaleString('es-AR')}`}
           />
         </Card>

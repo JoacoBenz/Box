@@ -100,18 +100,18 @@ const TRANSITIONS: Transition[] = [
   {
     action: 'registrar_compra',
     from: ['aprobada', 'en_compras', 'pago_programado'],
-    to: 'comprada',
+    to: 'abonada',
     requiredRoles: ['tesoreria', 'compras', 'solicitante'],
     segregation: 'comprar',
     endpoint: '/api/compras',
   },
   {
     action: 'registrar_recepcion',
-    from: ['comprada'],
+    from: ['abonada'],
     to: (ctx) => {
       if (ctx.hasItems && ctx.allItemsReceived && !ctx.hasProblems) return 'recibida';
       if (ctx.hasItems && ctx.allItemsReceived && ctx.hasProblems) return 'recibida_con_obs';
-      if (ctx.hasItems && !ctx.allItemsReceived) return 'comprada'; // partial
+      if (ctx.hasItems && !ctx.allItemsReceived) return 'abonada'; // partial
       if (ctx.conforme) return 'cerrada'; // no items, bulk conforme → cerrada (BUG: should be recibida)
       return 'recibida_con_obs';
     },
@@ -137,7 +137,7 @@ const TRANSITIONS: Transition[] = [
 // ─── All possible states ──────────────────────────────────────────────────────
 const ALL_STATES: EstadoSolicitud[] = [
   'borrador', 'enviada', 'devuelta_resp', 'validada', 'devuelta_dir',
-  'aprobada', 'rechazada', 'comprada', 'recibida', 'recibida_con_obs',
+  'aprobada', 'rechazada', 'abonada', 'recibida', 'recibida_con_obs',
   'en_compras', 'pago_programado', 'anulada', 'cerrada',
 ];
 
@@ -194,8 +194,8 @@ describe('Workflow State Machine - Happy Path (Flujo Normal)', () => {
       { state: 'borrador', action: 'enviar', nextState: 'enviada' },
       { state: 'enviada', action: 'validar', nextState: 'validada' },
       { state: 'validada', action: 'aprobar', nextState: 'aprobada' },
-      { state: 'aprobada', action: 'registrar_compra', nextState: 'comprada' },
-      { state: 'comprada', action: 'registrar_recepcion', nextState: 'cerrada' }, // conforme without items
+      { state: 'aprobada', action: 'registrar_compra', nextState: 'abonada' },
+      { state: 'abonada', action: 'registrar_recepcion', nextState: 'cerrada' }, // conforme without items
     ];
 
     for (const step of steps) {
@@ -205,14 +205,14 @@ describe('Workflow State Machine - Happy Path (Flujo Normal)', () => {
     }
   });
 
-  it('Path 2: Con departamento de Compras (aprobada → en_compras → pago_programado → comprada)', () => {
+  it('Path 2: Con departamento de Compras (aprobada → en_compras → pago_programado → abonada)', () => {
     const steps: { state: EstadoSolicitud; action: string }[] = [
       { state: 'borrador', action: 'enviar' },
       { state: 'enviada', action: 'validar' },
       { state: 'validada', action: 'aprobar' }, // → en_compras (if hasComprasUsers)
       { state: 'en_compras', action: 'programar_pago' },
       { state: 'pago_programado', action: 'registrar_compra' },
-      { state: 'comprada', action: 'registrar_recepcion' },
+      { state: 'abonada', action: 'registrar_recepcion' },
     ];
 
     for (const step of steps) {
@@ -285,9 +285,9 @@ describe('Workflow State Machine - Rechazo y Anulación', () => {
     expect(anular!.from).not.toContain('borrador');
   });
 
-  it('anular does NOT accept comprada (correct: already purchased)', () => {
+  it('anular does NOT accept abonada (correct: already purchased)', () => {
     const anular = TRANSITIONS.find(t => t.action === 'anular');
-    expect(anular!.from).not.toContain('comprada');
+    expect(anular!.from).not.toContain('abonada');
   });
 
   it('anular does NOT accept terminal states', () => {
@@ -341,14 +341,14 @@ describe('Workflow State Machine - Recepción', () => {
     expect(target).toBe('recibida_con_obs');
   });
 
-  it('recepción parcial (no todos los items) → permanece comprada', () => {
+  it('recepción parcial (no todos los items) → permanece abonada', () => {
     const recepcion = TRANSITIONS.find(t => t.action === 'registrar_recepcion');
     const ctx: TransitionContext = {
       hasComprasUsers: false, skipValidacion: false,
       conforme: true, hasItems: true, allItemsReceived: false, hasProblems: false,
     };
     const target = (recepcion!.to as (ctx: TransitionContext) => EstadoSolicitud)(ctx);
-    expect(target).toBe('comprada');
+    expect(target).toBe('abonada');
   });
 });
 

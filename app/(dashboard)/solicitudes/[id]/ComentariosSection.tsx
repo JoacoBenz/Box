@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, Input, Button, Typography, message, Avatar, Spin } from 'antd'
+import { App, Card, Input, Button, Typography, Avatar, Spin } from 'antd'
 import { SendOutlined, CommentOutlined, UserOutlined } from '@ant-design/icons'
 
 const { Text } = Typography
@@ -15,6 +15,7 @@ interface Comentario {
 }
 
 export default function ComentariosSection({ solicitudId }: { solicitudId: number }) {
+  const { message } = App.useApp()
   const [comentarios, setComentarios] = useState<Comentario[]>([])
   const [mensaje, setMensaje] = useState('')
   const [loading, setLoading] = useState(false)

@@ -10,8 +10,16 @@ import { verificarPresupuesto } from '@/lib/budget-control';
 export const POST = withAuth({ roles: ['director'] }, async (request, { session, db, ip }, params) => {
   const solicitudId = parseInt(params.id);
 
-  const solicitud = await db.solicitudes.findFirst({ where: { id: solicitudId } });
+  const solicitud = await db.solicitudes.findFirst({
+    where: { id: solicitudId },
+    include: { items_solicitud: true },
+  });
   if (!solicitud) return apiError('NOT_FOUND', 'No encontrada', 404);
+
+  // Compute total from items
+  const montoTotal = solicitud.items_solicitud.reduce((acc, item) => {
+    return acc + (item.precio_estimado ? Number(item.precio_estimado) * Number(item.cantidad) : 0);
+  }, 0) || null;
 
   const skipValidacion = !(await getTenantConfigBool(session.tenantId, 'requiere_validacion_responsable', true));
   const estadosPermitidos = skipValidacion ? ['validada', 'enviada'] : ['validada'];
@@ -26,7 +34,7 @@ export const POST = withAuth({ roles: ['director'] }, async (request, { session,
   const amountCheck = await canUserApproveAmount(
     session.tenantId,
     session.roles,
-    solicitud.monto_estimado_total ? Number(solicitud.monto_estimado_total) : null
+    montoTotal
   );
   if (!amountCheck.allowed) {
     return apiError('INSUFFICIENT_AUTHORITY', amountCheck.reason!, 403);
@@ -55,7 +63,7 @@ export const POST = withAuth({ roles: ['director'] }, async (request, { session,
     data: { estado: nuevoEstado, aprobado_por_id: session.userId, fecha_aprobacion: new Date() },
   });
 
-  const montoStr = solicitud.monto_estimado_total ? ` por $${solicitud.monto_estimado_total}` : '';
+  const montoStr = montoTotal ? ` por $${montoTotal}` : '';
 
   if (hasComprasUsers) {
     await crearNotificacion({ tenantId: session.tenantId, destinatarioId: solicitud.solicitante_id, tipo: 'solicitud_aprobada', titulo: 'Tu solicitud fue aprobada', mensaje: `${session.nombre} aprobó: ${solicitud.titulo}. El sector Compras la procesará.`, solicitudId });
@@ -73,18 +81,18 @@ export const POST = withAuth({ roles: ['director'] }, async (request, { session,
   }
 
   // Budget control warning
-  if (solicitud.centro_costo_id && solicitud.monto_estimado_total) {
+  if (solicitud.centro_costo_id && montoTotal) {
     const budget = await verificarPresupuesto(
       session.tenantId,
       solicitud.centro_costo_id,
-      Number(solicitud.monto_estimado_total)
+      Number(montoTotal)
     );
     if (budget.status.excedido) {
       await notificarPorRol(
         session.tenantId,
         'tesoreria',
         `⚠ Presupuesto excedido: ${budget.status.centroCosto}`,
-        `La solicitud ${solicitud.numero} ($${Number(solicitud.monto_estimado_total).toLocaleString()}) excede el presupuesto del centro de costo "${budget.status.centroCosto}". Uso: ${budget.status.alertaPorcentaje}%`,
+        `La solicitud ${solicitud.numero} ($${Number(montoTotal).toLocaleString()}) excede el presupuesto del centro de costo "${budget.status.centroCosto}". Uso: ${budget.status.alertaPorcentaje}%`,
         solicitudId
       );
     }

@@ -32,7 +32,7 @@ export const POST = withAuth({ roles: ['solicitante', 'responsable_area'] }, asy
 
   const solicitud = await db.solicitudes.findFirst({ where: { id: solicitud_id } });
   if (!solicitud) return Response.json({ error: { code: 'NOT_FOUND', message: 'Solicitud no encontrada' } }, { status: 404 });
-  if (solicitud.estado !== 'comprada') {
+  if (solicitud.estado !== 'abonada') {
     return Response.json({ error: { code: 'BAD_REQUEST', message: 'Esta solicitud no está pendiente de recepción' } }, { status: 400 });
   }
 
@@ -108,8 +108,8 @@ export const POST = withAuth({ roles: ['solicitante', 'responsable_area'] }, asy
       } else if (allFullyReceived && hasProblems) {
         nuevoEstado = 'recibida_con_obs';
       } else {
-        // Not fully received — keep as 'comprada' (partial receipt)
-        nuevoEstado = 'comprada';
+        // Not fully received — keep as 'abonada' (partial receipt)
+        nuevoEstado = 'abonada';
       }
     }
 

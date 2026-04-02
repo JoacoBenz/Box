@@ -29,12 +29,20 @@ interface Area {
   nombre: string
 }
 
+interface CentroCosto {
+  id: number
+  nombre: string
+  codigo: string
+  area_id: number | null
+}
+
 interface Usuario {
   id: number
   nombre: string
   email: string
   activo: boolean
   area: { id: number; nombre: string } | null
+  centro_costo: { id: number; nombre: string; codigo: string } | null
   area_sugerida?: string | null
   usuarios_roles: { rol: { id: number; nombre: string } }[]
   tenant?: { id: number; nombre: string }
@@ -42,12 +50,18 @@ interface Usuario {
 
 function UsuarioFormFields({ form, editing, areas }: { form: FormInstance; editing: Usuario | null; areas: Area[] }) {
   const [sessionRoles, setSessionRoles] = useState<string[]>([])
+  const [centrosCosto, setCentrosCosto] = useState<CentroCosto[]>([])
+  const selectedAreaId = Form.useWatch('area_id', form)
 
   useEffect(() => {
     fetch('/api/auth/session').then(r => r.json()).then(s => {
       setSessionRoles(s?.user?.roles ?? [])
     }).catch(() => {})
+    fetch('/api/centros-costo').then(r => r.ok ? r.json() : []).then(setCentrosCosto).catch(() => {})
   }, [])
+
+  // Filter centros by selected area (show area's CCs + general ones with no area)
+  const filteredCentros = centrosCosto.filter(cc => !cc.area_id || cc.area_id === selectedAreaId)
 
   return (
     <>
@@ -91,8 +105,24 @@ function UsuarioFormFields({ form, editing, areas }: { form: FormInstance; editi
         <Select
           placeholder="Seleccionar área"
           options={areas.map((a) => ({ value: a.id, label: a.nombre }))}
+          onChange={() => form.setFieldValue('centro_costo_id', null)}
         />
       </Form.Item>
+
+      {filteredCentros.length > 0 && (
+        <Form.Item label="Centro de Costo" name="centro_costo_id">
+          <Select
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder="Seleccionar centro de costo"
+            options={filteredCentros.map(cc => ({
+              value: cc.id,
+              label: `${cc.codigo} — ${cc.nombre}`,
+            }))}
+          />
+        </Form.Item>
+      )}
 
       <Form.Item
         label="Roles"
@@ -125,6 +155,7 @@ export default function AdminUsuariosPage() {
         nombre: u.nombre,
         email: u.email,
         area_id: u.area?.id,
+        centro_costo_id: u.centro_costo?.id ?? null,
         roles: u.usuarios_roles.map((r) => r.rol.nombre),
       })}
       mapPayload={(values, editing) => {
@@ -132,6 +163,7 @@ export default function AdminUsuariosPage() {
           nombre: values.nombre,
           email: values.email,
           area_id: values.area_id,
+          centro_costo_id: values.centro_costo_id ?? null,
           roles: values.roles,
         }
         if (!editing && values.password) payload.password = values.password

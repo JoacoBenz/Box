@@ -49,6 +49,8 @@ export const unirseSchema = z.object({
 export const areaSchema = z.object({
   nombre: nonBlank(2, 'Mínimo 2 caracteres').max(100),
   responsable_id: z.number().int().positive().optional().nullable(),
+  presupuesto_anual: z.number().nonnegative().max(999_999_999).optional().nullable(),
+  presupuesto_mensual: z.number().nonnegative().max(999_999_999).optional().nullable(),
 });
 
 export const usuarioSchema = z.object({
@@ -56,6 +58,7 @@ export const usuarioSchema = z.object({
   email: z.string().email('Email inválido'),
   password: passwordSchema.optional(),
   area_id: z.number().int().positive(),
+  centro_costo_id: z.number().int().positive().optional().nullable(),
   roles: z
     .array(z.enum(['solicitante', 'responsable_area', 'director', 'tesoreria', 'compras', 'admin']))
     .min(1, 'Asigná al menos un rol'),
@@ -147,7 +150,7 @@ export const compraSchema = z
 
 export const procesarComprasSchema = z.object({
   prioridad_compra: z.enum(['urgente', 'normal', 'programado']),
-  dia_pago_programado: z.string().refine((val) => !val || !isNaN(Date.parse(val)), 'Fecha inválida').optional().nullable(),
+  dia_pago_programado: z.string().refine((val) => !isNaN(Date.parse(val)), 'Fecha inválida'),
   observaciones: z.string().max(1000).optional().nullable(),
 });
 
@@ -164,6 +167,7 @@ export const centroCostoSchema = z.object({
     .refine((v) => v.trim() === v, 'El código no puede tener espacios'),
   presupuesto_anual: z.number().nonnegative().max(999_999_999).optional().nullable(),
   presupuesto_mensual: z.number().nonnegative().max(999_999_999).optional().nullable(),
+  area_id: z.number().int().positive().optional().nullable(),
 });
 
 export const recepcionSchema = z

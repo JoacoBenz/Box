@@ -24,11 +24,13 @@ export function DashboardShell({ tenantNombre, userName, areaNombre, roles, chil
     : roles.includes('responsable_area') ? 'responsable_area'
     : 'solicitante';
 
+  const siderWidth = collapsed ? 80 : 240;
+
   return (
     <App>
       <Layout style={{ minHeight: '100vh' }}>
         <Sidebar roles={roles} collapsed={collapsed} />
-        <Layout style={{ background: '#f1f5f9' }}>
+        <Layout style={{ background: '#f1f5f9', marginLeft: siderWidth, transition: 'margin-left 0.25s cubic-bezier(0.2, 0, 0, 1)' }}>
           <AppHeader
             tenantNombre={tenantNombre}
             userName={userName}

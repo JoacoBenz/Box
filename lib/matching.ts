@@ -11,13 +11,13 @@ export interface MatchingResult {
  * Returns discrepancies for review.
  */
 export function calcularMatching(
-  solicitud: { monto_estimado_total: any; items_solicitud?: Array<{ cantidad: any; precio_estimado: any }> },
+  solicitud: { items_solicitud?: Array<{ cantidad: any; precio_estimado: any }> },
   compra: { monto_total: any } | null,
   itemsRecibidos: Array<{ item_solicitud_id: number; cantidad_recibida: any }>,
   itemsSolicitud: Array<{ id: number; cantidad: any; precio_estimado: any }>
 ): MatchingResult {
   const discrepancies: string[] = [];
-  const montoSolicitud = Number(solicitud.monto_estimado_total ?? 0);
+  const montoSolicitud = itemsSolicitud.reduce((acc, item) => acc + Number(item.cantidad) * Number(item.precio_estimado ?? 0), 0);
   const montoCompra = compra ? Number(compra.monto_total) : 0;
 
   // 1. Price variance: compra vs solicitud estimate

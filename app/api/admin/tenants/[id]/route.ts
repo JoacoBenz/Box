@@ -101,6 +101,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
       if (userIds.length > 0) {
         await tx.usuarios_roles.deleteMany({ where: { usuario_id: { in: userIds } } });
       }
+      await tx.log_auditoria.deleteMany({ where: { tenant_id: tenantId } });
       await tx.comentarios.deleteMany({ where: { tenant_id: tenantId } });
       await tx.notificaciones.deleteMany({ where: { tenant_id: tenantId } });
       await tx.delegaciones.deleteMany({ where: { tenant_id: tenantId } });

@@ -36,7 +36,6 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       solicitudesDevueltas,
       recepcionesPendientes,
       solicitudesMesSolicitante,
-      montoSolicitadoMes,
       tasaAprobacionData,
       misSolicitudesPorEstado,
     ] = await Promise.all([
@@ -47,20 +46,16 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
         select: { id: true, numero: true, titulo: true, estado: true, urgencia: true, created_at: true },
       }),
       db.solicitudes.count({
-        where: { solicitante_id: userId, estado: { in: ['aprobada', 'en_compras', 'pago_programado', 'comprada'] } },
+        where: { solicitante_id: userId, estado: { in: ['aprobada', 'en_compras', 'pago_programado', 'abonada'] } },
       }),
       db.solicitudes.count({
         where: { solicitante_id: userId, estado: { in: ['devuelta_resp', 'devuelta_dir'] } },
       }),
       db.solicitudes.count({
-        where: { solicitante_id: userId, estado: 'comprada' },
+        where: { solicitante_id: userId, estado: 'abonada' },
       }),
       db.solicitudes.count({
         where: { solicitante_id: userId, created_at: { gte: inicioMes } },
-      }),
-      db.solicitudes.aggregate({
-        where: { solicitante_id: userId, created_at: { gte: inicioMes } },
-        _sum: { monto_estimado_total: true },
       }),
       // Tasa de aprobación: last 90 days
       Promise.all([
@@ -68,7 +63,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
           where: {
             solicitante_id: userId,
             created_at: { gte: hace90Dias },
-            estado: { in: ['aprobada', 'comprada', 'cerrada', 'en_compras', 'pago_programado', 'recibida', 'recibida_con_obs'] },
+            estado: { in: ['aprobada', 'abonada', 'cerrada', 'en_compras', 'pago_programado', 'recibida', 'recibida_con_obs'] },
           },
         }),
         db.solicitudes.count({
@@ -96,7 +91,6 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
     result.solicitudesDevueltas = solicitudesDevueltas;
     result.recepcionesPendientes = recepcionesPendientes;
     result.solicitudesMesSolicitante = solicitudesMesSolicitante;
-    result.montoSolicitadoMes = Number(montoSolicitadoMes._sum.monto_estimado_total ?? 0);
     result.tasaAprobacion = total90d > 0 ? Math.round((aprobadas90d / total90d) * 100) : 0;
     result.misSolicitudesPorEstado = misSolicitudesPorEstado.map(r => ({
       estado: r.estado,
@@ -164,14 +158,10 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
     // Director can pick an area to filter, or see all (default)
     const dirAreaFilter = directorAreaId ? { area_id: directorAreaId } : {};
     const areaFilter = dirAreaFilter;
-    const [pendientesAprobar, aprobadasSemana, rechazadasSemana, montoPendienteAprobar, urgentesPendientes] = await Promise.all([
+    const [pendientesAprobar, aprobadasSemana, rechazadasSemana, urgentesPendientes] = await Promise.all([
       db.solicitudes.count({ where: { estado: 'validada', ...areaFilter } }),
       db.solicitudes.count({ where: { fecha_aprobacion: { gte: semanaAtras }, ...areaFilter } }),
       db.solicitudes.count({ where: { fecha_rechazo: { gte: semanaAtras }, ...areaFilter } }),
-      db.solicitudes.aggregate({
-        where: { estado: 'validada', ...areaFilter },
-        _sum: { monto_estimado_total: true },
-      }),
       db.solicitudes.count({
         where: { estado: 'validada', urgencia: { in: ['urgente', 'critica'] }, ...areaFilter },
       }),
@@ -179,7 +169,6 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
     result.pendientesAprobar = pendientesAprobar;
     result.aprobadasSemana = aprobadasSemana;
     result.rechazadasSemana = rechazadasSemana;
-    result.montoPendienteAprobar = Number(montoPendienteAprobar._sum.monto_estimado_total ?? 0);
     result.urgentesPendientesDir = urgentesPendientes;
   }
 
@@ -198,7 +187,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       where: { estado: { in: ['aprobada', 'en_compras', 'pago_programado'] }, ...areaFilter },
       orderBy: { created_at: 'desc' },
       take: 10,
-      select: { id: true, numero: true, titulo: true, estado: true, urgencia: true, prioridad_compra: true, dia_pago_programado: true, monto_estimado_total: true },
+      select: { id: true, numero: true, titulo: true, estado: true, urgencia: true, prioridad_compra: true, dia_pago_programado: true },
     });
     // Tiempo promedio pipeline (last 90 days)
     const tiempoPipeline = await prisma.$queryRaw<{ avg_days: string | null }[]>`
@@ -221,7 +210,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
   if (roles.includes('tesoreria')) {
     const areaFilter = {};
     const proximaSemanaDias = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    const [pendientesComprar, recepcionesConObs, pagoProgramadoProximo, ultimasCompras, montoPagosProximos, comprasSinRecepcion] = await Promise.all([
+    const [pendientesComprar, recepcionesConObs, pagoProgramadoProximo, ultimasCompras, comprasSinRecepcion] = await Promise.all([
       db.solicitudes.count({ where: { estado: { in: ['aprobada', 'pago_programado'] }, ...areaFilter } }),
       db.solicitudes.count({ where: { estado: 'recibida_con_obs', ...areaFilter } }),
       db.solicitudes.count({ where: { estado: 'pago_programado', dia_pago_programado: { gte: new Date(), lte: proximaSemanaDias }, ...areaFilter } }),
@@ -230,17 +219,12 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
         take: 5,
         include: { solicitud: { select: { numero: true, titulo: true } } },
       }),
-      // Monto de pagos próximos 7 días
-      db.solicitudes.aggregate({
-        where: { estado: 'pago_programado', dia_pago_programado: { gte: new Date(), lte: proximaSemanaDias }, ...areaFilter },
-        _sum: { monto_estimado_total: true },
-      }),
       // Compras sin recepción
       prisma.$queryRaw<{ cantidad: string }[]>`
         SELECT COUNT(*)::text AS cantidad
         FROM solicitudes s
         WHERE s.tenant_id = ${tenantId}
-          AND s.estado = 'comprada'
+          AND s.estado = 'abonada'
           AND NOT EXISTS (SELECT 1 FROM recepciones r WHERE r.solicitud_id = s.id AND r.tenant_id = s.tenant_id)
       `,
     ]);
@@ -248,7 +232,6 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
     result.recepcionesConObs = recepcionesConObs;
     result.pagoProgramadoProximo = pagoProgramadoProximo;
     result.ultimasCompras = ultimasCompras;
-    result.montoPagosProximos = Number(montoPagosProximos._sum.monto_estimado_total ?? 0);
     result.comprasSinRecepcion = parseInt(comprasSinRecepcion[0]?.cantidad ?? '0');
   }
 

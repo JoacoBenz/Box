@@ -23,7 +23,7 @@ export const PATCH = withAdminOverride({ roles: ['admin', 'director'] }, async (
   const validation = validateBody(areaSchema, body);
   if (!validation.success) return validation.response;
 
-  const { nombre, responsable_id } = validation.data;
+  const { nombre, responsable_id, presupuesto_anual, presupuesto_mensual } = validation.data;
 
   if (nombre !== area.nombre) {
     const existing = await db.areas.findFirst({ where: { nombre } });
@@ -37,7 +37,7 @@ export const PATCH = withAdminOverride({ roles: ['admin', 'director'] }, async (
 
   const updated = await db.areas.update({
     where: { id: areaId },
-    data: { nombre, responsable_id: responsable_id ?? null },
+    data: { nombre, responsable_id: responsable_id ?? null, presupuesto_anual: presupuesto_anual ?? null, presupuesto_mensual: presupuesto_mensual ?? null },
   });
 
   await registrarAuditoria({ tenantId: effectiveTenantId ?? session.tenantId, usuarioId: session.userId, accion: 'editar_area', entidad: 'area', entidadId: areaId, datosAnteriores: area, datosNuevos: updated, ipAddress: ip });

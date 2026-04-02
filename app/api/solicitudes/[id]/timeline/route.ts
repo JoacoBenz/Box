@@ -9,7 +9,7 @@ export const GET = withAdminOverride({}, async (_request, { db }, params) => {
   // Get audit log entries for this solicitud
   const events = await db.log_auditoria.findMany({
     where: {
-      entidad: 'solicitudes',
+      entidad: { in: ['solicitud', 'solicitudes'] },
       entidad_id: solicitudId,
     },
     include: {

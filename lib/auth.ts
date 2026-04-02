@@ -33,6 +33,7 @@ function userPayload(usuario: NonNullable<Awaited<ReturnType<typeof loadUsuario>
     tenantName: usuario.tenant.nombre,
     areaId: usuario.area_id,
     areaNombre: usuario.area?.nombre ?? null,
+    centroCostoId: usuario.centro_costo_id,
     roles: usuario.usuarios_roles.map((ur) => ur.rol.nombre as RolNombre),
   };
 }
@@ -159,6 +160,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.tenantName = (user as any).tenantName;
         token.areaId = (user as any).areaId;
         token.areaNombre = (user as any).areaNombre;
+        token.centroCostoId = (user as any).centroCostoId;
         token.roles = (user as any).roles;
       } else if (account && account.provider !== 'credentials') {
         // OAuth: load user from DB
@@ -173,6 +175,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.tenantName = payload.tenantName;
           token.areaId = payload.areaId;
           token.areaNombre = payload.areaNombre;
+          token.centroCostoId = payload.centroCostoId;
           token.roles = payload.roles;
         }
       }
@@ -185,6 +188,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       (session.user as any).tenantName = token.tenantName as string;
       (session.user as any).areaId = token.areaId as number | null;
       (session.user as any).areaNombre = token.areaNombre as string | null;
+      (session.user as any).centroCostoId = token.centroCostoId as number | null;
       (session.user as any).roles = token.roles as RolNombre[];
       return session;
     },
@@ -217,6 +221,7 @@ export async function getServerSession() {
     tenantId: user.tenantId as number,
     areaId: user.areaId as number | null,
     areaNombre: user.areaNombre as string | null,
+    centroCostoId: user.centroCostoId as number | null,
     roles: rolesEfectivos,
     delegaciones,
     nombre: user.name as string,

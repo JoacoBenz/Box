@@ -44,17 +44,20 @@ model roles {
 }
 
 model areas {
-  id             Int      @id @default(autoincrement())
-  tenant_id      Int
-  nombre         String   @db.VarChar(100)
-  activo         Boolean  @default(true)
-  responsable_id Int?
-  created_at     DateTime @default(now())
+  id                  Int      @id @default(autoincrement())
+  tenant_id           Int
+  nombre              String   @db.VarChar(100)
+  activo              Boolean  @default(true)
+  responsable_id      Int?
+  presupuesto_anual   Decimal? @db.Decimal(15, 2)
+  presupuesto_mensual Decimal? @db.Decimal(15, 2)
+  created_at          DateTime @default(now())
 
-  tenant        tenants    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-  responsable   usuarios?  @relation("area_responsable", fields: [responsable_id], references: [id])
-  usuarios_area usuarios[] @relation("usuario_area")
-  solicitudes   solicitudes[]
+  tenant         tenants         @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  responsable    usuarios?       @relation("area_responsable", fields: [responsable_id], references: [id])
+  usuarios_area  usuarios[]      @relation("usuario_area")
+  solicitudes    solicitudes[]
+  centros_costo  centros_costo[]
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, nombre])
@@ -66,8 +69,9 @@ model usuarios {
   nombre         String   @db.VarChar(150)
   email          String   @db.VarChar(255)
   password_hash  String?  @db.VarChar(255)
-  area_id        Int?
-  activo         Boolean  @default(true)
+  area_id           Int?
+  centro_costo_id   Int?
+  activo            Boolean  @default(true)
   oauth_provider String?  @db.VarChar(20)
   oauth_sub      String?  @db.VarChar(255)
   area_sugerida  String?  @db.VarChar(150)
@@ -76,6 +80,7 @@ model usuarios {
 
   tenant                   tenants          @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   area                     areas?           @relation("usuario_area", fields: [area_id], references: [id])
+  centro_costo             centros_costo?   @relation(fields: [centro_costo_id], references: [id])
   areas_responsable        areas[]          @relation("area_responsable")
   usuarios_roles           usuarios_roles[]
   solicitudes_creadas      solicitudes[]    @relation("solicitud_solicitante")
@@ -117,7 +122,6 @@ model solicitudes {
   descripcion               String
   justificacion             String
   urgencia                  String   @default("normal") @db.VarChar(20)
-  monto_estimado_total      Decimal? @db.Decimal(15, 2)
   solicitante_id            Int
   area_id                   Int
   validado_por_id           Int?
@@ -331,16 +335,19 @@ model proveedores {
 }
 
 model centros_costo {
-  id         Int      @id @default(autoincrement())
-  tenant_id  Int
-  nombre     String   @db.VarChar(150)
-  codigo     String   @db.VarChar(20)
+  id                  Int      @id @default(autoincrement())
+  tenant_id           Int
+  area_id             Int?
+  nombre              String   @db.VarChar(150)
+  codigo              String   @db.VarChar(20)
   activo              Boolean  @default(true)
   presupuesto_anual   Decimal? @db.Decimal(15, 2)
   presupuesto_mensual Decimal? @db.Decimal(15, 2)
   created_at          DateTime @default(now())
 
   tenant      tenants       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  area        areas?        @relation(fields: [area_id], references: [id])
+  usuarios    usuarios[]
   solicitudes solicitudes[]
 
   @@unique([tenant_id, codigo])

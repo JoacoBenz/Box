@@ -380,9 +380,6 @@ export default function DashboardPage() {
                 <MiniStatCard title="Este Mes" value={data.solicitudesMesSolicitante} icon={<FileTextOutlined />} color="purple" />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Monto Mes" value={data.montoSolicitadoMes} icon={<DollarOutlined />} color="cyan" format="money" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
                 <MiniStatCard title="Tasa Aprobación" value={data.tasaAprobacion} icon={<PercentageOutlined />} color="green" suffix="%" />
               </Col>
             </>
@@ -437,9 +434,6 @@ export default function DashboardPage() {
               </Col>
               <Col xs={12} sm={8} lg={4}>
                 <MiniStatCard title="Pagos Próximos (7d)" value={data.pagoProgramadoProximo} icon={<ClockCircleOutlined />} color="orange" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Monto Pagos Próx." value={data.montoPagosProximos} icon={<DollarOutlined />} color="orange" format="money" />
               </Col>
               <Col xs={12} sm={8} lg={4}>
                 <MiniStatCard title="Sin Recepción" value={data.comprasSinRecepcion} icon={<InboxOutlined />} color={data.comprasSinRecepcion > 0 ? 'red' : 'green'} />
@@ -668,7 +662,6 @@ export default function DashboardPage() {
                 { title: 'Título', dataIndex: 'titulo', ellipsis: true },
                 { title: 'Estado', dataIndex: 'estado', width: 140, render: (v: string) => <Tag color={ESTADO_COLOR[v] ?? 'default'}>{ESTADO_LABEL[v] ?? v}</Tag> },
                 { title: 'Pago', dataIndex: 'dia_pago_programado', width: 110, render: (v: string | null) => v ? new Date(v).toLocaleDateString('es-AR') : '—' },
-                { title: 'Monto', dataIndex: 'monto_estimado_total', width: 120, align: 'right' as const, render: (v: any) => v != null ? formatMoney(Number(v)) : '—' },
               ]}
             />
           ) : (

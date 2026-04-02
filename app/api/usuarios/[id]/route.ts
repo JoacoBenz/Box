@@ -4,8 +4,9 @@ import { prisma } from '@/lib/prisma';
 import { registrarAuditoria } from '@/lib/audit';
 import { usuarioSchema } from '@/lib/validators';
 import { invalidateCache } from '@/lib/cache';
+import { isOnlyResponsable } from '@/lib/permissions';
 
-export const PATCH = withAdminOverride({ roles: ['admin', 'director'] }, async (request, { session, db, ip, effectiveTenantId }, params) => {
+export const PATCH = withAdminOverride({ roles: ['admin', 'director', 'responsable_area'] }, async (request, { session, db, ip, effectiveTenantId }, params) => {
   const userId = parseInt(params.id);
 
   const usuario = await db.usuarios.findFirst({ where: { id: userId }, include: { usuarios_roles: { include: { rol: true } } } });
@@ -15,7 +16,25 @@ export const PATCH = withAdminOverride({ roles: ['admin', 'director'] }, async (
   const parsed = validateBody(usuarioSchema, body);
   if (!parsed.success) return parsed.response;
 
-  const { nombre, email, password, area_id, roles: roleNames } = parsed.data;
+  let { nombre, email, password, area_id, centro_costo_id, roles: roleNames } = parsed.data;
+
+  // Responsable de área: can only edit solicitantes in their own area
+  if (isOnlyResponsable(session.roles)) {
+    if (!session.areaId) {
+      return Response.json({ error: { code: 'FORBIDDEN', message: 'No tenés un área asignada' } }, { status: 403 });
+    }
+    if (usuario.area_id !== session.areaId) {
+      return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo podés editar usuarios de tu área' } }, { status: 403 });
+    }
+    const targetRoles = usuario.usuarios_roles.map(ur => ur.rol.nombre);
+    if (targetRoles.some(r => r !== 'solicitante')) {
+      return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo podés editar usuarios con rol solicitante' } }, { status: 403 });
+    }
+    if (roleNames.length !== 1 || roleNames[0] !== 'solicitante') {
+      return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo podés asignar el rol solicitante' } }, { status: 403 });
+    }
+    area_id = session.areaId;
+  }
 
   // Directors cannot assign or remove the admin role
   const isAdmin = session.roles.includes('admin');
@@ -50,7 +69,7 @@ export const PATCH = withAdminOverride({ roles: ['admin', 'director'] }, async (
 
   const rolesData = await prisma.roles.findMany({ where: { nombre: { in: roleNames } } });
 
-  const updateData: { nombre: string; email: string; area_id: number; password_hash?: string } = { nombre, email, area_id };
+  const updateData: { nombre: string; email: string; area_id: number; centro_costo_id: number | null; password_hash?: string } = { nombre, email, area_id, centro_costo_id: centro_costo_id ?? null };
   if (password) updateData.password_hash = await bcrypt.hash(password, 12);
 
   await prisma.$transaction(async (tx) => {
