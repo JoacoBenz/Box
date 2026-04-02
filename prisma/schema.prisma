@@ -337,7 +337,7 @@ model proveedores {
 model centros_costo {
   id                  Int      @id @default(autoincrement())
   tenant_id           Int
-  area_id             Int?
+  area_id             Int
   nombre              String   @db.VarChar(150)
   codigo              String   @db.VarChar(20)
   activo              Boolean  @default(true)
@@ -346,7 +346,7 @@ model centros_costo {
   created_at          DateTime @default(now())
 
   tenant      tenants       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-  area        areas?        @relation(fields: [area_id], references: [id])
+  area        areas         @relation(fields: [area_id], references: [id])
   usuarios    usuarios[]
   solicitudes solicitudes[]
 

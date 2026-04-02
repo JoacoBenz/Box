@@ -51,7 +51,7 @@ export default function CentrosCostoPage() {
           title: 'Área',
           key: 'area',
           width: 160,
-          render: (_: unknown, r: CentroCosto) => r.area?.nombre ?? <span style={{ color: '#bbb' }}>General</span>,
+          render: (_: unknown, r: CentroCosto) => r.area?.nombre ?? '—',
         },
         {
           title: 'Presupuesto Anual',
@@ -94,10 +94,9 @@ export default function CentrosCostoPage() {
       ]}
       renderForm={(_form, _editing, areas: AreaOption[]) => (
         <>
-          <Form.Item name="area_id" label="Área asociada">
+          <Form.Item name="area_id" label="Área asociada" rules={[{ required: true, message: 'Seleccione un área' }]}>
             <Select
-              placeholder="Sin área (general)"
-              allowClear
+              placeholder="Seleccionar área..."
               showSearch
               optionFilterProp="label"
               options={areas.map((a) => ({ value: a.id, label: a.nombre }))}

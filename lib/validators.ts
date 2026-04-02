@@ -167,7 +167,7 @@ export const centroCostoSchema = z.object({
     .refine((v) => v.trim() === v, 'El código no puede tener espacios'),
   presupuesto_anual: z.number().nonnegative().max(999_999_999).optional().nullable(),
   presupuesto_mensual: z.number().nonnegative().max(999_999_999).optional().nullable(),
-  area_id: z.number().int().positive().optional().nullable(),
+  area_id: z.number().int().positive(),
 });
 
 export const recepcionSchema = z

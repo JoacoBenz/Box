@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Layout, Menu } from 'antd';
+import { Layout, Menu, Select, Tag } from 'antd';
 import {
   DashboardOutlined,
   PlusCircleOutlined,
@@ -19,9 +19,11 @@ import {
   AuditOutlined,
   KeyOutlined,
   SettingOutlined,
+  CloseCircleOutlined,
 } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
 import type { RolNombre } from '@/types';
+import { useAdminTenant } from '@/components/admin/TenantSelector';
 
 const { Sider } = Layout;
 
@@ -36,73 +38,121 @@ interface SidebarProps {
   collapsed: boolean;
 }
 
+interface TenantOption {
+  id: number;
+  nombre: string;
+}
+
 export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [pulse, setPulse] = useState(true);
+  const isAdmin = roles.includes('admin');
+  const [selectedTenant, setSelectedTenant] = useAdminTenant();
+  const [tenants, setTenants] = useState<TenantOption[]>([]);
 
   useEffect(() => {
     const timer = setTimeout(() => setPulse(false), 800);
     return () => clearTimeout(timer);
   }, []);
 
-  const items = [
-    { key: '/', icon: <DashboardOutlined />, label: 'Dashboard', visible: true },
-    { key: '/solicitudes/nueva', icon: <PlusCircleOutlined />, label: 'Nueva Solicitud', visible: roles.includes('solicitante') },
-    { key: '/solicitudes', icon: <FileTextOutlined />, label: roles.includes('director') || roles.includes('admin') || roles.includes('tesoreria') ? 'Solicitudes' : 'Mis Solicitudes', visible: roles.includes('solicitante') || roles.includes('director') || roles.includes('admin') || roles.includes('tesoreria') || roles.includes('responsable_area') || roles.includes('compras') },
-    {
+  // Fetch tenants for admin org selector
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetch('/api/admin/tenants')
+      .then(r => r.ok ? r.json() : [])
+      .then((data: any[]) => setTenants(data.map(t => ({ id: t.id, nombre: t.nombre }))))
+      .catch(() => {});
+  }, [isAdmin]);
+
+  const hasOrgSelected = isAdmin ? selectedTenant !== null : true;
+  const selectedTenantName = tenants.find(t => t.id === selectedTenant)?.nombre;
+
+  // Build menu items based on role and org selection
+  const items: any[] = [];
+
+  // Always visible
+  items.push({ key: '/', icon: <DashboardOutlined />, label: 'Dashboard', visible: true });
+
+  if (isAdmin) {
+    // Admin: platform items always visible
+    items.push({ key: '/gestion/tenants', icon: <GlobalOutlined />, label: 'Organizaciones', visible: true });
+    items.push({ key: '/gestion/aprobaciones-org', icon: <AuditOutlined />, label: 'Aprobaciones Org', visible: true });
+
+    // Org-scoped items only when an org is selected
+    if (hasOrgSelected) {
+      items.push({ key: '/solicitudes', icon: <FileTextOutlined />, label: 'Solicitudes', visible: true });
+      items.push({ key: '/proveedores', icon: <ShopOutlined />, label: 'Proveedores', visible: true });
+      items.push({
+        type: 'group' as const,
+        label: collapsed ? '—' : 'Gestión Org',
+        visible: true,
+        children: [
+          { key: '/gestion/usuarios', icon: <TeamOutlined />, label: 'Usuarios' },
+          { key: '/gestion/areas', icon: <ApartmentOutlined />, label: 'Áreas' },
+          { key: '/gestion/centros-costo', icon: <BankOutlined />, label: 'Centros de Costo' },
+          { key: '/gestion/invitaciones', icon: <KeyOutlined />, label: 'Invitaciones' },
+          { key: '/gestion/configuracion-sso', icon: <SettingOutlined />, label: 'Config SSO' },
+        ],
+      });
+    }
+  } else {
+    // Non-admin: original menu logic
+    items.push({ key: '/solicitudes/nueva', icon: <PlusCircleOutlined />, label: 'Nueva Solicitud', visible: roles.includes('solicitante') });
+    items.push({ key: '/solicitudes', icon: <FileTextOutlined />, label: roles.includes('director') || roles.includes('tesoreria') ? 'Solicitudes' : 'Mis Solicitudes', visible: roles.includes('solicitante') || roles.includes('director') || roles.includes('tesoreria') || roles.includes('responsable_area') || roles.includes('compras') });
+    items.push({
       key: '/validaciones',
       icon: <CheckCircleOutlined />,
       label: pendientes.validaciones ? `Validaciones (${pendientes.validaciones})` : 'Validaciones',
       visible: roles.includes('responsable_area'),
-    },
-    {
+    });
+    items.push({
       key: '/aprobaciones',
       icon: <ThunderboltOutlined />,
       label: pendientes.aprobaciones ? `Aprobaciones (${pendientes.aprobaciones})` : 'Aprobaciones',
       visible: roles.includes('director'),
-    },
-    {
+    });
+    items.push({
       key: '/compras',
       icon: <DollarOutlined />,
       label: pendientes.compras ? `Compras (${pendientes.compras})` : 'Compras',
       visible: roles.includes('tesoreria'),
-    },
-    {
+    });
+    items.push({
       key: '/recepciones',
       icon: <InboxOutlined />,
       label: pendientes.recepciones ? `Recepciones (${pendientes.recepciones})` : 'Recepciones',
       visible: roles.includes('solicitante') || roles.includes('responsable_area'),
-    },
-    {
+    });
+    items.push({
       key: '/gestion-compras',
       icon: <ShoppingCartOutlined />,
       label: pendientes.compras ? `Gestión Compras (${pendientes.compras})` : 'Gestión Compras',
       visible: roles.includes('compras'),
-    },
-    { key: '/proveedores', icon: <ShopOutlined />, label: 'Proveedores', visible: true },
-    { key: '/mi-area/usuarios', icon: <TeamOutlined />, label: 'Usuarios de mi Área', visible: roles.includes('responsable_area') && !roles.includes('admin') && !roles.includes('director') },
-    {
-      type: 'group' as const,
-      label: collapsed ? '—' : 'Administración',
-      visible: roles.includes('admin') || roles.includes('director'),
-      children: [
-        { key: '/gestion/usuarios', icon: <TeamOutlined />, label: 'Usuarios' },
-        { key: '/gestion/areas', icon: <ApartmentOutlined />, label: 'Áreas' },
-        { key: '/gestion/centros-costo', icon: <BankOutlined />, label: 'Centros de Costo' },
-        { key: '/gestion/invitaciones', icon: <KeyOutlined />, label: 'Invitaciones' },
-        ...(roles.includes('admin') ? [
-          { key: '/gestion/configuracion-sso', icon: <SettingOutlined />, label: 'Config SSO' },
-          { key: '/gestion/aprobaciones-org', icon: <AuditOutlined />, label: 'Aprobaciones Org' },
-          { key: '/gestion/tenants', icon: <GlobalOutlined />, label: 'Organizaciones' },
-        ] : []),
-      ],
-    },
-  ]
+    });
+    items.push({ key: '/proveedores', icon: <ShopOutlined />, label: 'Proveedores', visible: true });
+    items.push({ key: '/mi-area/usuarios', icon: <TeamOutlined />, label: 'Usuarios de mi Área', visible: roles.includes('responsable_area') && !roles.includes('admin') && !roles.includes('director') });
+
+    if (roles.includes('director')) {
+      items.push({
+        type: 'group' as const,
+        label: collapsed ? '—' : 'Administración',
+        visible: true,
+        children: [
+          { key: '/gestion/usuarios', icon: <TeamOutlined />, label: 'Usuarios' },
+          { key: '/gestion/areas', icon: <ApartmentOutlined />, label: 'Áreas' },
+          { key: '/gestion/centros-costo', icon: <BankOutlined />, label: 'Centros de Costo' },
+          { key: '/gestion/invitaciones', icon: <KeyOutlined />, label: 'Invitaciones' },
+        ],
+      });
+    }
+  }
+
+  const filteredItems = items
     .filter((item) => item.visible)
     .map(({ visible, ...item }) => item);
 
-  const selectedKey = items.find(item => 'key' in item && pathname.startsWith(item.key as string) && item.key !== '/')?.key as string
+  const selectedKey = filteredItems.find(item => 'key' in item && pathname.startsWith(item.key as string) && item.key !== '/')?.key as string
     ?? (pathname === '/' ? '/' : undefined);
 
   return (
@@ -168,12 +218,30 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
           </div>
           {!collapsed && <span style={{ fontWeight: 700, fontSize: 15, color: '#1e293b', letterSpacing: '-0.3px' }}>BoxZenj</span>}
         </div>
+
+        {/* Admin org selector */}
+        {isAdmin && !collapsed && (
+          <div style={{ padding: '12px 12px 0' }}>
+            <Select
+              value={selectedTenant}
+              onChange={(val: number | null) => { setSelectedTenant(val); if (val === undefined || val === null) router.push('/'); }}
+              placeholder="Seleccionar organización..."
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              size="small"
+              style={{ width: '100%' }}
+              options={tenants.map(t => ({ value: t.id, label: t.nombre }))}
+            />
+          </div>
+        )}
+
         <Menu
           className="sidebar-menu"
           mode="inline"
           selectedKeys={selectedKey ? [selectedKey] : []}
           style={{ border: 'none', padding: '12px 4px', background: 'transparent' }}
-          items={items}
+          items={filteredItems}
           onClick={({ key }) => router.push(key)}
         />
       </Sider>

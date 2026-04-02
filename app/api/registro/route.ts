@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { registroSchema } from '@/lib/validators';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
+import { notificarAdmins } from '@/lib/notifications';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { logApiError } from '@/lib/logger';
 
@@ -131,6 +132,11 @@ export async function POST(request: NextRequest) {
       entidadId: txResult.tenant.id,
       ipAddress: getClientIp(request),
     });
+
+    await notificarAdmins(
+      'Nueva organización pendiente',
+      `"${nombreOrganizacion}" se registró y requiere aprobación.`,
+    );
 
     return Response.json({ message: 'Tu organización fue registrada y está pendiente de aprobación. Te notificaremos cuando sea activada.' }, { status: 201 });
   } catch (error) {

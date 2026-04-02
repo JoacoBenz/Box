@@ -6,7 +6,6 @@ import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, LogoutOutlined, Sea
 import { signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { NotificationBell } from './NotificationBell';
-import TenantSelector, { useAdminTenant } from '@/components/admin/TenantSelector';
 import { ESTADO_COLOR, ESTADO_LABEL } from '@/lib/constants';
 
 const { Header: AntHeader } = Layout;
@@ -38,8 +37,6 @@ interface SearchResult {
 
 export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, roles, collapsed, onToggle }: HeaderProps) {
   const router = useRouter()
-  const isAdmin = roles.includes('admin')
-  const [selectedTenant, setSelectedTenant] = useAdminTenant()
 
   // Search state
   const [searchOpen, setSearchOpen] = useState(false)
@@ -118,6 +115,13 @@ export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, ro
 
   const menuItems: MenuProps['items'] = [
     {
+      key: 'profile',
+      icon: <UserOutlined />,
+      label: 'Mi Perfil',
+      onClick: () => router.push('/perfil'),
+    },
+    { type: 'divider' },
+    {
       key: 'logout',
       icon: <LogoutOutlined />,
       label: 'Cerrar sesión',
@@ -148,9 +152,6 @@ export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, ro
             style={{ fontSize: 16, width: 38, height: 38, borderRadius: 10, color: '#64748b' }}
           />
           <Text strong style={{ fontSize: 15, color: '#334155' }}>{tenantNombre}</Text>
-          {isAdmin && (
-            <TenantSelector value={selectedTenant} onChange={setSelectedTenant} compact />
-          )}
         </Space>
 
         <Space size="middle">

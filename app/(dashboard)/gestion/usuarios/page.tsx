@@ -60,8 +60,7 @@ function UsuarioFormFields({ form, editing, areas }: { form: FormInstance; editi
     fetch('/api/centros-costo').then(r => r.ok ? r.json() : []).then(setCentrosCosto).catch(() => {})
   }, [])
 
-  // Filter centros by selected area (show area's CCs + general ones with no area)
-  const filteredCentros = centrosCosto.filter(cc => !cc.area_id || cc.area_id === selectedAreaId)
+  const filteredCentros = centrosCosto.filter(cc => cc.area_id === selectedAreaId)
 
   return (
     <>

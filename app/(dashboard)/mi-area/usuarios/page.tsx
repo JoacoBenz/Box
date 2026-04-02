@@ -55,7 +55,7 @@ export default function MiAreaUsuariosPage() {
     fetchData()
   }, [fetchData])
 
-  const filteredCentros = centrosCosto.filter(cc => !cc.area_id || cc.area_id === sessionAreaId)
+  const filteredCentros = centrosCosto.filter(cc => cc.area_id === sessionAreaId)
 
   function openCreate() {
     setEditing(null)

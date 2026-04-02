@@ -45,6 +45,20 @@ export const POST = withAdminOverride({ roles: ['admin', 'director', 'tesoreria'
     return Response.json({ error: { code: 'CONFLICT', message: `Ya existe un centro de costo con el nombre "${nombre}"` } }, { status: 409 });
   }
 
+  // Validate budget doesn't exceed area budget
+  const area = await db.areas.findUnique({ where: { id: area_id }, select: { presupuesto_anual: true, presupuesto_mensual: true } });
+  if (area) {
+    const existingCCs = await db.centros_costo.findMany({ where: { area_id, activo: true }, select: { presupuesto_anual: true, presupuesto_mensual: true } });
+    const sumaAnual = existingCCs.reduce((s, cc) => s + Number(cc.presupuesto_anual ?? 0), 0) + Number(presupuesto_anual ?? 0);
+    const sumaMensual = existingCCs.reduce((s, cc) => s + Number(cc.presupuesto_mensual ?? 0), 0) + Number(presupuesto_mensual ?? 0);
+    if (area.presupuesto_anual != null && sumaAnual > Number(area.presupuesto_anual)) {
+      return Response.json({ error: { code: 'VALIDATION_ERROR', message: `La suma de presupuestos anuales de los centros de costo ($${sumaAnual.toLocaleString('es-AR')}) supera el presupuesto anual del área ($${Number(area.presupuesto_anual).toLocaleString('es-AR')})` } }, { status: 400 });
+    }
+    if (area.presupuesto_mensual != null && sumaMensual > Number(area.presupuesto_mensual)) {
+      return Response.json({ error: { code: 'VALIDATION_ERROR', message: `La suma de presupuestos mensuales de los centros de costo ($${sumaMensual.toLocaleString('es-AR')}) supera el presupuesto mensual del área ($${Number(area.presupuesto_mensual).toLocaleString('es-AR')})` } }, { status: 400 });
+    }
+  }
+
   const centro = await db.centros_costo.create({
     data: {
       tenant_id: effectiveTenantId,
@@ -52,7 +66,7 @@ export const POST = withAdminOverride({ roles: ['admin', 'director', 'tesoreria'
       codigo: codigoUpper,
       ...(presupuesto_anual !== undefined && { presupuesto_anual }),
       ...(presupuesto_mensual !== undefined && { presupuesto_mensual }),
-      ...(area_id !== undefined && { area_id: area_id ?? null }),
+      area_id,
     },
   });
 

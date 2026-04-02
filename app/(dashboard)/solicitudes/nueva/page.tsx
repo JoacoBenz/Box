@@ -217,7 +217,7 @@ export default function NuevaSolicitudPage() {
           </Form.Item>
 
           {(() => {
-            const filtered = centrosCosto.filter(cc => !cc.area_id || cc.area_id === sessionAreaId)
+            const filtered = centrosCosto.filter(cc => cc.area_id === sessionAreaId)
             return filtered.length > 0 ? (
               <Form.Item label="Centro de Costo" name="centro_costo_id">
                 <Select
