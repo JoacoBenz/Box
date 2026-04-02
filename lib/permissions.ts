@@ -53,6 +53,6 @@ export async function verificarResponsableDeArea(
   return !!area;
 }
 
-export function apiError(code: string, message: string, status: number, details?: { field: string; message: string }[]) {
-  return Response.json({ error: { code, message, details } }, { status });
+export function apiError(code: string, message: string | undefined, status: number, details?: { field: string; message: string }[]) {
+  return Response.json({ error: { code, message: message ?? 'Error', details } }, { status });
 }

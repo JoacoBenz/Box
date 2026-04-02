@@ -119,7 +119,7 @@ export default function NuevaSolicitudPage() {
           <Form.Item
             label="Urgencia"
             name="urgencia"
-            rules={[{ required: true }]}
+            rules={[{ required: true, message: 'Seleccioná la urgencia' }]}
           >
             <Select
               options={[
@@ -255,6 +255,7 @@ export default function NuevaSolicitudPage() {
                       {...restField}
                       label="Link del producto"
                       name={[name, 'link_producto']}
+                      rules={[{ type: 'url', message: 'Ingresá una URL válida (ej: https://...)' }]}
                       style={{ marginTop: 12, marginBottom: 0 }}
                     >
                       <Input placeholder="https://pagina.com/producto" maxLength={500} />

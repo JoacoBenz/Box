@@ -3,6 +3,7 @@ import { getServerSession } from '@/lib/auth';
 import { tenantPrisma } from '@/lib/prisma';
 import { verificarRol, apiError } from '@/lib/permissions';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
+import { invalidateCache } from '@/lib/cache';
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession();
@@ -33,6 +34,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     entidadId: delegacionId,
     ipAddress: getClientIp(request),
   });
+
+  // Invalidate cached roles for the delegado so role removal takes effect immediately
+  invalidateCache(`t:${session.tenantId}:roles:${delegacion.delegado_id}`);
 
   return NextResponse.json({ ok: true });
 }

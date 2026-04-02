@@ -159,7 +159,7 @@ export default function InvitacionesPage() {
         okText="Generar"
       >
         <Form form={form} layout="vertical" initialValues={{ dias_validez: 30 }}>
-          <Form.Item label="Días de validez" name="dias_validez">
+          <Form.Item label="Días de validez" name="dias_validez" rules={[{ required: true, message: 'Ingresá los días de validez' }]}>
             <InputNumber min={1} max={365} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item label="Máximo de usos (vacío = ilimitado)" name="max_usos">

@@ -184,13 +184,13 @@ export default function ProveedoresPage() {
           <Form.Item label="Datos Bancarios" name="datos_bancarios">
             <Input.TextArea rows={2} maxLength={500} />
           </Form.Item>
-          <Form.Item label="Link de Página Web" name="link_pagina">
+          <Form.Item label="Link de Página Web" name="link_pagina" rules={[{ type: 'url', message: 'Ingresá una URL válida (ej: https://...)' }]}>
             <Input maxLength={500} />
           </Form.Item>
           <Form.Item label="Teléfono" name="telefono">
             <PhoneInput />
           </Form.Item>
-          <Form.Item label="Email" name="email">
+          <Form.Item label="Email" name="email" rules={[{ type: 'email', message: 'Ingresá un email válido' }]}>
             <Input maxLength={255} />
           </Form.Item>
           <Form.Item label="Dirección" name="direccion">

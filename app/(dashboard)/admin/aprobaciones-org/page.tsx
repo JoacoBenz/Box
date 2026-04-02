@@ -37,9 +37,12 @@ export default function AprobacionesOrgPage() {
 
   useEffect(() => { fetchPendientes() }, [fetchPendientes])
 
+  const [actionLoading, setActionLoading] = useState<number | null>(null)
+
   async function cambiarEstado(id: number, estado: 'activo' | 'rechazado') {
     try {
-      const res = await fetch(`/api/admin/tenants/${id}/estado`, {
+      setActionLoading(id)
+      const res = await fetch(`/api/admin/tenants/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ estado }),
@@ -52,6 +55,8 @@ export default function AprobacionesOrgPage() {
       fetchPendientes()
     } catch (err: any) {
       message.error(err.message)
+    } finally {
+      setActionLoading(null)
     }
   }
 
@@ -86,7 +91,7 @@ export default function AprobacionesOrgPage() {
             okText="Aprobar"
             cancelText="Cancelar"
           >
-            <Button type="primary" size="small">Aprobar</Button>
+            <Button type="primary" size="small" loading={actionLoading === r.id} disabled={actionLoading !== null}>Aprobar</Button>
           </Popconfirm>
           <Popconfirm
             title="¿Rechazar esta organización?"
@@ -95,7 +100,7 @@ export default function AprobacionesOrgPage() {
             okText="Rechazar"
             cancelText="Cancelar"
           >
-            <Button danger size="small">Rechazar</Button>
+            <Button danger size="small" loading={actionLoading === r.id} disabled={actionLoading !== null}>Rechazar</Button>
           </Popconfirm>
         </Space>
       ),

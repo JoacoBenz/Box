@@ -2,7 +2,10 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { verificarRol, apiError } from '@/lib/permissions';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { logApiError } from '@/lib/logger';
+
+const ESTADOS_VALIDOS = ['activo', 'rechazado', 'suspendido'] as const;
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -14,11 +17,37 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const { id } = await params;
     const tenantId = parseInt(id);
     const body = await request.json();
-    const { nombre, email_contacto, moneda, desactivado } = body;
 
     const existing = await prisma.tenants.findUnique({ where: { id: tenantId } });
     if (!existing) return apiError('NOT_FOUND', 'Organización no encontrada', 404);
 
+    // Estado change flow (used by aprobaciones-org page)
+    if (body.estado && ESTADOS_VALIDOS.includes(body.estado)) {
+      if (tenantId === session.tenantId) {
+        return apiError('VALIDATION_ERROR', 'No podés cambiar el estado de tu propia organización', 400);
+      }
+
+      const updated = await prisma.tenants.update({
+        where: { id: tenantId },
+        data: { estado: body.estado },
+      });
+
+      await registrarAuditoria({
+        tenantId: session.tenantId,
+        usuarioId: session.userId,
+        accion: `cambiar_estado_tenant_${body.estado}`,
+        entidad: 'tenant',
+        entidadId: tenantId,
+        datosAnteriores: { estado: existing.estado },
+        datosNuevos: { estado: body.estado },
+        ipAddress: getClientIp(request),
+      });
+
+      return Response.json(updated);
+    }
+
+    // General edit flow (used by organizaciones page)
+    const { nombre, email_contacto, moneda, desactivado } = body;
     const data: any = { updated_at: new Date() };
     if (nombre?.trim()) data.nombre = nombre.trim();
     if (email_contacto?.trim()) data.email_contacto = email_contacto.trim();

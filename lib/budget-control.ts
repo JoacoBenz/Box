@@ -31,7 +31,7 @@ export async function verificarPresupuesto(
   const startOfYear = new Date(now.getFullYear(), 0, 1);
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  // Sum approved/in-process solicitudes for this cost center
+  // Sum approved/in-process spending in a single aggregation query
   const gastosAnuales = await db.compras.findMany({
     where: {
       solicitud: {
@@ -40,22 +40,18 @@ export async function verificarPresupuesto(
       },
       fecha_compra: { gte: startOfYear },
     },
-    select: { monto_total: true },
+    select: { monto_total: true, fecha_compra: true },
   });
 
-  const gastosMensuales = await db.compras.findMany({
-    where: {
-      solicitud: {
-        centro_costo_id: centroCostoId,
-        estado: { in: ['comprada', 'recibida', 'recibida_con_obs', 'cerrada'] },
-      },
-      fecha_compra: { gte: startOfMonth },
-    },
-    select: { monto_total: true },
-  });
-
-  const gastoAnual = gastosAnuales.reduce((sum, c) => sum + Number(c.monto_total), 0);
-  const gastoMensual = gastosMensuales.reduce((sum, c) => sum + Number(c.monto_total), 0);
+  let gastoAnual = 0;
+  let gastoMensual = 0;
+  for (const c of gastosAnuales) {
+    const monto = Number(c.monto_total);
+    gastoAnual += monto;
+    if (c.fecha_compra >= startOfMonth) {
+      gastoMensual += monto;
+    }
+  }
 
   const presupuestoAnual = centroCosto.presupuesto_anual ? Number(centroCosto.presupuesto_anual) : null;
   const presupuestoMensual = centroCosto.presupuesto_mensual ? Number(centroCosto.presupuesto_mensual) : null;

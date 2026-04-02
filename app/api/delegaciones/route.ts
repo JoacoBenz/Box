@@ -3,6 +3,7 @@ import { getServerSession } from '@/lib/auth';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { verificarRol, apiError } from '@/lib/permissions';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
+import { invalidateCache } from '@/lib/cache';
 
 export async function GET(request: Request) {
   const { session, effectiveTenantId } = await (await import('@/lib/tenant-override')).getEffectiveTenantId(request);
@@ -76,6 +77,9 @@ export async function POST(request: Request) {
     datosNuevos: { delegado_id, rol_delegado, fecha_inicio, fecha_fin },
     ipAddress: getClientIp(request),
   });
+
+  // Invalidate cached roles for the delegado so new roles take effect immediately
+  invalidateCache(`t:${session.tenantId}:roles:${delegado_id}`);
 
   return NextResponse.json(delegacion, { status: 201 });
 }

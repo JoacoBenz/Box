@@ -24,6 +24,7 @@ import {
 } from '@ant-design/icons'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import type { DashboardData } from '@/types/dashboard'
 
 const DirectorDashboard = dynamic(() => import('./components/DirectorDashboard'), {
   loading: () => <div style={{ textAlign: 'center', padding: 40 }}>Cargando dashboard...</div>,
@@ -209,7 +210,8 @@ function BarChartRow({ label, value, maxValue, color, subtext, index }: {
 }
 
 export default function DashboardPage() {
-  const [data, setData] = useState<any>(null)
+  // Fields are populated conditionally by role — accessed within role-conditional blocks
+  const [data, setData] = useState<Record<string, any> | null>(null)
   const [loading, setLoading] = useState(true)
   const [directorAreaId, setDirectorAreaId] = useState<number | null>(null)
 

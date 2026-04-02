@@ -78,6 +78,7 @@ export default function ConfiguracionSSOPage() {
           <Form.Item
             label="Dominio institucional"
             name="sso_dominio"
+            rules={[{ pattern: /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, message: 'Ingresá un dominio válido (ej: escuela.edu.ar)' }]}
             help="Dominio de email para auto-registro de empleados (ej: escuela.edu.ar). Los empleados que se registren con un email de este dominio serán asociados automáticamente a esta organización."
           >
             <Input placeholder="ejemplo.edu.ar" />

@@ -1,18 +1,12 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
-import { tenantPrisma, prisma } from '@/lib/prisma';
-import { getEffectiveTenantId } from '@/lib/tenant-override';
+import { withAdminOverride } from '@/lib/api-handler';
 
-export async function GET(request: Request) {
-  const { session, effectiveTenantId } = await getEffectiveTenantId(request);
+export const GET = withAdminOverride({}, async (request, { db }) => {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q')?.trim();
 
   if (!q || q.length < 2) {
-    return NextResponse.json({ solicitudes: [], proveedores: [], compras: [] });
+    return Response.json({ solicitudes: [], proveedores: [], compras: [] });
   }
-
-  const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
 
   const [solicitudes, proveedores] = await Promise.all([
     db.solicitudes.findMany({
@@ -42,5 +36,5 @@ export async function GET(request: Request) {
     }),
   ]);
 
-  return NextResponse.json({ solicitudes, proveedores });
-}
+  return Response.json({ solicitudes, proveedores });
+});

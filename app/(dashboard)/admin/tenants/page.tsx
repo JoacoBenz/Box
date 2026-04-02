@@ -360,7 +360,7 @@ export default function AdminTenantsPage() {
           <Form.Item
             name="moneda"
             label="Moneda"
-            rules={[{ required: true }]}
+            rules={[{ required: true, message: 'Seleccioná la moneda' }]}
           >
             <Select
               options={[
