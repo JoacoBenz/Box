@@ -497,7 +497,7 @@ export default function DashboardPage() {
                 <Text strong style={{ fontSize: 15, color: '#9a3412' }}>
                   {data.adminPlatform.orgPendientes} organizaci{data.adminPlatform.orgPendientes !== 1 ? 'ones' : '\u00f3n'} pendiente{data.adminPlatform.orgPendientes !== 1 ? 's' : ''} de aprobaci\u00f3n
                 </Text>
-                <Link href="/admin/aprobaciones-org">
+                <Link href="/gestion/aprobaciones-org">
                   <Button type="primary" style={{ background: '#ea580c', borderColor: '#ea580c', fontWeight: 600 }}>
                     Revisar Aprobaciones
                   </Button>
@@ -513,7 +513,7 @@ export default function DashboardPage() {
                 <Card
                   title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Organizaciones por Uso</span>}
                   style={{ borderRadius: 16 }}
-                  extra={<Link href="/admin/tenants" style={{ color: '#4f46e5', fontWeight: 600 }}>Ver todas <ArrowRightOutlined /></Link>}
+                  extra={<Link href="/gestion/tenants" style={{ color: '#4f46e5', fontWeight: 600 }}>Ver todas <ArrowRightOutlined /></Link>}
                 >
                   <Table
                     dataSource={data.adminPlatform.orgsTopUso}

@@ -59,20 +59,13 @@ export default function ConfiguracionSSOPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="page-content" style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}>
-        <Spin size="large" />
-      </div>
-    )
-  }
-
   return (
     <div className="page-content">
       <Title level={3} style={{ margin: 0, marginBottom: 24, fontWeight: 700, color: '#1e293b' }}>
         Configuración SSO
       </Title>
 
+      <Spin spinning={loading}>
       <Card style={{ maxWidth: 600 }}>
         <Form form={form} layout="vertical">
           <Form.Item
@@ -113,6 +106,7 @@ export default function ConfiguracionSSOPage() {
           </Space>
         </Form>
       </Card>
+      </Spin>
     </div>
   )
 }

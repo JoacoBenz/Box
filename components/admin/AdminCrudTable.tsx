@@ -78,7 +78,23 @@ export default function AdminCrudTable<T extends { id: number }>({
   const [editing, setEditing] = useState<T | null>(null)
   const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
-  const [selectedTenant] = useAdminTenant()
+  const [adminTenant] = useAdminTenant()
+  const [ownTenantId, setOwnTenantId] = useState<number | null>(null)
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    fetch('/api/auth/session').then(r => r.json()).then(s => {
+      const roles: string[] = s?.user?.roles ?? []
+      setIsAdmin(roles.includes('admin'))
+      setOwnTenantId(s?.user?.tenantId ?? null)
+    }).catch(() => {})
+  }, [])
+
+  // For admins, selectedTenant comes from cookie (TenantSelector).
+  // For directors/others, use their own tenant automatically.
+  // isAdmin === null means still loading session
+  const selectedTenant = isAdmin === null ? null : isAdmin ? adminTenant : ownTenantId
+  const hasTenant = selectedTenant !== null
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -110,7 +126,7 @@ export default function AdminCrudTable<T extends { id: number }>({
   useEffect(() => { fetchData() }, [fetchData])
 
   function openCreate() {
-    if (!selectedTenant) {
+    if (!hasTenant) {
       message.warning(`Seleccioná una organización antes de crear`)
       return
     }
@@ -184,7 +200,7 @@ export default function AdminCrudTable<T extends { id: number }>({
     <div className="page-content">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>{pageTitle}</Title>
-        {selectedTenant && (
+        {hasTenant && (
           <Button type="primary" onClick={openCreate} style={{ fontWeight: 600 }}>
             {createLabel ?? `+ Nuevo`}
           </Button>
