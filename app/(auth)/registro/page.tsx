@@ -47,8 +47,8 @@ export default function RegistroPage() {
       <Card style={{ width: 480, boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
         <Result
           status="success"
-          title="Registro enviado"
-          subTitle="Tu organización fue registrada y está pendiente de aprobación. Te notificaremos cuando sea activada."
+          title="Verificá tu email"
+          subTitle="Te enviamos un email de verificación. Revisá tu bandeja de entrada (y spam) para completar el registro."
           extra={<Link href="/login"><Button type="primary">Volver al inicio</Button></Link>}
         />
       </Card>

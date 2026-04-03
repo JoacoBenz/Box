@@ -32,7 +32,10 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
   const estado = searchParams.get('estado') || undefined;
   const urgencia = searchParams.get('urgencia') || undefined;
   const areaId = searchParams.get('area_id') ? parseInt(searchParams.get('area_id')!) : undefined;
+  const solicitanteId = searchParams.get('solicitante_id') ? parseInt(searchParams.get('solicitante_id')!) : undefined;
   const busqueda = searchParams.get('busqueda') || undefined;
+  const desde = searchParams.get('desde') || undefined;
+  const hasta = searchParams.get('hasta') || undefined;
   const orden = searchParams.get('orden') || 'created_at';
   const direccion = (searchParams.get('direccion') || 'desc') as 'asc' | 'desc';
 
@@ -65,8 +68,13 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
     const estados = estado.split(',').map(e => e.trim()).filter(Boolean);
     where.estado = estados.length === 1 ? estados[0] : { in: estados };
   }
-  if (urgencia) where.urgencia = urgencia;
   if (areaId) where.area_id = areaId;
+  if (solicitanteId) where.solicitante_id = solicitanteId;
+  if (desde || hasta) {
+    where.created_at = {};
+    if (desde) where.created_at.gte = new Date(desde + 'T00:00:00');
+    if (hasta) where.created_at.lte = new Date(hasta + 'T23:59:59');
+  }
   if (busqueda) {
     const busquedaCondition = [
       { titulo: { contains: busqueda, mode: 'insensitive' } },

@@ -72,7 +72,6 @@ export async function notificarPorRol(
         activo: true,
         usuarios_roles: {
           some: { rol: { nombre: rolNombre } },
-          none: { rol: { nombre: 'admin' } },
         },
       },
       select: { id: true },

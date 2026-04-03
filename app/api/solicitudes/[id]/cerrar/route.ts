@@ -8,8 +8,8 @@ export const POST = withAuth({ roles: ['tesoreria', 'admin'] }, async (request, 
 
   const solicitud = await db.solicitudes.findFirst({ where: { id: solicitudId } });
   if (!solicitud) return apiError('NOT_FOUND', 'No encontrada', 404);
-  if (solicitud.estado !== 'recibida_con_obs') {
-    return apiError('BAD_REQUEST', 'Solo se pueden cerrar solicitudes con observaciones de recepción', 400);
+  if (!['recibida_con_obs', 'recibida'].includes(solicitud.estado)) {
+    return apiError('BAD_REQUEST', 'Solo se pueden cerrar solicitudes recibidas', 400);
   }
 
   const body = await request.json().catch(() => ({}));

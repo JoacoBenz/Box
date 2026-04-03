@@ -14,6 +14,7 @@ export async function GET() {
         id: true,
         nombre: true,
         email: true,
+        password_hash: true,
         area: { select: { nombre: true } },
         tenant: { select: { nombre: true } },
         usuarios_roles: {
@@ -30,6 +31,7 @@ export async function GET() {
       area: usuario.area?.nombre ?? null,
       organizacion: usuario.tenant?.nombre ?? null,
       roles: usuario.usuarios_roles.map(ur => ur.rol.nombre),
+      tienePassword: !!usuario.password_hash,
     });
   } catch (error: any) {
     if (error.message === 'No autenticado') return apiError('UNAUTHORIZED', 'No autenticado', 401);
@@ -50,22 +52,25 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (passwordNuevo) {
-      if (!passwordActual) {
-        return apiError('VALIDATION_ERROR', 'Debe ingresar la contraseña actual', 400);
-      }
-
       const usuario = await prisma.usuarios.findUnique({
         where: { id: session.userId },
-        select: { password_hash: true },
+        select: { password_hash: true, usuarios_roles: { select: { rol: { select: { nombre: true } } } } },
       });
 
-      if (!usuario?.password_hash) {
+      const isAdmin = usuario?.usuarios_roles?.some(ur => ur.rol.nombre === 'admin');
+
+      if (!usuario?.password_hash && !isAdmin) {
         return apiError('VALIDATION_ERROR', 'No se puede cambiar la contraseña de cuentas SSO', 400);
       }
 
-      const valid = await bcrypt.compare(passwordActual, usuario.password_hash);
-      if (!valid) {
-        return apiError('VALIDATION_ERROR', 'Contraseña actual incorrecta', 400);
+      if (usuario?.password_hash) {
+        if (!passwordActual) {
+          return apiError('VALIDATION_ERROR', 'Debe ingresar la contraseña actual', 400);
+        }
+        const valid = await bcrypt.compare(passwordActual, usuario.password_hash);
+        if (!valid) {
+          return apiError('VALIDATION_ERROR', 'Contraseña actual incorrecta', 400);
+        }
       }
 
       if (passwordNuevo.length < 8) {

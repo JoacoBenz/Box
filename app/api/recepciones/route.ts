@@ -104,7 +104,7 @@ export const POST = withAuth({ roles: ['solicitante', 'responsable_area'] }, asy
 
       // Set appropriate estado based on item-level data
       if (allFullyReceived && !hasProblems) {
-        nuevoEstado = 'recibida';
+        nuevoEstado = 'cerrada';
       } else if (allFullyReceived && hasProblems) {
         nuevoEstado = 'recibida_con_obs';
       } else {

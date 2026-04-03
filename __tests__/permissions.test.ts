@@ -163,9 +163,11 @@ describe('verificarSegregacion', () => {
       expect(verificarSegregacion(BASE, 3, 'comprar').permitido).toBe(true);
     });
 
-    it('allows solicitante to register purchase (if they have role)', () => {
+    it('blocks solicitante from registering purchase of own request', () => {
       const solicitud = { ...BASE, aprobado_por_id: 5 };
-      expect(verificarSegregacion(solicitud, 1, 'comprar').permitido).toBe(true);
+      const result = verificarSegregacion(solicitud, 1, 'comprar');
+      expect(result.permitido).toBe(false);
+      expect(result.motivo).toContain('propia solicitud');
     });
 
     it('allows validator to register purchase (different concern)', () => {

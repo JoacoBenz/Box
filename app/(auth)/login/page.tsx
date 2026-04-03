@@ -131,6 +131,10 @@ export default function LoginPage() {
             </Form.Item>
           </div>
 
+          <div style={{ textAlign: 'right', marginTop: -8, marginBottom: 8 }}>
+            <Link href="/recuperar" style={{ fontSize: 13, color: '#6366f1' }}>¿Olvidaste tu contraseña?</Link>
+          </div>
+
           <div className="anim-field-3">
             <Form.Item style={{ marginBottom: 16, marginTop: 8 }}>
               <Button

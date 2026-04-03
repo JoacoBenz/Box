@@ -1,13 +1,14 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
-import { Table, Tag, Select, Space, Button, Input, Card, Row, Col, Typography } from 'antd'
+import { Table, Tag, Select, Space, Button, Input, Card, Typography, DatePicker } from 'antd'
 import { SearchOutlined, DownloadOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useRouter } from 'next/navigation'
 import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types'
 import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types'
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
 import Link from 'next/link'
+import dayjs from 'dayjs'
 
 const { Text } = Typography
 
@@ -35,11 +36,21 @@ export default function SolicitudesTable({ roles, areas }: Props) {
 
   // Filters
   const [estado, setEstado] = useState<string | undefined>()
-  const [urgencia, setUrgencia] = useState<string | undefined>()
+  const [solicitanteId, setSolicitanteId] = useState<number | undefined>()
   const [areaId, setAreaId] = useState<number | undefined>()
   const [busqueda, setBusqueda] = useState('')
   const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
+  const [fechaDesde, setFechaDesde] = useState<string | undefined>()
+  const [fechaHasta, setFechaHasta] = useState<string | undefined>()
   const searchTimeout = useRef<any>(null)
+
+  // Solicitantes list
+  const [solicitantes, setSolicitantes] = useState<{ id: number; nombre: string }[]>([])
+  useEffect(() => {
+    fetch('/api/usuarios?rol=solicitante').then(r => r.ok ? r.json() : []).then((users: any[]) => {
+      setSolicitantes(users.map(u => ({ id: u.id, nombre: u.nombre })))
+    }).catch(() => {})
+  }, [])
 
   // Data
   const [data, setData] = useState<Solicitud[]>([])
@@ -73,9 +84,11 @@ export default function SolicitudesTable({ roles, areas }: Props) {
       params.set('page', String(page))
       params.set('limit', String(pageSize))
       if (estado) params.set('estado', estado)
-      if (urgencia) params.set('urgencia', urgencia)
+      if (solicitanteId) params.set('solicitante_id', String(solicitanteId))
       if (areaId) params.set('area_id', String(areaId))
       if (debouncedBusqueda) params.set('busqueda', debouncedBusqueda)
+      if (fechaDesde) params.set('desde', fechaDesde)
+      if (fechaHasta) params.set('hasta', fechaHasta)
 
       const res = await fetch(`/api/solicitudes?${params.toString()}`)
       const json = await res.json()
@@ -88,7 +101,7 @@ export default function SolicitudesTable({ roles, areas }: Props) {
       setLoading(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, pageSize, estado, urgencia, areaId, debouncedBusqueda, tenantVersion])
+  }, [page, pageSize, estado, solicitanteId, areaId, debouncedBusqueda, fechaDesde, fechaHasta, tenantVersion])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -99,14 +112,16 @@ export default function SolicitudesTable({ roles, areas }: Props) {
 
   const clearFilters = () => {
     setEstado(undefined)
-    setUrgencia(undefined)
+    setSolicitanteId(undefined)
     setAreaId(undefined)
+    setFechaDesde(undefined)
+    setFechaHasta(undefined)
     setBusqueda('')
     setDebouncedBusqueda('')
     setPage(1)
   }
 
-  const hasFilters = estado || urgencia || areaId || debouncedBusqueda
+  const hasFilters = estado || solicitanteId || areaId || debouncedBusqueda || fechaDesde || fechaHasta
 
   const columns: ColumnsType<Solicitud> = useMemo(() => [
     {
@@ -183,7 +198,11 @@ export default function SolicitudesTable({ roles, areas }: Props) {
               onClick={() => {
                 const params = new URLSearchParams()
                 if (estado) params.set('estado', estado)
+                if (solicitanteId) params.set('solicitante_id', String(solicitanteId))
                 if (areaId) params.set('area_id', String(areaId))
+                if (debouncedBusqueda) params.set('q', debouncedBusqueda)
+                if (fechaDesde) params.set('desde', fechaDesde)
+                if (fechaHasta) params.set('hasta', fechaHasta)
                 window.open(`/api/solicitudes/export?${params.toString()}`)
               }}
             >
@@ -202,61 +221,64 @@ export default function SolicitudesTable({ roles, areas }: Props) {
 
       {/* Filters */}
       <Card size="small" style={{ borderRadius: 12, marginBottom: 16, border: '1px solid #e2e8f0' }} styles={{ body: { padding: '12px 16px' } }}>
-        <Row gutter={[12, 12]} align="middle">
-          <Col xs={24} sm={12} lg={8}>
-            <Input
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              placeholder="Buscar por número, título o descripción..."
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              allowClear
-              style={{ borderRadius: 8 }}
-            />
-          </Col>
-          <Col xs={12} sm={6} lg={4}>
-            <Select
-              allowClear
-              placeholder="Estado"
-              style={{ width: '100%' }}
-              value={estado}
-              onChange={(v) => { setEstado(v); setPage(1) }}
-              options={Object.entries(ESTADOS_SOLICITUD).map(([k, v]) => ({ value: k, label: v.label }))}
-            />
-          </Col>
-          <Col xs={12} sm={6} lg={3}>
-            <Select
-              allowClear
-              placeholder="Urgencia"
-              style={{ width: '100%' }}
-              value={urgencia}
-              onChange={(v) => { setUrgencia(v); setPage(1) }}
-              options={Object.entries(URGENCIAS).map(([k, v]) => ({ value: k, label: v.label }))}
-            />
-          </Col>
-          <Col xs={12} sm={6} lg={4}>
-            <Select
-              allowClear
-              placeholder="Área"
-              style={{ width: '100%' }}
-              value={areaId}
-              onChange={(v) => { setAreaId(v); setPage(1) }}
-              options={areas.map(a => ({ value: a.id, label: a.nombre }))}
-              showSearch
-              optionFilterProp="label"
-            />
-          </Col>
-          <Col xs={12} sm={6} lg={5}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'nowrap' }}>
+          <Input
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            placeholder="Buscar..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            allowClear
+            style={{ borderRadius: 8, flex: '1 1 180px', minWidth: 120 }}
+          />
+          <Select
+            allowClear
+            placeholder="Solicitante"
+            style={{ flex: '0 0 160px' }}
+            value={solicitanteId}
+            onChange={(v) => { setSolicitanteId(v); setPage(1) }}
+            options={solicitantes.map(s => ({ value: s.id, label: s.nombre }))}
+            showSearch
+            optionFilterProp="label"
+          />
+          <Select
+            allowClear
+            placeholder="Área"
+            style={{ flex: '0 0 140px' }}
+            value={areaId}
+            onChange={(v) => { setAreaId(v); setPage(1) }}
+            options={areas.map(a => ({ value: a.id, label: a.nombre }))}
+            showSearch
+            optionFilterProp="label"
+          />
+          <Select
+            allowClear
+            placeholder="Estado"
+            style={{ flex: '0 0 130px' }}
+            value={estado}
+            onChange={(v) => { setEstado(v); setPage(1) }}
+            options={Object.entries(ESTADOS_SOLICITUD).map(([k, v]) => ({ value: k, label: v.label }))}
+          />
+          <DatePicker
+            placeholder="Desde"
+            style={{ flex: '0 0 130px' }}
+            format="DD/MM/YYYY"
+            value={fechaDesde ? dayjs(fechaDesde) : null}
+            onChange={(d: any) => { setFechaDesde(d ? d.format('YYYY-MM-DD') : undefined); setPage(1) }}
+          />
+          <DatePicker
+            placeholder="Hasta"
+            style={{ flex: '0 0 130px' }}
+            format="DD/MM/YYYY"
+            value={fechaHasta ? dayjs(fechaHasta) : null}
+            onChange={(d: any) => { setFechaHasta(d ? d.format('YYYY-MM-DD') : undefined); setPage(1) }}
+          />
+          <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
             <Space>
-              {hasFilters && (
-                <Button onClick={clearFilters} size="small" type="link" style={{ color: '#64748b' }}>
-                  Limpiar filtros
-                </Button>
-              )}
-              <Button icon={<ReloadOutlined />} onClick={fetchData} size="small" type="text" style={{ color: '#64748b' }} />
-              <Text type="secondary" style={{ fontSize: 12 }}>{total} resultado{total !== 1 ? 's' : ''}</Text>
+              <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{total} resultado{total !== 1 ? 's' : ''}</Text>
+              <Button icon={<ReloadOutlined />} onClick={clearFilters} size="small" type="text" style={{ color: '#64748b' }} />
             </Space>
-          </Col>
-        </Row>
+          </div>
+        </div>
       </Card>
 
       {/* Table */}

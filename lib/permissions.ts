@@ -34,6 +34,9 @@ export function verificarSegregacion(
       }
       break;
     case 'comprar':
+      if (solicitud.solicitante_id === usuarioId) {
+        return { permitido: false, motivo: 'No podés registrar la compra de tu propia solicitud' };
+      }
       if (solicitud.aprobado_por_id != null && solicitud.aprobado_por_id === usuarioId) {
         return { permitido: false, motivo: 'No podés registrar la compra de una solicitud que vos aprobaste' };
       }

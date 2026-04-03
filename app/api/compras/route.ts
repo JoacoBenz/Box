@@ -56,7 +56,7 @@ export const POST = withAuth({ roles: ['tesoreria', 'compras', 'solicitante'] },
     select: { id: true, estado: true, solicitante_id: true, validado_por_id: true, aprobado_por_id: true, proveedor_id: true, area_id: true, titulo: true, numero: true },
   });
   if (!solicitud) return Response.json({ error: { code: 'NOT_FOUND', message: 'Solicitud no encontrada' } }, { status: 404 });
-  const estadosPermitidos = ['pago_programado'];
+  const estadosPermitidos = ['pago_programado', 'aprobada'];
   if (!estadosPermitidos.includes(solicitud.estado)) {
     return Response.json({ error: { code: 'BAD_REQUEST', message: 'Esta solicitud no está lista para registrar la compra' } }, { status: 400 });
   }

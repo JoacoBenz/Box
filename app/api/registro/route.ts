@@ -2,21 +2,12 @@ import { NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { registroSchema } from '@/lib/validators';
-import { registrarAuditoria, getClientIp } from '@/lib/audit';
-import { notificarAdmins } from '@/lib/notifications';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { logApiError } from '@/lib/logger';
+import { generateToken, hashToken } from '@/lib/tokens';
+import { sendEmail } from '@/lib/email';
 
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
-}
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,7 +16,7 @@ export async function POST(request: NextRequest) {
     if (!rateLimit.allowed) {
       return Response.json(
         { error: { code: 'RATE_LIMITED', message: 'Demasiados intentos. Intentá de nuevo más tarde.' } },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
@@ -34,111 +25,62 @@ export async function POST(request: NextRequest) {
     if (!result.success) {
       return Response.json(
         { error: { code: 'VALIDATION_ERROR', message: 'Datos inválidos', details: result.error.issues.map(i => ({ field: i.path.join('.'), message: i.message })) } },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const { nombreOrganizacion, nombreUsuario, email, password } = result.data;
 
-    // Check email uniqueness globally
+    // Check email uniqueness in existing users
     const existingUser = await prisma.usuarios.findFirst({ where: { email } });
     if (existingUser) {
       return Response.json(
         { error: { code: 'CONFLICT', message: 'Este email ya está registrado' } },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
-    // Generate unique slug
-    let slug = slugify(nombreOrganizacion);
-    const existingSlug = await prisma.tenants.findUnique({ where: { slug } });
-    if (existingSlug) {
-      const count = await prisma.tenants.count({ where: { slug: { startsWith: slug } } });
-      slug = `${slug}-${count + 1}`;
+    // Check for non-expired pending registration with same email
+    const existingPending = await prisma.registros_pendientes.findFirst({
+      where: { email, verificado: false, expira_el: { gt: new Date() } },
+    });
+    if (existingPending) {
+      return Response.json(
+        { error: { code: 'CONFLICT', message: 'Ya hay un registro pendiente de verificación para este email. Revisá tu bandeja de entrada.' } },
+        { status: 409 },
+      );
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
+    const token = generateToken();
+    const tokenHash = hashToken(token);
 
-    // Get all roles
-    const roles = await prisma.roles.findMany();
-    const directorRole = roles.find(r => r.nombre === 'director');
-    const solicitanteRole = roles.find(r => r.nombre === 'solicitante');
-    if (!directorRole || !solicitanteRole) {
-      return Response.json({ error: { code: 'INTERNAL', message: 'Roles no encontrados. Ejecutá el seed.' } }, { status: 500 });
-    }
-
-    const AREAS_DEFAULT = ['Administración', 'Operaciones', 'Finanzas', 'Recursos Humanos', 'Logística'];
-
-    // Atomic transaction
-    const txResult = await prisma.$transaction(async (tx) => {
-      const newTenant = await tx.tenants.create({
-        data: { nombre: nombreOrganizacion, slug, email_contacto: email, moneda: 'ARS', estado: 'pendiente' },
-      });
-
-      // Create default areas
-      const areas = await Promise.all(
-        AREAS_DEFAULT.map(nombre => tx.areas.create({ data: { tenant_id: newTenant.id, nombre } }))
-      );
-      const areaDireccion = areas[0];
-
-      // Create admin user
-      const usuario = await tx.usuarios.create({
-        data: {
-          tenant_id: newTenant.id,
-          nombre: nombreUsuario,
-          email,
-          password_hash: passwordHash,
-          area_id: areaDireccion.id,
-        },
-      });
-
-      // Assign director + solicitante roles (NOT admin — admin is the platform admin)
-      await tx.usuarios_roles.createMany({
-        data: [
-          { usuario_id: usuario.id, rol_id: directorRole.id },
-          { usuario_id: usuario.id, rol_id: solicitanteRole.id },
-        ],
-      });
-
-      // Set user as area responsable
-      await tx.areas.update({
-        where: { id: areaDireccion.id },
-        data: { responsable_id: usuario.id },
-      });
-
-      // Extract domain from director's email for SSO auto-config
-      const emailDomain = email.split('@')[1] ?? '';
-
-      // Initial config
-      await tx.configuracion.createMany({
-        data: [
-          { tenant_id: newTenant.id, clave: 'moneda', valor: 'ARS' },
-          { tenant_id: newTenant.id, clave: 'umbral_aprobacion_responsable', valor: '0' },
-          { tenant_id: newTenant.id, clave: 'umbral_aprobacion_director', valor: '999999999' },
-          { tenant_id: newTenant.id, clave: 'sso_dominio', valor: emailDomain },
-          { tenant_id: newTenant.id, clave: 'sso_google_habilitado', valor: 'true' },
-          { tenant_id: newTenant.id, clave: 'sso_microsoft_habilitado', valor: 'true' },
-        ],
-      });
-
-      return { tenant: newTenant, usuarioId: usuario.id };
+    await prisma.registros_pendientes.create({
+      data: {
+        token_hash: tokenHash,
+        nombre_organizacion: nombreOrganizacion,
+        nombre_usuario: nombreUsuario,
+        email,
+        password_hash: passwordHash,
+        expira_el: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas
+      },
     });
 
-    await registrarAuditoria({
-      tenantId: txResult.tenant.id,
-      usuarioId: txResult.usuarioId,
-      accion: 'registro_organizacion',
-      entidad: 'tenant',
-      entidadId: txResult.tenant.id,
-      ipAddress: getClientIp(request),
+    const verifyUrl = `${APP_URL}/verificar-email?token=${token}`;
+
+    await sendEmail({
+      to: email,
+      subject: 'Verificá tu email — Gestión de Compras',
+      html: `
+        <h2>Hola ${nombreUsuario},</h2>
+        <p>Gracias por registrar <strong>${nombreOrganizacion}</strong>.</p>
+        <p>Para completar el registro, verificá tu email:</p>
+        <p><a href="${verifyUrl}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Verificar email</a></p>
+        <p>Este enlace expira en 24 horas.</p>
+      `,
     });
 
-    await notificarAdmins(
-      'Nueva organización pendiente',
-      `"${nombreOrganizacion}" se registró y requiere aprobación.`,
-    );
-
-    return Response.json({ message: 'Tu organización fue registrada y está pendiente de aprobación. Te notificaremos cuando sea activada.' }, { status: 201 });
+    return Response.json({ message: 'Te enviamos un email de verificación. Revisá tu bandeja de entrada.' }, { status: 201 });
   } catch (error) {
     logApiError('/api/registro', 'POST', error);
     return Response.json({ error: { code: 'INTERNAL', message: 'Error interno del servidor' } }, { status: 500 });

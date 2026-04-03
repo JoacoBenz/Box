@@ -1,3 +1,5 @@
+import { Suspense } from 'react';
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
@@ -68,7 +70,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(255,255,255,0.08) 0%, transparent 50%)',
       }} />
       <div style={{ position: 'relative', zIndex: 1 }}>
-        {children}
+        <Suspense>{children}</Suspense>
       </div>
     </div>
   );

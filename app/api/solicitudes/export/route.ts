@@ -1,11 +1,30 @@
 import { withAdminOverride } from '@/lib/api-handler';
+import ExcelJS from 'exceljs';
 
 export const GET = withAdminOverride({ roles: ['director', 'tesoreria', 'compras', 'admin'] }, async (request, { db }) => {
   const { searchParams } = new URL(request.url);
   const estado = searchParams.get('estado');
+  const areaId = searchParams.get('area_id');
+  const solicitanteId = searchParams.get('solicitante_id');
+  const q = searchParams.get('q');
+  const desde = searchParams.get('desde');
+  const hasta = searchParams.get('hasta');
 
   const where: any = {};
   if (estado) where.estado = { in: estado.split(',') };
+  if (areaId) where.area_id = parseInt(areaId);
+  if (solicitanteId) where.solicitante_id = parseInt(solicitanteId);
+  if (q) {
+    where.OR = [
+      { numero: { contains: q, mode: 'insensitive' } },
+      { titulo: { contains: q, mode: 'insensitive' } },
+    ];
+  }
+  if (desde || hasta) {
+    where.created_at = {};
+    if (desde) where.created_at.gte = new Date(desde + 'T00:00:00');
+    if (hasta) where.created_at.lte = new Date(hasta + 'T23:59:59');
+  }
 
   const solicitudes = await db.solicitudes.findMany({
     where,
@@ -19,37 +38,52 @@ export const GET = withAdminOverride({ roles: ['director', 'tesoreria', 'compras
     take: 5000,
   });
 
-  // Build CSV
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('Solicitudes');
+
   const headers = [
     'Número', 'Título', 'Estado', 'Urgencia', 'Área', 'Solicitante',
     'Centro de Costo', 'Monto Compra', 'Proveedor',
-    'Fecha Envío', 'Fecha Aprobación', 'Fecha Compra', 'Creado'
+    'Fecha Envío', 'Fecha Aprobación', 'Fecha Compra', 'Creado',
   ];
 
-  const rows = solicitudes.map((s: any) => [
-    s.numero,
-    `"${(s.titulo || '').replace(/"/g, '""')}"`,
-    s.estado,
-    s.urgencia,
-    s.area?.nombre ?? '',
-    s.solicitante?.nombre ?? '',
-    s.centro_costo ? `${s.centro_costo.codigo} - ${s.centro_costo.nombre}` : '',
-    s.compras[0]?.monto_total ?? '',
-    s.compras[0]?.proveedor_nombre ?? '',
-    s.fecha_envio ? new Date(s.fecha_envio).toLocaleDateString('es-AR') : '',
-    s.fecha_aprobacion ? new Date(s.fecha_aprobacion).toLocaleDateString('es-AR') : '',
-    s.compras[0]?.fecha_compra ? new Date(s.compras[0].fecha_compra).toLocaleDateString('es-AR') : '',
-    new Date(s.created_at).toLocaleDateString('es-AR'),
-  ]);
+  const headerRow = sheet.addRow(headers);
+  headerRow.eachCell(cell => {
+    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
+    cell.alignment = { horizontal: 'center' };
+  });
 
-  // UTF-8 BOM for Excel compatibility
-  const bom = '\uFEFF';
-  const csv = bom + headers.join(',') + '\n' + rows.map((r: any[]) => r.join(',')).join('\n');
+  for (const s of solicitudes as any[]) {
+    sheet.addRow([
+      s.numero,
+      s.titulo || '',
+      s.estado,
+      s.urgencia,
+      s.area?.nombre ?? '',
+      s.solicitante?.nombre ?? '',
+      s.centro_costo ? `${s.centro_costo.codigo} - ${s.centro_costo.nombre}` : '',
+      s.compras[0]?.monto_total ? Number(s.compras[0].monto_total) : null,
+      s.compras[0]?.proveedor_nombre ?? '',
+      s.fecha_envio ? new Date(s.fecha_envio) : null,
+      s.fecha_aprobacion ? new Date(s.fecha_aprobacion) : null,
+      s.compras[0]?.fecha_compra ? new Date(s.compras[0].fecha_compra) : null,
+      new Date(s.created_at),
+    ]);
+  }
 
-  return new Response(csv, {
+  // Format columns
+  sheet.columns.forEach(col => { col.width = 18; });
+  sheet.getColumn(2).width = 30; // Título
+  sheet.getColumn(8).numFmt = '#,##0.00'; // Monto
+  [10, 11, 12, 13].forEach(i => { sheet.getColumn(i).numFmt = 'dd/mm/yyyy'; });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+
+  return new Response(buffer, {
     headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="solicitudes_${new Date().toISOString().slice(0, 10)}.csv"`,
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="solicitudes_${new Date().toISOString().slice(0, 10)}.xlsx"`,
     },
   });
 });

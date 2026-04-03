@@ -404,3 +404,28 @@ model codigos_invitacion {
 
   @@index([tenant_id, activo])
 }
+
+model tokens_password_reset {
+  id         Int      @id @default(autoincrement())
+  email      String   @db.VarChar(255)
+  token_hash String   @unique @db.VarChar(64)
+  expira_el  DateTime
+  usado      Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  @@index([email, created_at])
+}
+
+model registros_pendientes {
+  id                  Int      @id @default(autoincrement())
+  token_hash          String   @unique @db.VarChar(64)
+  nombre_organizacion String   @db.VarChar(255)
+  nombre_usuario      String   @db.VarChar(150)
+  email               String   @db.VarChar(255)
+  password_hash       String   @db.VarChar(255)
+  expira_el           DateTime
+  verificado          Boolean  @default(false)
+  created_at          DateTime @default(now())
+
+  @@index([email])
+}

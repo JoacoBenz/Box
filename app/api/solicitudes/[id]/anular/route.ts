@@ -71,7 +71,7 @@ export const POST = withAuth({}, async (request, { session, db, ip }, params) =>
     tenantId: session.tenantId,
     usuarioId: session.userId,
     accion: 'anular_solicitud',
-    entidad: 'solicitudes',
+    entidad: 'solicitud',
     entidadId: solicitudId,
     datosAnteriores: { estado: estadoAnterior },
     datosNuevos: { estado: 'anulada', motivo },

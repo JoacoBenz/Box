@@ -12,6 +12,7 @@ interface Profile {
   area: string | null
   organizacion: string | null
   roles: string[]
+  tienePassword: boolean
 }
 
 const ROL_LABELS: Record<string, string> = {
@@ -124,11 +125,14 @@ export default function PerfilPage() {
         </Form>
       </Card>
 
+      {(profile.tienePassword || profile.roles.includes('admin')) && (
       <Card title="Cambiar contraseña">
         <Form form={passwordForm} layout="vertical" onFinish={handleChangePassword}>
+          {profile.tienePassword && (
           <Form.Item name="passwordActual" label="Contraseña actual" rules={[{ required: true, message: 'Requerido' }]}>
             <Input.Password prefix={<LockOutlined />} />
           </Form.Item>
+          )}
           <Form.Item name="passwordNuevo" label="Nueva contraseña" rules={[{ required: true, message: 'Requerido' }, { min: 8, message: 'Mínimo 8 caracteres' }]}>
             <Input.Password prefix={<LockOutlined />} />
           </Form.Item>
@@ -148,6 +152,7 @@ export default function PerfilPage() {
           </Button>
         </Form>
       </Card>
+      )}
     </div>
   )
 }

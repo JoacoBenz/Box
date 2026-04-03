@@ -4,14 +4,18 @@ import { verificarSegregacion, apiError } from '@/lib/permissions';
 import { registrarAuditoria } from '@/lib/audit';
 import { crearNotificacion } from '@/lib/notifications';
 import { rechazoSchema } from '@/lib/validators';
+import { getTenantConfigBool } from '@/lib/tenant-config';
 
 export const POST = withAuth({ roles: ['director'] }, async (request, { session, db, ip }, params) => {
   const solicitudId = parseInt(params.id);
 
   const solicitud = await db.solicitudes.findFirst({ where: { id: solicitudId } });
   if (!solicitud) return apiError('NOT_FOUND', 'No encontrada', 404);
-  if (solicitud.estado !== 'validada') {
-    return apiError('BAD_REQUEST', 'Solo se pueden rechazar solicitudes validadas', 400);
+
+  const skipValidacion = !(await getTenantConfigBool(session.tenantId, 'requiere_validacion_responsable', true));
+  const estadosPermitidos = skipValidacion ? ['validada', 'enviada'] : ['validada'];
+  if (!estadosPermitidos.includes(solicitud.estado)) {
+    return apiError('BAD_REQUEST', 'Esta solicitud no está pendiente de revisión', 400);
   }
 
   const seg = verificarSegregacion(solicitud, session.userId, 'aprobar');

@@ -489,7 +489,7 @@ export default function DashboardPage() {
             <Card style={{ borderRadius: 16, marginBottom: 16, background: 'linear-gradient(135deg, #fff7ed, #fed7aa)', border: '1px solid #fdba74' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Text strong style={{ fontSize: 15, color: '#9a3412' }}>
-                  {data.adminPlatform.orgPendientes} organizaci{data.adminPlatform.orgPendientes !== 1 ? 'ones' : '\u00f3n'} pendiente{data.adminPlatform.orgPendientes !== 1 ? 's' : ''} de aprobaci\u00f3n
+                  {data.adminPlatform.orgPendientes} {data.adminPlatform.orgPendientes !== 1 ? 'organizaciones pendientes' : 'organización pendiente'} de aprobación
                 </Text>
                 <Link href="/gestion/aprobaciones-org">
                   <Button type="primary" style={{ background: '#ea580c', borderColor: '#ea580c', fontWeight: 600 }}>

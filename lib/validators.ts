@@ -5,7 +5,7 @@ const nonBlank = (min: number, msg: string) =>
   z.string().min(min, msg).refine((v) => v.trim().length >= min, msg);
 
 // Shared strong password policy
-const passwordSchema = z
+export const passwordSchema = z
   .string()
   .min(10, 'Mínimo 10 caracteres')
   .regex(/[A-Z]/, 'Debe contener al menos una mayúscula')

@@ -591,7 +591,7 @@ describe('proveedorSchema', () => {
 
 // ─── centroCostoSchema ───────────────────────────────────────────────────────
 describe('centroCostoSchema', () => {
-  const valid = { nombre: 'Administración', codigo: 'ADM-001' };
+  const valid = { nombre: 'Administración', codigo: 'ADM-001', area_id: 1 };
 
   it('accepts valid centro de costo', () => {
     expect(centroCostoSchema.safeParse(valid).success).toBe(true);
@@ -640,22 +640,25 @@ describe('centroCostoSchema', () => {
 
 // ─── procesarComprasSchema ───────────────────────────────────────────────────
 describe('procesarComprasSchema', () => {
+  const base = { prioridad_compra: 'normal', dia_pago_programado: '2026-04-15' };
+
   it('accepts valid procesarCompras', () => {
-    expect(procesarComprasSchema.safeParse({ prioridad_compra: 'normal' }).success).toBe(true);
+    expect(procesarComprasSchema.safeParse(base).success).toBe(true);
   });
 
   it('accepts all priority values', () => {
     for (const p of ['urgente', 'normal', 'programado']) {
-      expect(procesarComprasSchema.safeParse({ prioridad_compra: p }).success).toBe(true);
+      expect(procesarComprasSchema.safeParse({ ...base, prioridad_compra: p }).success).toBe(true);
     }
   });
 
   it('rejects invalid priority', () => {
-    expect(procesarComprasSchema.safeParse({ prioridad_compra: 'baja' }).success).toBe(false);
+    expect(procesarComprasSchema.safeParse({ ...base, prioridad_compra: 'baja' }).success).toBe(false);
   });
 
   it('accepts with optional observaciones', () => {
     expect(procesarComprasSchema.safeParse({
+      ...base,
       prioridad_compra: 'urgente',
       observaciones: 'Priorizar esta compra',
     }).success).toBe(true);
