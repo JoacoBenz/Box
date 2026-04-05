@@ -17,6 +17,7 @@ import {
   Card,
   Descriptions,
   Tag,
+  Modal,
 } from 'antd'
 import { UploadOutlined } from '@ant-design/icons'
 import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
@@ -87,7 +88,12 @@ export default function RegistrarCompraForm({ solicitud, archivos = [] }: Props)
   const { hasErrors, formProps } = useFormValid(form)
   const medioPago = Form.useWatch('medio_pago', form)
 
-  const prov = solicitud.proveedor
+  const [proveedorData, setProveedorData] = useState<ProveedorData | null | undefined>(solicitud.proveedor)
+  const [editBancariosOpen, setEditBancariosOpen] = useState(false)
+  const [savingBancarios, setSavingBancarios] = useState(false)
+  const [bancariosForm] = Form.useForm()
+
+  const prov = proveedorData
   const pagoDate = solicitud.dia_pago_programado ? dayjs(solicitud.dia_pago_programado) : null
   const canSubmit = !pagoDate || !pagoDate.startOf('day').isAfter(dayjs().startOf('day'))
 
@@ -151,6 +157,42 @@ export default function RegistrarCompraForm({ solicitud, archivos = [] }: Props)
     }
   }
 
+  function openEditBancarios() {
+    bancariosForm.setFieldsValue({
+      datos_bancarios: prov?.datos_bancarios ?? '',
+    })
+    setEditBancariosOpen(true)
+  }
+
+  async function handleSaveBancarios() {
+    if (!prov) return
+    try {
+      const values = await bancariosForm.validateFields()
+      setSavingBancarios(true)
+      const res = await fetch(`/api/proveedores/${prov.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ datos_bancarios: values.datos_bancarios || null }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err?.error ?? 'Error al guardar')
+      }
+      const updated = await res.json()
+      setProveedorData((prev) => prev ? { ...prev, datos_bancarios: updated.datos_bancarios ?? values.datos_bancarios } : prev)
+      // Also update the proveedor_detalle form field
+      const detalle = [prov.cuit && `CUIT: ${prov.cuit}`, values.datos_bancarios, prov.direccion && `Dir: ${prov.direccion}`, prov.telefono && `Tel: ${prov.telefono}`].filter(Boolean).join('\n')
+      form.setFieldsValue({ proveedor_detalle: detalle || undefined })
+      message.success('Datos bancarios actualizados')
+      setEditBancariosOpen(false)
+    } catch (err: any) {
+      if (err?.errorFields) return
+      message.error(err?.message ?? 'Error inesperado')
+    } finally {
+      setSavingBancarios(false)
+    }
+  }
+
   return (
     <div className="page-content" style={{ maxWidth: 880, margin: '0 auto' }}>
       <div style={{ marginBottom: 16, fontSize: 13 }}>
@@ -187,10 +229,31 @@ export default function RegistrarCompraForm({ solicitud, archivos = [] }: Props)
         </Descriptions>
       </Card>
 
-      {/* Proveedor info from solicitud (read-only) */}
+      {/* Proveedor info from solicitud */}
       {prov && (
-        <ProveedorInfoCard proveedor={prov} style={{ marginBottom: 24 }} />
+        <ProveedorInfoCard proveedor={prov} style={{ marginBottom: 24 }} editable onEditBancarios={openEditBancarios} />
       )}
+
+      {/* Modal editar datos bancarios */}
+      <Modal
+        title="Editar Datos Bancarios"
+        open={editBancariosOpen}
+        onCancel={() => setEditBancariosOpen(false)}
+        onOk={handleSaveBancarios}
+        confirmLoading={savingBancarios}
+        okText="Guardar"
+        cancelText="Cancelar"
+      >
+        <Form form={bancariosForm} layout="vertical" style={{ marginTop: 16 }}>
+          <Form.Item
+            label="Datos Bancarios (CBU / Alias / Banco)"
+            name="datos_bancarios"
+            rules={[{ max: 500, message: 'Máximo 500 caracteres' }]}
+          >
+            <Input.TextArea rows={4} placeholder="CBU: 0000000000000000000000&#10;Alias: mi-alias&#10;Banco: Banco Nación" maxLength={500} showCount />
+          </Form.Item>
+        </Form>
+      </Modal>
 
       {/* Archivos adjuntos */}
       {archivos.length > 0 && (

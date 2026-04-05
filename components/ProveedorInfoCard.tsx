@@ -1,7 +1,7 @@
 'use client'
 
-import { Card, Descriptions, Typography } from 'antd'
-import { ShopOutlined, LinkOutlined } from '@ant-design/icons'
+import { Card, Descriptions, Typography, Button } from 'antd'
+import { ShopOutlined, LinkOutlined, EditOutlined } from '@ant-design/icons'
 
 interface Proveedor {
   id: number
@@ -17,9 +17,11 @@ interface Proveedor {
 interface Props {
   proveedor: Proveedor
   style?: React.CSSProperties
+  editable?: boolean
+  onEditBancarios?: () => void
 }
 
-export default function ProveedorInfoCard({ proveedor, style }: Props) {
+export default function ProveedorInfoCard({ proveedor, style, editable, onEditBancarios }: Props) {
   return (
     <Card
       size="small"
@@ -44,11 +46,21 @@ export default function ProveedorInfoCard({ proveedor, style }: Props) {
         {proveedor.direccion && (
           <Descriptions.Item label="Dirección">{proveedor.direccion}</Descriptions.Item>
         )}
-        {proveedor.datos_bancarios && (
-          <Descriptions.Item label="Datos Bancarios">
-            <Typography.Text style={{ whiteSpace: 'pre-line' }}>{proveedor.datos_bancarios}</Typography.Text>
-          </Descriptions.Item>
-        )}
+        <Descriptions.Item label={
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            Datos Bancarios
+            {editable && (
+              <Button type="link" size="small" icon={<EditOutlined />} onClick={onEditBancarios} style={{ padding: 0, height: 'auto', fontSize: 12 }}>
+                Editar
+              </Button>
+            )}
+          </span>
+        }>
+          {proveedor.datos_bancarios
+            ? <Typography.Text style={{ whiteSpace: 'pre-line' }}>{proveedor.datos_bancarios}</Typography.Text>
+            : <span style={{ color: '#bbb' }}>Sin datos bancarios</span>
+          }
+        </Descriptions.Item>
         {proveedor.link_pagina && (
           <Descriptions.Item label="Web">
             <a href={proveedor.link_pagina} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
