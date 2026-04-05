@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Card, Form, Input, Button, Typography, Tag, Descriptions, message, Divider } from 'antd'
 import { UserOutlined, LockOutlined, SaveOutlined } from '@ant-design/icons'
+import { useFormValid } from '@/hooks/useFormValid'
 
 const { Title } = Typography
 
@@ -29,7 +30,9 @@ export default function PerfilPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
+  const { hasErrors: hasNameErrors, formProps: nameFormProps } = useFormValid(form)
   const [passwordForm] = Form.useForm()
+  const { hasErrors: hasPasswordErrors, formProps: passwordFormProps } = useFormValid(passwordForm)
 
   useEffect(() => {
     fetch('/api/auth/profile')
@@ -113,12 +116,12 @@ export default function PerfilPage() {
       </Card>
 
       <Card title="Editar nombre" style={{ marginBottom: 16 }}>
-        <Form form={form} layout="inline" onFinish={handleSaveNombre}>
+        <Form form={form} layout="inline" onFinish={handleSaveNombre} {...nameFormProps}>
           <Form.Item name="nombre" rules={[{ required: true, message: 'Requerido' }]} style={{ flex: 1 }}>
             <Input prefix={<UserOutlined />} placeholder="Nombre" />
           </Form.Item>
           <Form.Item>
-            <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
+            <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving} disabled={hasNameErrors}>
               Guardar
             </Button>
           </Form.Item>
@@ -127,7 +130,7 @@ export default function PerfilPage() {
 
       {(profile.tienePassword || profile.roles.includes('admin')) && (
       <Card title="Cambiar contraseña">
-        <Form form={passwordForm} layout="vertical" onFinish={handleChangePassword}>
+        <Form form={passwordForm} layout="vertical" onFinish={handleChangePassword} {...passwordFormProps}>
           {profile.tienePassword && (
           <Form.Item name="passwordActual" label="Contraseña actual" rules={[{ required: true, message: 'Requerido' }]}>
             <Input.Password prefix={<LockOutlined />} />
@@ -147,7 +150,7 @@ export default function PerfilPage() {
           ]}>
             <Input.Password prefix={<LockOutlined />} />
           </Form.Item>
-          <Button type="primary" htmlType="submit" icon={<LockOutlined />} loading={saving}>
+          <Button type="primary" htmlType="submit" icon={<LockOutlined />} loading={saving} disabled={hasPasswordErrors}>
             Cambiar contraseña
           </Button>
         </Form>

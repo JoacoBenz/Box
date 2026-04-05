@@ -6,12 +6,15 @@ import { UserOutlined, LockOutlined, GoogleOutlined, WindowsOutlined } from '@an
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useFormValid } from '@/hooks/useFormValid';
 
 const { Title, Text } = Typography;
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [form] = Form.useForm();
+  const { hasErrors, formProps } = useFormValid(form);
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(() => {
@@ -118,7 +121,7 @@ export default function LoginPage() {
 
         {error && <Alert title={error} type="error" showIcon style={{ marginBottom: 20, borderRadius: 10 }} />}
 
-        <Form layout="vertical" onFinish={onFinish} autoComplete="off" size="large">
+        <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off" size="large" {...formProps}>
           <div className="anim-field-1">
             <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email', message: 'Ingresá un email válido' }]}>
               <Input prefix={<UserOutlined style={{ color: '#a0aec0' }} />} placeholder="tu@empresa.com" />
@@ -143,6 +146,7 @@ export default function LoginPage() {
                 block
                 size="large"
                 loading={loading}
+                disabled={hasErrors || loading}
                 style={{
                   height: 46,
                   fontWeight: 600,

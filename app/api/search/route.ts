@@ -12,9 +12,9 @@ export const GET = withAdminOverride({}, async (request, { db }) => {
     db.solicitudes.findMany({
       where: {
         OR: [
-          { numero: { contains: q, mode: 'insensitive' as any } },
-          { titulo: { contains: q, mode: 'insensitive' as any } },
-          { descripcion: { contains: q, mode: 'insensitive' as any } },
+          { numero: { contains: q, mode: 'insensitive' as const } },
+          { titulo: { contains: q, mode: 'insensitive' as const } },
+          { descripcion: { contains: q, mode: 'insensitive' as const } },
         ],
       },
       select: {
@@ -27,8 +27,8 @@ export const GET = withAdminOverride({}, async (request, { db }) => {
       where: {
         activo: true,
         OR: [
-          { nombre: { contains: q, mode: 'insensitive' as any } },
-          { cuit: { contains: q, mode: 'insensitive' as any } },
+          { nombre: { contains: q, mode: 'insensitive' as const } },
+          { cuit: { contains: q, mode: 'insensitive' as const } },
         ],
       },
       select: { id: true, nombre: true, cuit: true },

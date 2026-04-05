@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { App, Table, Tag, Button, Space, Modal, Form, Input, Select, Popconfirm, Typography } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
+import { useFormValid } from '@/hooks/useFormValid'
 
 const { Title } = Typography
 
@@ -30,6 +31,7 @@ export default function MiAreaUsuariosPage() {
   const [editing, setEditing] = useState<Usuario | null>(null)
   const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
+  const { hasErrors, formProps } = useFormValid(form)
   const [sessionAreaId, setSessionAreaId] = useState<number | null>(null)
   const [areaNombre, setAreaNombre] = useState('')
 
@@ -198,12 +200,12 @@ export default function MiAreaUsuariosPage() {
         onCancel={() => { setModalOpen(false); form.resetFields() }}
         onOk={handleSave}
         okText={editing ? 'Guardar' : 'Crear'}
-        okButtonProps={{ loading: saving }}
+        okButtonProps={{ loading: saving, disabled: hasErrors }}
         cancelText="Cancelar"
         destroyOnHidden={false}
         width={480}
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={form} layout="vertical" style={{ marginTop: 16 }} {...formProps}>
           <Form.Item
             label="Nombre completo"
             name="nombre"

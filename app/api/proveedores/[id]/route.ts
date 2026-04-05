@@ -11,7 +11,7 @@ export const GET = withAdminOverride({}, async (request, { db }, params) => {
   return Response.json(proveedor);
 });
 
-export const PATCH = withAdminOverride({ roles: ['tesoreria', 'compras', 'director', 'admin', 'responsable_area'] }, async (request, { session, db, ip, effectiveTenantId }, params) => {
+export const PATCH = withAdminOverride({ roles: ['solicitante', 'tesoreria', 'compras', 'director', 'admin', 'responsable_area'] }, async (request, { session, db, ip, effectiveTenantId }, params) => {
   const proveedorId = parseInt(params.id);
 
   const existing = await db.proveedores.findFirst({ where: { id: proveedorId } });

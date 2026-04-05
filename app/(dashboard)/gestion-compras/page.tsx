@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types'
 import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types'
 import dayjs from 'dayjs'
+import { useFormValid } from '@/hooks/useFormValid'
 
 const { Title, Text } = Typography
 const { TextArea } = Input
@@ -36,6 +37,7 @@ export default function GestionComprasPage() {
   const [actionLoading, setActionLoading] = useState(false)
 
   const [programarForm] = Form.useForm()
+  const { hasErrors, formProps } = useFormValid(programarForm)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -204,10 +206,10 @@ export default function GestionComprasPage() {
         onCancel={() => { setProgramarOpen(false); programarForm.resetFields() }}
         onOk={() => programarForm.submit()}
         okText="Programar Pago"
-        okButtonProps={{ loading: actionLoading }}
+        okButtonProps={{ loading: actionLoading, disabled: hasErrors }}
         cancelText="Cancelar"
       >
-        <Form form={programarForm} layout="vertical" onFinish={handleProgramarPago}>
+        <Form form={programarForm} layout="vertical" onFinish={handleProgramarPago} {...formProps}>
           <Form.Item name="prioridad_compra" label="Prioridad" rules={[{ required: true, message: 'Seleccioná la prioridad' }]}>
             <Select placeholder="Seleccionar prioridad" options={[
               { value: 'urgente', label: 'Urgente' },

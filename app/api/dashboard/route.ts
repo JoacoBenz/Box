@@ -82,7 +82,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
           AND solicitante_id = ${userId}
           AND estado NOT IN ('cerrada', 'anulada')
         GROUP BY estado
-        ORDER BY cantidad DESC
+        ORDER BY COUNT(*) DESC
       `,
     ]);
     const [aprobadas90d, total90d] = tasaAprobacionData;
@@ -138,7 +138,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
         WHERE tenant_id = ${tenantId} AND area_id = ${areaId}
           AND estado NOT IN ('cerrada', 'anulada')
         GROUP BY estado
-        ORDER BY cantidad DESC
+        ORDER BY COUNT(*) DESC
       `,
     ]);
     result.pendientesValidar = pendientesValidar;
@@ -191,7 +191,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
     });
     // Tiempo promedio pipeline (last 90 days)
     const tiempoPipeline = await prisma.$queryRaw<{ avg_days: string | null }[]>`
-      SELECT ROUND(AVG(EXTRACT(EPOCH FROM (c.fecha_compra::timestamp - s.fecha_aprobacion::timestamp)) / 86400))::text AS avg_days
+      SELECT ROUND(AVG(EXTRACT(EPOCH FROM (c.fecha_compra - s.fecha_aprobacion)) / 86400))::text AS avg_days
       FROM compras c
       JOIN solicitudes s ON c.solicitud_id = s.id AND c.tenant_id = s.tenant_id
       WHERE c.tenant_id = ${tenantId}
@@ -260,7 +260,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       prisma.usuarios.count({ where: { activo: true } }),
       prisma.usuarios.count({ where: { created_at: { gte: inicioMes } } }),
       prisma.tenants.count({ where: { fecha_registro: { gte: inicioMes } } }),
-      // Orgs dormidas: activas pero sin actividad (ningún usuario logueó o creó algo en 30 días)
+      // Orgs dormidas: activas pero sin actividad en 30 días
       prisma.$queryRaw<{ cantidad: string }[]>`
         SELECT COUNT(*)::text AS cantidad
         FROM tenants t
@@ -285,7 +285,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       prisma.$queryRaw<{ mes: string; cantidad: string }[]>`
         SELECT TO_CHAR(fecha_registro, 'YYYY-MM') AS mes, COUNT(*)::text AS cantidad
         FROM tenants
-        WHERE fecha_registro >= (CURRENT_DATE - INTERVAL '6 months')
+        WHERE fecha_registro >= CURRENT_DATE - INTERVAL '6 months'
         GROUP BY TO_CHAR(fecha_registro, 'YYYY-MM')
         ORDER BY mes ASC
       `,
@@ -293,7 +293,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       prisma.$queryRaw<{ mes: string; cantidad: string }[]>`
         SELECT TO_CHAR(created_at, 'YYYY-MM') AS mes, COUNT(*)::text AS cantidad
         FROM usuarios
-        WHERE created_at >= (CURRENT_DATE - INTERVAL '6 months')
+        WHERE created_at >= CURRENT_DATE - INTERVAL '6 months'
         GROUP BY TO_CHAR(created_at, 'YYYY-MM')
         ORDER BY mes ASC
       `,
@@ -381,7 +381,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
             FROM compras c
             ${tendenciaAreaJoin}
             WHERE c.tenant_id = ${tenantId}
-              AND c.fecha_compra >= (CURRENT_DATE - INTERVAL '6 months')
+              AND c.fecha_compra >= CURRENT_DATE - INTERVAL '6 months'
               ${tendenciaAreaWhere}
             GROUP BY TO_CHAR(c.fecha_compra, 'YYYY-MM')
             ORDER BY mes ASC
@@ -406,7 +406,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
             FROM solicitudes
             WHERE tenant_id = ${tenantId}
             GROUP BY estado
-            ORDER BY cantidad DESC
+            ORDER BY COUNT(*) DESC
           `,
           prisma.$queryRaw<{ urgencia: string; cantidad: string }[]>`
             SELECT urgencia, COUNT(*)::text AS cantidad

@@ -16,8 +16,8 @@ export const GET = withAdminOverride({ roles: ['director', 'tesoreria', 'compras
   if (solicitanteId) where.solicitante_id = parseInt(solicitanteId);
   if (q) {
     where.OR = [
-      { numero: { contains: q, mode: 'insensitive' } },
-      { titulo: { contains: q, mode: 'insensitive' } },
+      { numero: { contains: q, mode: 'insensitive' as const } },
+      { titulo: { contains: q, mode: 'insensitive' as const } },
     ];
   }
   if (desde || hasta) {

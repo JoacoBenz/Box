@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { App, Card, Form, Input, Switch, Button, Typography, Spin, Space } from 'antd'
 import { useAdminTenant } from '@/components/admin/TenantSelector'
+import { useFormValid } from '@/hooks/useFormValid'
 
 const { Title, Text } = Typography
 
@@ -11,6 +12,7 @@ export default function ConfiguracionSSOPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
+  const { hasErrors, formProps } = useFormValid(form)
   const [selectedTenant] = useAdminTenant()
 
   const fetchConfig = useCallback(async () => {
@@ -67,7 +69,7 @@ export default function ConfiguracionSSOPage() {
 
       <Spin spinning={loading}>
       <Card style={{ maxWidth: 600 }}>
-        <Form form={form} layout="vertical">
+        <Form form={form} layout="vertical" {...formProps}>
           <Form.Item
             label="Dominio institucional"
             name="sso_dominio"
@@ -100,7 +102,7 @@ export default function ConfiguracionSSOPage() {
           </Text>
 
           <Space>
-            <Button type="primary" onClick={handleSave} loading={saving} style={{ fontWeight: 600 }}>
+            <Button type="primary" onClick={handleSave} loading={saving} disabled={hasErrors} style={{ fontWeight: 600 }}>
               Guardar
             </Button>
           </Space>

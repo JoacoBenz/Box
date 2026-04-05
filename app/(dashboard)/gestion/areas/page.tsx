@@ -49,7 +49,7 @@ export default function AdminAreasPage() {
           title: 'Presup. Anual',
           key: 'presupuesto_anual',
           width: 140,
-          render: (_: unknown, r: Area) => r.presupuesto_anual != null
+          render: (_: unknown, r: Area) => r.presupuesto_anual && Number(r.presupuesto_anual) > 0
             ? `$${Number(r.presupuesto_anual).toLocaleString('es-AR', { minimumFractionDigits: 0 })}`
             : <span style={{ color: '#bbb' }}>—</span>,
         },
@@ -57,7 +57,7 @@ export default function AdminAreasPage() {
           title: 'Presup. Mensual',
           key: 'presupuesto_mensual',
           width: 140,
-          render: (_: unknown, r: Area) => r.presupuesto_mensual != null
+          render: (_: unknown, r: Area) => r.presupuesto_mensual && Number(r.presupuesto_mensual) > 0
             ? `$${Number(r.presupuesto_mensual).toLocaleString('es-AR', { minimumFractionDigits: 0 })}`
             : <span style={{ color: '#bbb' }}>—</span>,
         },

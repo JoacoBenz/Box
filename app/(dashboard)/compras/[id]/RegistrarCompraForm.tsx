@@ -20,6 +20,7 @@ import {
 } from 'antd'
 import { UploadOutlined } from '@ant-design/icons'
 import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
+import { useFormValid } from '@/hooks/useFormValid'
 import ProveedorInfoCard from '@/components/ProveedorInfoCard'
 import type { UploadFile } from 'antd/es/upload'
 import type { Dayjs } from 'dayjs'
@@ -83,6 +84,7 @@ export default function RegistrarCompraForm({ solicitud, archivos = [] }: Props)
   const [form] = Form.useForm<FormValues>()
   const [loading, setLoading] = useState(false)
   const [fileList, setFileList] = useState<UploadFile[]>([])
+  const { hasErrors, formProps } = useFormValid(form)
   const medioPago = Form.useWatch('medio_pago', form)
 
   const prov = solicitud.proveedor
@@ -204,7 +206,7 @@ export default function RegistrarCompraForm({ solicitud, archivos = [] }: Props)
 
       {/* Purchase form */}
       <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Datos de la Compra</span>} style={{ borderRadius: 16 }}>
-        <Form form={form} layout="vertical">
+        <Form form={form} layout="vertical" {...formProps}>
           <Form.Item
             label="Proveedor"
             name="proveedor_nombre"
@@ -377,7 +379,7 @@ export default function RegistrarCompraForm({ solicitud, archivos = [] }: Props)
             <AnimatedSubmitButton
               variant="send"
               onClick={handleSubmit}
-              disabled={loading || !canSubmit}
+              disabled={loading || !canSubmit || hasErrors}
             >
               {canSubmit ? 'Registrar Pago' : `Habilitado el ${pagoDate?.format('DD/MM/YYYY') ?? ''}`}
             </AnimatedSubmitButton>

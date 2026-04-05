@@ -3,10 +3,13 @@
 import { useState } from 'react';
 import { Form, Input, Button, Card, Typography, Alert, Space, Result } from 'antd';
 import Link from 'next/link';
+import { useFormValid } from '@/hooks/useFormValid';
 
 const { Title, Text } = Typography;
 
 export default function RegistroPage() {
+  const [form] = Form.useForm();
+  const { hasErrors, formProps } = useFormValid(form);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [registrado, setRegistrado] = useState(false);
@@ -65,7 +68,7 @@ export default function RegistroPage() {
 
         {error && <Alert title={error} type="error" showIcon />}
 
-        <Form layout="vertical" onFinish={onFinish} autoComplete="off">
+        <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off" {...formProps}>
           <Form.Item name="nombreOrganizacion" label="Nombre de la organización" rules={[{ required: true, min: 3, message: 'Mínimo 3 caracteres' }]}>
             <Input placeholder="Mi Empresa S.A." size="large" />
           </Form.Item>
@@ -94,7 +97,7 @@ export default function RegistroPage() {
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0 }}>
-            <Button type="primary" htmlType="submit" block size="large" loading={loading}>
+            <Button type="primary" htmlType="submit" block size="large" loading={loading} disabled={hasErrors || loading}>
               Registrar Organización
             </Button>
           </Form.Item>

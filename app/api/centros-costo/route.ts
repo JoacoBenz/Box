@@ -36,7 +36,7 @@ export const POST = withAdminOverride({ roles: ['admin', 'director', 'tesoreria'
   const codigoUpper = codigo.toUpperCase();
   const [byCode, byName] = await Promise.all([
     db.centros_costo.findFirst({ where: { codigo: codigoUpper } }),
-    db.centros_costo.findFirst({ where: { nombre: { equals: nombre, mode: 'insensitive' }, activo: true } }),
+    db.centros_costo.findFirst({ where: { nombre: { equals: nombre }, activo: true } }),
   ]);
   if (byCode) {
     return Response.json({ error: { code: 'CONFLICT', message: `Ya existe un centro de costo con el código "${codigoUpper}"` } }, { status: 409 });

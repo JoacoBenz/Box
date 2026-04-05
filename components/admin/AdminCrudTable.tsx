@@ -14,6 +14,7 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import type { FormInstance } from 'antd/es/form'
 import { useAdminTenant } from '@/components/admin/TenantSelector'
+import { useFormValid } from '@/hooks/useFormValid'
 
 const { Title } = Typography
 
@@ -78,6 +79,7 @@ export default function AdminCrudTable<T extends { id: number }>({
   const [editing, setEditing] = useState<T | null>(null)
   const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
+  const { hasErrors, formProps } = useFormValid(form)
   const [adminTenant] = useAdminTenant()
   const [ownTenantId, setOwnTenantId] = useState<number | null>(null)
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
@@ -222,6 +224,7 @@ export default function AdminCrudTable<T extends { id: number }>({
         onOk={useFormSubmit ? () => form.submit() : () => handleSave()}
         onCancel={() => { setModalOpen(false); form.resetFields() }}
         confirmLoading={saving}
+        okButtonProps={{ disabled: hasErrors }}
         okText={editing ? 'Guardar' : 'Crear'}
         cancelText="Cancelar"
         destroyOnHidden={false}
@@ -232,6 +235,7 @@ export default function AdminCrudTable<T extends { id: number }>({
           layout="vertical"
           style={{ marginTop: 16 }}
           onFinish={useFormSubmit ? handleSave : undefined}
+          {...formProps}
         >
           {renderForm(form, editing, secondaryData)}
         </Form>

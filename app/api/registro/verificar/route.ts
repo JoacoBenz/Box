@@ -19,7 +19,7 @@ function slugify(text: string): string {
     .replace(/-+/g, '-');
 }
 
-const AREAS_DEFAULT = ['Administración', 'Operaciones', 'Finanzas', 'Recursos Humanos', 'Logística'];
+const AREAS_DEFAULT = ['Dirección'];
 
 export async function POST(request: NextRequest) {
   try {

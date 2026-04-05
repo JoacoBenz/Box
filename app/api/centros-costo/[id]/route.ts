@@ -32,7 +32,7 @@ export const PATCH = withAdminOverride({ roles: ['admin', 'director', 'tesoreria
     if (dup) return Response.json({ error: { code: 'CONFLICT', message: `Ya existe un centro de costo con el código "${codigoUpper}"` } }, { status: 409 });
   }
   if (nombre) {
-    const dup = await db.centros_costo.findFirst({ where: { nombre: { equals: nombre, mode: 'insensitive' }, activo: true, id: { not: centroId } } });
+    const dup = await db.centros_costo.findFirst({ where: { nombre: { equals: nombre }, activo: true, id: { not: centroId } } });
     if (dup) return Response.json({ error: { code: 'CONFLICT', message: `Ya existe un centro de costo con el nombre "${nombre}"` } }, { status: 409 });
   }
 

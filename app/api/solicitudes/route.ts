@@ -77,9 +77,9 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
   }
   if (busqueda) {
     const busquedaCondition = [
-      { titulo: { contains: busqueda, mode: 'insensitive' } },
-      { descripcion: { contains: busqueda, mode: 'insensitive' } },
-      { numero: { contains: busqueda, mode: 'insensitive' } },
+      { titulo: { contains: busqueda, mode: 'insensitive' as const } },
+      { descripcion: { contains: busqueda, mode: 'insensitive' as const } },
+      { numero: { contains: busqueda, mode: 'insensitive' as const } },
     ];
     if (where.OR) {
       // Wrap existing role-based OR with AND to preserve both conditions

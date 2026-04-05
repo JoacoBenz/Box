@@ -5,12 +5,15 @@ import { Form, Input, Button, Card, Typography, Alert, Result } from 'antd';
 import { LockOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useFormValid } from '@/hooks/useFormValid';
 
 const { Title, Text } = Typography;
 
 export default function RestablecerPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
+  const [form] = Form.useForm();
+  const { hasErrors, formProps } = useFormValid(form);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +76,7 @@ export default function RestablecerPage() {
 
       {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16, borderRadius: 10 }} />}
 
-      <Form layout="vertical" onFinish={onFinish} autoComplete="off" size="large">
+      <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off" size="large" {...formProps}>
         <Form.Item
           name="password"
           label="Nueva contraseña"
@@ -113,6 +116,7 @@ export default function RestablecerPage() {
             block
             size="large"
             loading={loading}
+            disabled={hasErrors || loading}
             style={{
               height: 46,
               fontWeight: 600,

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
-const PUBLIC_ROUTES = ['/login', '/registro', '/api/auth', '/api/registro'];
+const PUBLIC_ROUTES = ['/login', '/registro', '/recuperar', '/restablecer', '/verificar-email', '/unirse', '/api/auth', '/api/registro', '/api/unirse'];
 
 const ROLE_ROUTES: Record<string, string[]> = {
   '/validaciones': ['responsable_area'],

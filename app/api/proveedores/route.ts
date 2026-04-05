@@ -11,8 +11,8 @@ export const GET = withAdminOverride({}, async (request, { db, effectiveTenantId
   const where: any = { activo: true };
   if (search) {
     where.OR = [
-      { nombre: { contains: search, mode: 'insensitive' } },
-      { cuit: { contains: search, mode: 'insensitive' } },
+      { nombre: { contains: search, mode: 'insensitive' as const } },
+      { cuit: { contains: search, mode: 'insensitive' as const } },
     ];
   }
 
@@ -25,7 +25,7 @@ export const GET = withAdminOverride({}, async (request, { db, effectiveTenantId
   return Response.json(proveedores);
 });
 
-export const POST = withAdminOverride({ roles: ['tesoreria', 'compras', 'director', 'admin', 'responsable_area'] }, async (request, { session, ip, effectiveTenantId }) => {
+export const POST = withAdminOverride({ roles: ['solicitante', 'tesoreria', 'compras', 'director', 'admin', 'responsable_area'] }, async (request, { session, ip, effectiveTenantId }) => {
   if (!effectiveTenantId) {
     return Response.json({ error: { code: 'BAD_REQUEST', message: 'Seleccioná una organización antes de crear' } }, { status: 400 });
   }

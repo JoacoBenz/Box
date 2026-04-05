@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { verificarRol, apiError } from '@/lib/permissions';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { logApiError } from '@/lib/logger';
+import { sendEmail } from '@/lib/email';
 
 const ESTADOS_VALIDOS = ['activo', 'rechazado', 'suspendido'] as const;
 
@@ -42,6 +43,24 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         datosNuevos: { estado: body.estado },
         ipAddress: getClientIp(request),
       });
+
+      if (body.estado === 'activo' && existing.email_contacto) {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.boxzenj.com';
+        sendEmail({
+          to: existing.email_contacto,
+          subject: 'Tu organización fue aprobada — Gestión de Compras',
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
+              <h2 style="color: #16a34a;">¡Tu organización fue aprobada!</h2>
+              <p>Hola,</p>
+              <p>Nos complace informarte que tu organización <strong>${existing.nombre}</strong> fue aprobada y ya se encuentra activa en nuestra plataforma.</p>
+              <p>Ya podés iniciar sesión y comenzar a gestionar tus compras.</p>
+              <a href="${appUrl}/login" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 16px;">Iniciar sesión</a>
+              <p style="margin-top: 24px; color: #6b7280; font-size: 14px;">Si tenés alguna consulta, no dudes en contactarnos.</p>
+            </div>
+          `,
+        }).catch(() => {});
+      }
 
       return Response.json(updated);
     }

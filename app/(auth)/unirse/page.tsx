@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, Typography, Alert, Result, AutoComplete } from 'antd';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useFormValid } from '@/hooks/useFormValid';
 
 const { Title, Text } = Typography;
 
@@ -27,6 +28,7 @@ export default function UnirsePage() {
   const [successMsg, setSuccessMsg] = useState('');
 
   const [form] = Form.useForm();
+  const { hasErrors, formProps } = useFormValid(form);
 
   // Auto-validate code from URL param
   useEffect(() => {
@@ -180,7 +182,7 @@ export default function UnirsePage() {
             style={{ marginBottom: 16 }}
           />
 
-          <Form form={form} layout="vertical" onFinish={onFinish}>
+          <Form form={form} layout="vertical" onFinish={onFinish} {...formProps}>
             <Form.Item name="nombre" label="Tu nombre completo" rules={[{ required: true, min: 2, message: 'Mínimo 2 caracteres' }]}>
               <Input placeholder="Juan Pérez" size="large" autoFocus />
             </Form.Item>
@@ -219,7 +221,7 @@ export default function UnirsePage() {
             </Form.Item>
 
             <Form.Item style={{ marginBottom: 8 }}>
-              <Button type="primary" htmlType="submit" block size="large" loading={loading}>
+              <Button type="primary" htmlType="submit" block size="large" loading={loading} disabled={hasErrors || loading}>
                 Crear cuenta
               </Button>
             </Form.Item>

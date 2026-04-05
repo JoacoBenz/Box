@@ -16,6 +16,7 @@ import {
   StopOutlined,
   CheckCircleOutlined,
 } from '@ant-design/icons'
+import { useFormValid } from '@/hooks/useFormValid'
 
 const { Title, Text } = Typography
 
@@ -46,6 +47,7 @@ export default function AdminTenantsPage() {
   const [editing, setEditing] = useState<Tenant | null>(null)
   const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
+  const { hasErrors, formProps } = useFormValid(form)
   const [msg, contextHolder] = message.useMessage()
 
   const fetchData = useCallback(async () => {
@@ -336,10 +338,11 @@ export default function AdminTenantsPage() {
         onCancel={() => setModalOpen(false)}
         onOk={handleSave}
         confirmLoading={saving}
+        okButtonProps={{ disabled: hasErrors }}
         destroyOnHidden
         afterOpenChange={(open) => { if (open) form.setFieldsValue(initialValues) }}
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }} preserve={false} initialValues={initialValues}>
+        <Form form={form} layout="vertical" style={{ marginTop: 16 }} preserve={false} initialValues={initialValues} {...formProps}>
           <Form.Item
             name="nombre"
             label="Nombre de la organización"

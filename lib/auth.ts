@@ -178,6 +178,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.centroCostoId = payload.centroCostoId;
           token.roles = payload.roles;
         }
+      } else if (token.userId) {
+        // Subsequent requests: refresh roles and user data from DB
+        const usuario = await cached(
+          `user:${token.userId}:session`,
+          30_000, // 30s TTL — roles update within 30s of change
+          () => loadUsuario({ id: Number(token.userId) }),
+        );
+        if (usuario) {
+          const payload = userPayload(usuario);
+          token.roles = payload.roles;
+          token.areaId = payload.areaId;
+          token.areaNombre = payload.areaNombre;
+          token.centroCostoId = payload.centroCostoId;
+          token.tenantName = payload.tenantName;
+        }
       }
       return token;
     },

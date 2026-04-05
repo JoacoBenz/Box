@@ -19,6 +19,7 @@ import {
 import { PlusOutlined, MinusCircleOutlined, UploadOutlined } from '@ant-design/icons'
 import Link from 'next/link'
 import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
+import { useFormValid } from '@/hooks/useFormValid'
 import ProveedorSelect from '@/components/ProveedorSelect'
 import ProveedorInfoCard from '@/components/ProveedorInfoCard'
 
@@ -81,6 +82,7 @@ export default function EditarSolicitudPage() {
   const params = useParams()
   const id = params.id as string
   const [form] = Form.useForm<SolicitudFormValues>()
+  const { hasErrors, formProps } = useFormValid(form)
   const [loading, setLoading] = useState<'guardar' | 'enviar' | null>(null)
   const [fetching, setFetching] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -208,7 +210,7 @@ export default function EditarSolicitudPage() {
         />
       )}
 
-      <Form form={form} layout="vertical" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Form form={form} layout="vertical" style={{ display: 'flex', flexDirection: 'column', gap: 24 }} {...formProps}>
         <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Información General</span>} style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           <Form.Item
             label="Título"
@@ -422,14 +424,14 @@ export default function EditarSolicitudPage() {
             size="large"
             onClick={() => handleSubmit('guardar')}
             loading={loading === 'guardar'}
-            disabled={loading === 'enviar'}
+            disabled={loading === 'enviar' || hasErrors}
           >
             Guardar Cambios
           </Button>
           <AnimatedSubmitButton
             variant="send"
             onClick={() => handleSubmit('enviar')}
-            disabled={loading === 'guardar'}
+            disabled={loading === 'guardar' || hasErrors}
           >
             Guardar y Enviar
           </AnimatedSubmitButton>

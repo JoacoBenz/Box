@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { App, Table, Button, Tag, Space, Typography, Popconfirm } from 'antd'
+import { App, Table, Button, Tag, Space, Typography, Popconfirm, Divider, Tooltip } from 'antd'
+import { MailOutlined, DeleteOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 
-const { Title } = Typography
+const { Title, Text } = Typography
 
 interface Tenant {
   id: number
@@ -16,10 +17,22 @@ interface Tenant {
   _count?: { usuarios: number; areas: number }
 }
 
+interface RegistroPendiente {
+  id: number
+  nombre_organizacion: string
+  nombre_usuario: string
+  email: string
+  expira_el: string
+  created_at: string
+  expirado: boolean
+}
+
 export default function AprobacionesOrgPage() {
   const { message } = App.useApp()
   const [tenants, setTenants] = useState<Tenant[]>([])
+  const [registros, setRegistros] = useState<RegistroPendiente[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingRegistros, setLoadingRegistros] = useState(true)
 
   const fetchPendientes = useCallback(async () => {
     setLoading(true)
@@ -35,7 +48,21 @@ export default function AprobacionesOrgPage() {
     }
   }, [])
 
-  useEffect(() => { fetchPendientes() }, [fetchPendientes])
+  const fetchRegistros = useCallback(async () => {
+    setLoadingRegistros(true)
+    try {
+      const res = await fetch('/api/admin/registros-pendientes')
+      if (!res.ok) throw new Error('Error al cargar registros')
+      const data = await res.json()
+      setRegistros(Array.isArray(data) ? data : [])
+    } catch (err: any) {
+      message.error(err.message)
+    } finally {
+      setLoadingRegistros(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchPendientes(); fetchRegistros() }, [fetchPendientes, fetchRegistros])
 
   const [actionLoading, setActionLoading] = useState<number | null>(null)
 
@@ -57,6 +84,17 @@ export default function AprobacionesOrgPage() {
       message.error(err.message)
     } finally {
       setActionLoading(null)
+    }
+  }
+
+  async function eliminarRegistro(id: number) {
+    try {
+      const res = await fetch(`/api/admin/registros-pendientes?id=${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Error al eliminar')
+      message.success('Registro eliminado')
+      fetchRegistros()
+    } catch (err: any) {
+      message.error(err.message)
     }
   }
 
@@ -107,6 +145,55 @@ export default function AprobacionesOrgPage() {
     },
   ]
 
+  const registrosColumns: ColumnsType<RegistroPendiente> = [
+    { title: 'Organización', dataIndex: 'nombre_organizacion', key: 'org' },
+    { title: 'Contacto', dataIndex: 'nombre_usuario', key: 'nombre' },
+    {
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+      render: (email: string) => (
+        <Space>
+          <span>{email}</span>
+          <Tooltip title={`Enviar email a ${email}`}>
+            <a href={`mailto:${email}`}><MailOutlined style={{ color: '#1677ff' }} /></a>
+          </Tooltip>
+        </Space>
+      ),
+    },
+    {
+      title: 'Fecha de Registro',
+      dataIndex: 'created_at',
+      key: 'fecha',
+      width: 160,
+      render: (v: string) => new Date(v).toLocaleDateString('es-AR'),
+    },
+    {
+      title: 'Estado',
+      key: 'estado',
+      width: 140,
+      render: (_, r) => r.expirado
+        ? <Tag color="red">Link expirado</Tag>
+        : <Tag color="blue">Esperando verificación</Tag>,
+    },
+    {
+      title: 'Acciones',
+      key: 'actions',
+      width: 100,
+      render: (_, r) => (
+        <Popconfirm
+          title="¿Eliminar este registro?"
+          description="Se eliminará permanentemente."
+          onConfirm={() => eliminarRegistro(r.id)}
+          okText="Eliminar"
+          cancelText="Cancelar"
+        >
+          <Button size="small" icon={<DeleteOutlined />} danger />
+        </Popconfirm>
+      ),
+    },
+  ]
+
   return (
     <div className="page-content">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -126,6 +213,32 @@ export default function AprobacionesOrgPage() {
         pagination={false}
         size="middle"
         locale={{ emptyText: 'No hay organizaciones pendientes de aprobación' }}
+      />
+
+      <Divider />
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div>
+          <Title level={4} style={{ margin: 0, fontWeight: 600, color: '#1e293b' }}>
+            Registros sin verificar email
+          </Title>
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            Organizaciones que se registraron pero no completaron la verificación de email. Posibles clientes para contactar.
+          </Text>
+        </div>
+        <Tag color="blue" style={{ fontSize: 14, padding: '4px 12px' }}>
+          {registros.length} registro{registros.length !== 1 ? 's' : ''}
+        </Tag>
+      </div>
+
+      <Table
+        rowKey="id"
+        columns={registrosColumns}
+        dataSource={registros}
+        loading={loadingRegistros}
+        pagination={registros.length > 10 ? { pageSize: 10 } : false}
+        size="middle"
+        locale={{ emptyText: 'No hay registros pendientes de verificación' }}
       />
     </div>
   )

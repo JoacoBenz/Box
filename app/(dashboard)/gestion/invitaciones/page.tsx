@@ -7,6 +7,7 @@ import {
 import { CopyOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { useAdminTenant } from '@/components/admin/TenantSelector'
+import { useFormValid } from '@/hooks/useFormValid'
 
 const { Title, Text } = Typography
 
@@ -28,6 +29,7 @@ export default function InvitacionesPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [creating, setCreating] = useState(false)
   const [form] = Form.useForm()
+  const { hasErrors, formProps } = useFormValid(form)
   const [selectedTenant] = useAdminTenant()
 
   const fetchCodigos = useCallback(async () => {
@@ -157,8 +159,9 @@ export default function InvitacionesPage() {
         onCancel={() => setModalOpen(false)}
         confirmLoading={creating}
         okText="Generar"
+        okButtonProps={{ disabled: hasErrors }}
       >
-        <Form form={form} layout="vertical" initialValues={{ dias_validez: 30 }}>
+        <Form form={form} layout="vertical" initialValues={{ dias_validez: 30 }} {...formProps}>
           <Form.Item label="Días de validez" name="dias_validez" rules={[{ required: true, message: 'Ingresá los días de validez' }]}>
             <InputNumber min={1} max={365} style={{ width: '100%' }} />
           </Form.Item>

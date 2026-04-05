@@ -17,6 +17,7 @@ import {
 } from 'antd'
 import { PlusOutlined, MinusCircleOutlined, UploadOutlined } from '@ant-design/icons'
 import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
+import { useFormValid } from '@/hooks/useFormValid'
 import ProveedorSelect from '@/components/ProveedorSelect'
 import ProveedorInfoCard from '@/components/ProveedorInfoCard'
 
@@ -78,6 +79,7 @@ export default function NuevaSolicitudPage() {
   const { message } = App.useApp()
   const router = useRouter()
   const [form] = Form.useForm<SolicitudFormValues>()
+  const { hasErrors, formProps } = useFormValid(form)
   const [loading, setLoading] = useState<'borrador' | 'enviar' | null>(null)
   const [selectedProveedor, setSelectedProveedor] = useState<any>(null)
   const [presupuestoFile, setPresupuestoFile] = useState<File | null>(null)
@@ -146,7 +148,7 @@ export default function NuevaSolicitudPage() {
         Nueva Solicitud de Compra
       </Title>
 
-      <Form form={form} layout="vertical" initialValues={{ urgencia: 'normal', items: [{ unidad: 'unidades', cantidad: 1 }] }} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Form form={form} layout="vertical" initialValues={{ urgencia: 'normal', items: [{ unidad: 'unidades', cantidad: 1 }] }} style={{ display: 'flex', flexDirection: 'column', gap: 24 }} {...formProps}>
         <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Información General</span>} style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           <Form.Item
             label="Título"
@@ -361,14 +363,14 @@ export default function NuevaSolicitudPage() {
             size="large"
             onClick={() => handleSubmit('borrador')}
             loading={loading === 'borrador'}
-            disabled={loading === 'enviar'}
+            disabled={loading === 'enviar' || hasErrors}
           >
             Guardar Borrador
           </Button>
           <AnimatedSubmitButton
             variant="send"
             onClick={() => handleSubmit('enviar')}
-            disabled={loading === 'borrador'}
+            disabled={loading === 'borrador' || hasErrors}
           >
             Enviar Solicitud
           </AnimatedSubmitButton>

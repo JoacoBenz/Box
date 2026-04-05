@@ -2,7 +2,7 @@ import { PrismaClient } from '../app/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+const adapter = new PrismaPg(process.env.DATABASE_URL!);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
@@ -11,7 +11,8 @@ async function main() {
     { nombre: 'solicitante', descripcion: 'Crea solicitudes de compra' },
     { nombre: 'responsable_area', descripcion: 'Valida solicitudes de su área' },
     { nombre: 'director', descripcion: 'Aprueba o rechaza gastos' },
-    { nombre: 'tesoreria', descripcion: 'Ejecuta compras y registra pagos' },
+    { nombre: 'compras', descripcion: 'Gestiona compras y programa pagos' },
+    { nombre: 'tesoreria', descripcion: 'Ejecuta pagos y controla finanzas' },
     { nombre: 'admin', descripcion: 'Administrador del sistema' },
   ];
 

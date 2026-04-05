@@ -4,10 +4,13 @@ import { useState } from 'react';
 import { Form, Input, Button, Card, Typography, Alert, Result } from 'antd';
 import { MailOutlined } from '@ant-design/icons';
 import Link from 'next/link';
+import { useFormValid } from '@/hooks/useFormValid';
 
 const { Title, Text } = Typography;
 
 export default function RecuperarPage() {
+  const [form] = Form.useForm();
+  const { hasErrors, formProps } = useFormValid(form);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -49,7 +52,7 @@ export default function RecuperarPage() {
             <Text type="secondary" style={{ fontSize: 14 }}>Ingresá tu email y te enviaremos un enlace</Text>
           </div>
 
-          <Form layout="vertical" onFinish={onFinish} autoComplete="off" size="large">
+          <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off" size="large" {...formProps}>
             <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email', message: 'Ingresá un email válido' }]}>
               <Input prefix={<MailOutlined style={{ color: '#a0aec0' }} />} placeholder="tu@empresa.com" />
             </Form.Item>
@@ -61,6 +64,7 @@ export default function RecuperarPage() {
                 block
                 size="large"
                 loading={loading}
+                disabled={hasErrors || loading}
                 style={{
                   height: 46,
                   fontWeight: 600,

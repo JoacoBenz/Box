@@ -5,6 +5,7 @@ import { App, Table, Button, Input, Space, Tag, Popconfirm, Modal, Form, Typogra
 import { PlusOutlined, SearchOutlined, EditOutlined, StopOutlined } from '@ant-design/icons'
 import ProveedorCreateModal from '@/components/ProveedorCreateModal'
 import CuitInput from '@/components/CuitInput'
+import { useFormValid } from '@/hooks/useFormValid'
 
 const { Title } = Typography
 import PhoneInput from '@/components/PhoneInput'
@@ -30,6 +31,7 @@ export default function ProveedoresPage() {
   const [editOpen, setEditOpen] = useState(false)
   const [editingProv, setEditingProv] = useState<Proveedor | null>(null)
   const [editForm] = Form.useForm()
+  const { hasErrors, formProps } = useFormValid(editForm)
   const [saving, setSaving] = useState(false)
 
   const fetchProveedores = useCallback(async () => {
@@ -168,9 +170,10 @@ export default function ProveedoresPage() {
         okText="Guardar"
         cancelText="Cancelar"
         confirmLoading={saving}
+        okButtonProps={{ disabled: hasErrors }}
         width={520}
       >
-        <Form form={editForm} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={editForm} layout="vertical" style={{ marginTop: 16 }} {...formProps}>
           <Form.Item label="Nombre" name="nombre" rules={[{ required: true, message: 'Obligatorio' }]}>
             <Input maxLength={255} />
           </Form.Item>
