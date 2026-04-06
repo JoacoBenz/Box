@@ -1,10 +1,11 @@
-import { withAuth } from '@/lib/api-handler';
+import { withAuth, parseId } from '@/lib/api-handler';
 import { verificarSegregacion, verificarResponsableDeArea, apiError } from '@/lib/permissions';
 import { registrarAuditoria } from '@/lib/audit';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 
 export const POST = withAuth({ roles: ['responsable_area'] }, async (request, { session, db, ip }, params) => {
-  const solicitudId = parseInt(params.id);
+  const solicitudId = parseId(params.id);
+  if (!solicitudId) return apiError('BAD_REQUEST', 'ID inválido', 400);
 
   const solicitud = await db.solicitudes.findFirst({ where: { id: solicitudId } });
   if (!solicitud) return apiError('NOT_FOUND', 'No encontrada', 404);

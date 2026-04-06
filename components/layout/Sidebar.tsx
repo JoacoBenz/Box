@@ -24,6 +24,7 @@ import {
 import { usePathname, useRouter } from 'next/navigation';
 import type { RolNombre } from '@/types';
 import { useAdminTenant } from '@/components/admin/TenantSelector';
+import { useTheme } from '@/components/ThemeProvider';
 
 const { Sider } = Layout;
 
@@ -44,6 +45,7 @@ interface TenantOption {
 }
 
 export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
+  const { tokens } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
   const [pulse, setPulse] = useState(true);
@@ -181,7 +183,7 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
           transition: width 0.25s cubic-bezier(0.2, 0, 0, 1) !important;
         }
         .sidebar-menu .ant-menu-item-selected {
-          border-left: 3px solid #4f46e5;
+          border-left: 3px solid #00C2CB;
         }
       `}</style>
       <Sider
@@ -190,7 +192,7 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
         trigger={null}
         width={240}
         style={{
-          background: 'linear-gradient(180deg, #fafbff 0%, #f1f0ff 100%)',
+          background: tokens.sidebarBg,
           borderRight: 'none',
           position: 'fixed',
           left: 0,
@@ -206,7 +208,7 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
           alignItems: 'center',
           justifyContent: 'center',
           gap: 10,
-          borderBottom: '1px solid #f1f5f9',
+          borderBottom: `1px solid ${tokens.sidebarBorder}`,
         }}>
           <div
             className={pulse ? 'sidebar-icon-pulse' : undefined}
@@ -214,7 +216,7 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
               width: 32,
               height: 32,
               borderRadius: 10,
-              background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+              background: tokens.logoGradient,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -227,7 +229,7 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
               <path d="M16 10a4 4 0 01-8 0" />
             </svg>
           </div>
-          {!collapsed && <span style={{ fontWeight: 700, fontSize: 15, color: '#1e293b', letterSpacing: '-0.3px' }}>BoxZenj</span>}
+          {!collapsed && <span style={{ fontWeight: 700, fontSize: 15, color: tokens.textPrimary, letterSpacing: '-0.3px' }}>BoxZenj</span>}
         </div>
 
         {/* Admin org selector */}

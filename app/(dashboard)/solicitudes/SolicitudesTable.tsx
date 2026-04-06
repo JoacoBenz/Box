@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { useTheme } from '@/components/ThemeProvider'
 import { Table, Tag, Select, Space, Button, Input, Card, Typography, DatePicker } from 'antd'
 import { SearchOutlined, DownloadOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useRouter } from 'next/navigation'
@@ -30,6 +31,7 @@ interface Props {
 }
 
 export default function SolicitudesTable({ roles, areas }: Props) {
+  const { tokens } = useTheme()
   const router = useRouter()
   const canExport = ['director', 'tesoreria', 'compras', 'admin'].some(r => roles.includes(r))
   const isSolicitante = roles.includes('solicitante')
@@ -130,7 +132,7 @@ export default function SolicitudesTable({ roles, areas }: Props) {
       key: 'numero',
       width: 140,
       render: (val: string, r: Solicitud) => (
-        <a onClick={() => router.push(`/solicitudes/${r.id}`)} style={{ cursor: 'pointer', fontWeight: 600, color: '#4f46e5' }}>
+        <a onClick={() => router.push(`/solicitudes/${r.id}`)} style={{ cursor: 'pointer', fontWeight: 600, color: tokens.colorPrimary }}>
           {val}
         </a>
       ),
@@ -140,7 +142,7 @@ export default function SolicitudesTable({ roles, areas }: Props) {
       dataIndex: 'titulo',
       key: 'titulo',
       ellipsis: true,
-      render: (val: string) => <Text style={{ color: '#1e293b' }}>{val}</Text>,
+      render: (val: string) => <Text style={{ color: tokens.textPrimary }}>{val}</Text>,
     },
     {
       title: 'Solicitante',
@@ -190,7 +192,7 @@ export default function SolicitudesTable({ roles, areas }: Props) {
     <div>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#1e293b' }}>Solicitudes de Compra</h3>
+        <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: tokens.textPrimary }}>Solicitudes de Compra</h3>
         <Space>
           {canExport && (
             <Button
@@ -211,7 +213,7 @@ export default function SolicitudesTable({ roles, areas }: Props) {
           )}
           {isSolicitante && (
             <Link href="/solicitudes/nueva">
-              <Button type="primary" icon={<PlusOutlined />} style={{ background: '#4f46e5' }}>
+              <Button type="primary" icon={<PlusOutlined />} style={{ background: tokens.colorPrimary }}>
                 Nueva Solicitud
               </Button>
             </Link>
@@ -220,10 +222,10 @@ export default function SolicitudesTable({ roles, areas }: Props) {
       </div>
 
       {/* Filters */}
-      <Card size="small" style={{ borderRadius: 12, marginBottom: 16, border: '1px solid #e2e8f0' }} styles={{ body: { padding: '12px 16px' } }}>
+      <Card size="small" style={{ borderRadius: 12, marginBottom: 16, border: `1px solid ${tokens.borderColor}` }} styles={{ body: { padding: '12px 16px' } }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'nowrap' }}>
           <Input
-            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            prefix={<SearchOutlined style={{ color: tokens.textMuted }} />}
             placeholder="Buscar..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
@@ -275,7 +277,7 @@ export default function SolicitudesTable({ roles, areas }: Props) {
           <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
             <Space>
               <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{total} resultado{total !== 1 ? 's' : ''}</Text>
-              <Button icon={<ReloadOutlined />} onClick={clearFilters} size="small" type="text" style={{ color: '#64748b' }} />
+              <Button icon={<ReloadOutlined />} onClick={clearFilters} size="small" type="text" style={{ color: tokens.textSecondary }} />
             </Space>
           </div>
         </div>

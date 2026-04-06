@@ -1,10 +1,11 @@
-import { withAdminOverride, withAuth, validateBody } from '@/lib/api-handler';
+import { withAdminOverride, withAuth, validateBody, parseId } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
 import { solicitudSchema } from '@/lib/validators';
 import { registrarAuditoria } from '@/lib/audit';
 
 export const GET = withAdminOverride({}, async (request, { session, db, effectiveTenantId }, params) => {
-  const solicitudId = parseInt(params.id);
+  const solicitudId = parseId(params.id);
+  if (!solicitudId) return Response.json({ error: { code: 'BAD_REQUEST', message: 'ID inválido' } }, { status: 400 });
 
   const solicitud = await db.solicitudes.findFirst({
     where: { id: solicitudId },
@@ -39,7 +40,8 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
 });
 
 export const PATCH = withAuth({}, async (request, { session, db, ip }, params) => {
-  const solicitudId = parseInt(params.id);
+  const solicitudId = parseId(params.id);
+  if (!solicitudId) return Response.json({ error: { code: 'BAD_REQUEST', message: 'ID inválido' } }, { status: 400 });
 
   const solicitud = await db.solicitudes.findFirst({ where: { id: solicitudId } });
   if (!solicitud) return Response.json({ error: { code: 'NOT_FOUND', message: 'No encontrada' } }, { status: 404 });

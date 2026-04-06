@@ -1,10 +1,11 @@
-import { withAdminOverride } from '@/lib/api-handler';
+import { withAdminOverride, parseId } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
 import { registrarAuditoria } from '@/lib/audit';
 import { isOnlyResponsable } from '@/lib/permissions';
 
 export const PATCH = withAdminOverride({ roles: ['admin', 'director', 'responsable_area'] }, async (request, { session, db, ip, effectiveTenantId }, params) => {
-  const userId = parseInt(params.id);
+  const userId = parseId(params.id);
+  if (!userId) return Response.json({ error: { code: 'BAD_REQUEST', message: 'ID inválido' } }, { status: 400 });
 
   const usuario = await db.usuarios.findFirst({ where: { id: userId }, include: { usuarios_roles: { include: { rol: true } } } });
   if (!usuario) return Response.json({ error: { code: 'NOT_FOUND', message: 'Usuario no encontrado' } }, { status: 404 });

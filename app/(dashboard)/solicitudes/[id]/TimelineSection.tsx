@@ -7,6 +7,7 @@ import {
   RollbackOutlined, ShoppingCartOutlined, ClockCircleOutlined,
   InboxOutlined, EditOutlined, StopOutlined, HistoryOutlined
 } from '@ant-design/icons'
+import { useTheme } from '@/components/ThemeProvider'
 
 const { Text } = Typography
 
@@ -36,6 +37,7 @@ interface TimelineEvent {
 }
 
 export default function TimelineSection({ solicitudId }: { solicitudId: number }) {
+  const { tokens } = useTheme()
   const [events, setEvents] = useState<TimelineEvent[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -81,7 +83,7 @@ export default function TimelineSection({ solicitudId }: { solicitudId: number }
                 </div>
                 <Text style={{ fontSize: 13 }}>por <strong>{e.usuario}</strong></Text>
                 {detail && (
-                  <div style={{ marginTop: 4, padding: '6px 10px', background: '#f8fafc', borderRadius: 6, fontSize: 12 }}>
+                  <div style={{ marginTop: 4, padding: '6px 10px', background: tokens.bgInput, borderRadius: 6, fontSize: 12 }}>
                     <Text type="secondary">{typeof detail === 'string' ? detail : JSON.stringify(detail)}</Text>
                   </div>
                 )}

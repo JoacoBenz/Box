@@ -1,9 +1,10 @@
-import { withAdminOverride, validateBody } from '@/lib/api-handler';
+import { withAdminOverride, validateBody, parseId } from '@/lib/api-handler';
 import { registrarAuditoria } from '@/lib/audit';
 import { areaSchema } from '@/lib/validators';
 
 export const PATCH = withAdminOverride({ roles: ['admin', 'director'] }, async (request, { session, db, ip, effectiveTenantId }, params) => {
-  const areaId = parseInt(params.id);
+  const areaId = parseId(params.id);
+  if (!areaId) return Response.json({ error: { code: 'BAD_REQUEST', message: 'ID inválido' } }, { status: 400 });
 
   const area = await db.areas.findFirst({ where: { id: areaId } });
   if (!area) return Response.json({ error: { code: 'NOT_FOUND', message: 'Área no encontrada' } }, { status: 404 });
@@ -46,7 +47,8 @@ export const PATCH = withAdminOverride({ roles: ['admin', 'director'] }, async (
 });
 
 export const DELETE = withAdminOverride({ roles: ['admin', 'director'] }, async (request, { session, db, ip, effectiveTenantId }, params) => {
-  const areaId = parseInt(params.id);
+  const areaId = parseId(params.id);
+  if (!areaId) return Response.json({ error: { code: 'BAD_REQUEST', message: 'ID inválido' } }, { status: 400 });
 
   const area = await db.areas.findFirst({ where: { id: areaId } });
   if (!area) return Response.json({ error: { code: 'NOT_FOUND', message: 'Área no encontrada' } }, { status: 404 });

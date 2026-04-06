@@ -104,17 +104,17 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
   }))
 
   const STATUS_BG: Record<string, string> = {
-    borrador: '#f1f5f9',
-    enviada: '#eff6ff',
-    devuelta_resp: '#fffbeb',
-    devuelta_dir: '#fffbeb',
-    validada: '#ecfeff',
-    aprobada: '#f0fdf4',
-    rechazada: '#fef2f2',
-    abonada: '#faf5ff',
-    recibida: '#f7fee7',
-    recibida_con_obs: '#fff7ed',
-    cerrada: '#f1f5f9',
+    borrador: 'var(--status-bg-borrador)',
+    enviada: 'var(--status-bg-enviada)',
+    devuelta_resp: 'var(--status-bg-devuelta)',
+    devuelta_dir: 'var(--status-bg-devuelta)',
+    validada: 'var(--status-bg-validada)',
+    aprobada: 'var(--status-bg-aprobada)',
+    rechazada: 'var(--status-bg-rechazada)',
+    abonada: 'var(--status-bg-abonada)',
+    recibida: 'var(--status-bg-recibida)',
+    recibida_con_obs: 'var(--status-bg-recibida-obs)',
+    cerrada: 'var(--status-bg-cerrada)',
   }
 
   return (
@@ -125,7 +125,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
         borderRadius: 16,
         padding: '24px 28px',
         marginBottom: 24,
-        border: '1px solid rgba(0,0,0,0.04)',
+        border: '1px solid var(--hero-border)',
       }}>
         <div style={{
           display: 'flex',
@@ -135,13 +135,13 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
         }}>
           <div>
             <div style={{ fontSize: 13, marginBottom: 8 }}>
-              <Link href="/solicitudes" style={{ color: '#4f46e5', fontWeight: 500, textDecoration: 'none' }}>
+              <Link href="/solicitudes" style={{ color: 'var(--color-primary)', fontWeight: 500, textDecoration: 'none' }}>
                 ← Volver a Solicitudes
               </Link>
             </div>
-            <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#1e293b' }}>{solicitud.titulo}</h3>
+            <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>{solicitud.titulo}</h3>
             <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: '#64748b', fontSize: 13, fontWeight: 600 }}>{solicitud.numero}</span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600 }}>{solicitud.numero}</span>
               {estadoInfo && <Tag color={estadoInfo.color}>{estadoInfo.label}</Tag>}
               {urgenciaInfo && <Tag color={urgenciaInfo.color}>{urgenciaInfo.label}</Tag>}
             </div>
@@ -164,7 +164,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
       </div>
 
       {/* Main info */}
-      <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Detalle de la Solicitud</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
+      <Card title={<span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Detalle de la Solicitud</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
         <Descriptions column={2} bordered size="small">
           <Descriptions.Item label="Solicitante">{solicitud.solicitante.nombre}</Descriptions.Item>
           <Descriptions.Item label="Área">{solicitud.area?.nombre ?? '—'}</Descriptions.Item>
@@ -194,17 +194,17 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
           </Descriptions.Item>
           {solicitud.observaciones_responsable && (
             <Descriptions.Item label="Obs. Responsable" span={2}>
-              <span style={{ color: '#d46b08' }}>{solicitud.observaciones_responsable}</span>
+              <span style={{ color: 'var(--color-observation)' }}>{solicitud.observaciones_responsable}</span>
             </Descriptions.Item>
           )}
           {solicitud.observaciones_director && (
             <Descriptions.Item label="Obs. Dirección" span={2}>
-              <span style={{ color: '#d46b08' }}>{solicitud.observaciones_director}</span>
+              <span style={{ color: 'var(--color-observation)' }}>{solicitud.observaciones_director}</span>
             </Descriptions.Item>
           )}
           {solicitud.motivo_rechazo && (
             <Descriptions.Item label="Motivo Rechazo" span={2}>
-              <span style={{ color: '#cf1322' }}>{solicitud.motivo_rechazo}</span>
+              <span style={{ color: 'var(--color-rejection)' }}>{solicitud.motivo_rechazo}</span>
             </Descriptions.Item>
           )}
         </Descriptions>
@@ -213,7 +213,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
       {/* Proveedor info (read-only) */}
       {solicitud.proveedor && (
         <Card
-          title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Proveedor</span>}
+          title={<span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Proveedor</span>}
           style={{ marginBottom: 24, borderRadius: 16 }}
         >
           <Descriptions column={2} bordered size="small">
@@ -247,7 +247,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
       )}
 
       {/* Items */}
-      <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Ítems Solicitados</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
+      <Card title={<span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Ítems Solicitados</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
         <ItemsTable items={items} />
         {(() => {
           const total = items.reduce((acc, item) => acc + (item.precio_estimado != null ? item.precio_estimado * item.cantidad : 0), 0)
@@ -255,16 +255,16 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
             <div style={{
               marginTop: 12,
               padding: '12px 16px',
-              background: '#f0fdf4',
+              background: 'var(--total-estimated-bg)',
               borderRadius: 8,
-              border: '1px solid #bbf7d0',
+              border: '1px solid var(--total-estimated-border)',
               display: 'flex',
               justifyContent: 'flex-end',
               alignItems: 'center',
               gap: 12,
             }}>
-              <span style={{ fontWeight: 600, color: '#15803d', fontSize: 15 }}>Total Estimado:</span>
-              <span style={{ fontWeight: 700, color: '#15803d', fontSize: 17 }}>
+              <span style={{ fontWeight: 600, color: 'var(--total-estimated-text)', fontSize: 15 }}>Total Estimado:</span>
+              <span style={{ fontWeight: 700, color: 'var(--total-estimated-text)', fontSize: 17 }}>
                 ${total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
@@ -278,7 +278,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
           title={
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 18 }}>📎</span>
-              <span style={{ fontWeight: 700, color: '#1e293b' }}>Documentos Adjuntos</span>
+              <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Documentos Adjuntos</span>
               <Tag style={{ marginLeft: 4 }}>{archivosSerializados.length}</Tag>
             </div>
           }
@@ -286,13 +286,13 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {archivosSolicitud.length > 0 && (
-              <ArchivoGroup label="Solicitud" color="#4f46e5" bg="#eef2ff" archivos={archivosSolicitud} />
+              <ArchivoGroup label="Solicitud" color="var(--color-primary)" bg="var(--archivo-solicitud-bg)" archivos={archivosSolicitud} />
             )}
             {archivosCompra.length > 0 && (
-              <ArchivoGroup label="Comprobante de Pago" color="#0891b2" bg="#ecfeff" archivos={archivosCompra} />
+              <ArchivoGroup label="Comprobante de Pago" color="var(--archivo-compra-color)" bg="var(--archivo-compra-bg)" archivos={archivosCompra} />
             )}
             {archivosRecepcion.length > 0 && (
-              <ArchivoGroup label="Recepción / Remito" color="#16a34a" bg="#f0fdf4" archivos={archivosRecepcion} />
+              <ArchivoGroup label="Recepción / Remito" color="var(--archivo-recepcion-color)" bg="var(--archivo-recepcion-bg)" archivos={archivosRecepcion} />
             )}
           </div>
         </Card>
@@ -300,7 +300,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
 
       {/* Compra info */}
       {solicitud.compras.length > 0 && (
-        <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Información de Compra</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
+        <Card title={<span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Información de Compra</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
           {solicitud.compras.map((compra) => (
             <Descriptions key={compra.id} column={2} bordered size="small">
               <Descriptions.Item label="Proveedor">{compra.proveedor_nombre}</Descriptions.Item>
@@ -336,7 +336,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
 
       {/* Recepciones */}
       {solicitud.recepciones.length > 0 && (
-        <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Recepciones</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
+        <Card title={<span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Recepciones</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
           {solicitud.recepciones.map((rec) => (
             <Descriptions key={rec.id} column={2} bordered size="small">
               <Descriptions.Item label="Confirmado por">
@@ -431,10 +431,10 @@ function ArchivoGroup({ label, color, bg, archivos }: { label: string; color: st
             >
               <span style={{ fontSize: 22, lineHeight: 1 }}>{getFileIcon(a.nombre_archivo)}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {a.nombre_archivo}
                 </div>
-                <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
                   {a.subido_por?.nombre ?? 'Usuario'}
                   {' · '}
                   {new Date(a.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}

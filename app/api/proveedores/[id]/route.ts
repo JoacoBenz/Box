@@ -1,9 +1,10 @@
-import { withAdminOverride, validateBody } from '@/lib/api-handler';
+import { withAdminOverride, validateBody, parseId } from '@/lib/api-handler';
 import { registrarAuditoria } from '@/lib/audit';
 import { proveedorSchema } from '@/lib/validators';
 
 export const GET = withAdminOverride({}, async (request, { db }, params) => {
-  const proveedorId = parseInt(params.id);
+  const proveedorId = parseId(params.id);
+  if (!proveedorId) return Response.json({ error: { code: 'BAD_REQUEST', message: 'ID inválido' } }, { status: 400 });
 
   const proveedor = await db.proveedores.findFirst({ where: { id: proveedorId } });
   if (!proveedor) return Response.json({ error: { code: 'NOT_FOUND', message: 'Proveedor no encontrado' } }, { status: 404 });
@@ -12,7 +13,8 @@ export const GET = withAdminOverride({}, async (request, { db }, params) => {
 });
 
 export const PATCH = withAdminOverride({ roles: ['solicitante', 'tesoreria', 'compras', 'director', 'admin', 'responsable_area'] }, async (request, { session, db, ip, effectiveTenantId }, params) => {
-  const proveedorId = parseInt(params.id);
+  const proveedorId = parseId(params.id);
+  if (!proveedorId) return Response.json({ error: { code: 'BAD_REQUEST', message: 'ID inválido' } }, { status: 400 });
 
   const existing = await db.proveedores.findFirst({ where: { id: proveedorId } });
   if (!existing) return Response.json({ error: { code: 'NOT_FOUND', message: 'No encontrado' } }, { status: 404 });
@@ -39,7 +41,8 @@ export const PATCH = withAdminOverride({ roles: ['solicitante', 'tesoreria', 'co
 });
 
 export const DELETE = withAdminOverride({ roles: ['tesoreria', 'compras', 'director', 'admin', 'responsable_area'] }, async (request, { session, db, ip, effectiveTenantId }, params) => {
-  const proveedorId = parseInt(params.id);
+  const proveedorId = parseId(params.id);
+  if (!proveedorId) return Response.json({ error: { code: 'BAD_REQUEST', message: 'ID inválido' } }, { status: 400 });
 
   const existing = await db.proveedores.findFirst({ where: { id: proveedorId } });
   if (!existing) return Response.json({ error: { code: 'NOT_FOUND', message: 'No encontrado' } }, { status: 404 });

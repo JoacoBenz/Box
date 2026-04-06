@@ -1,4 +1,4 @@
-import { withAuth } from '@/lib/api-handler';
+import { withAuth, parseId } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
 import { verificarSegregacion, apiError } from '@/lib/permissions';
 import { registrarAuditoria } from '@/lib/audit';
@@ -8,7 +8,8 @@ import { canUserApproveAmount } from '@/lib/approval-limits';
 import { verificarPresupuesto } from '@/lib/budget-control';
 
 export const POST = withAuth({ roles: ['director'] }, async (request, { session, db, ip }, params) => {
-  const solicitudId = parseInt(params.id);
+  const solicitudId = parseId(params.id);
+  if (!solicitudId) return apiError('BAD_REQUEST', 'ID inválido', 400);
 
   const solicitud = await db.solicitudes.findFirst({
     where: { id: solicitudId },

@@ -263,6 +263,8 @@ model archivos {
 
   tenant     tenants  @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   subido_por usuarios @relation(fields: [subido_por_id], references: [id])
+
+  @@index([tenant_id, entidad, entidad_id])
 }
 
 model notificaciones {

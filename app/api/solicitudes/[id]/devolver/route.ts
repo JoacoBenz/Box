@@ -1,4 +1,4 @@
-import { withAuth, validateBody } from '@/lib/api-handler';
+import { withAuth, validateBody, parseId } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
 import { verificarRol, verificarSegregacion, verificarResponsableDeArea, apiError } from '@/lib/permissions';
 import { registrarAuditoria } from '@/lib/audit';
@@ -6,7 +6,8 @@ import { crearNotificacion } from '@/lib/notifications';
 import { devolucionSchema } from '@/lib/validators';
 
 export const POST = withAuth({}, async (request, { session, db, ip }, params) => {
-  const solicitudId = parseInt(params.id);
+  const solicitudId = parseId(params.id);
+  if (!solicitudId) return apiError('BAD_REQUEST', 'ID inválido', 400);
 
   const body = await request.json();
   const validation = validateBody(devolucionSchema, body);

@@ -1,9 +1,10 @@
-import { withAdminOverride, validateBody } from '@/lib/api-handler';
+import { withAdminOverride, validateBody, parseId } from '@/lib/api-handler';
 import { registrarAuditoria } from '@/lib/audit';
 import { centroCostoSchema } from '@/lib/validators';
 
 export const PATCH = withAdminOverride({ roles: ['admin', 'director', 'tesoreria'] }, async (request, { session, db, ip, effectiveTenantId }, params) => {
-  const centroId = parseInt(params.id);
+  const centroId = parseId(params.id);
+  if (!centroId) return Response.json({ error: { code: 'BAD_REQUEST', message: 'ID inválido' } }, { status: 400 });
 
   const centro = await db.centros_costo.findFirst({ where: { id: centroId } });
   if (!centro) return Response.json({ error: { code: 'NOT_FOUND', message: 'No encontrado' } }, { status: 404 });

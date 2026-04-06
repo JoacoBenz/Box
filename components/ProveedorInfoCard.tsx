@@ -2,6 +2,7 @@
 
 import { Card, Descriptions, Typography, Button } from 'antd'
 import { ShopOutlined, LinkOutlined, EditOutlined } from '@ant-design/icons'
+import { useTheme } from '@/components/ThemeProvider'
 
 interface Proveedor {
   id: number
@@ -22,16 +23,17 @@ interface Props {
 }
 
 export default function ProveedorInfoCard({ proveedor, style, editable, onEditBancarios }: Props) {
+  const { tokens } = useTheme()
   return (
     <Card
       size="small"
       title={
         <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <ShopOutlined style={{ color: '#1677ff' }} />
+          <ShopOutlined style={{ color: tokens.colorPrimary }} />
           <span style={{ fontWeight: 600 }}>Proveedor: {proveedor.nombre}</span>
         </span>
       }
-      style={{ borderRadius: 10, background: '#f8fafc', ...style }}
+      style={{ borderRadius: 10, background: tokens.bgInput, ...style }}
     >
       <Descriptions column={1} size="small" colon={false}>
         {proveedor.cuit && (
@@ -58,7 +60,7 @@ export default function ProveedorInfoCard({ proveedor, style, editable, onEditBa
         }>
           {proveedor.datos_bancarios
             ? <Typography.Text style={{ whiteSpace: 'pre-line' }}>{proveedor.datos_bancarios}</Typography.Text>
-            : <span style={{ color: '#bbb' }}>Sin datos bancarios</span>
+            : <span style={{ color: tokens.textMuted }}>Sin datos bancarios</span>
           }
         </Descriptions.Item>
         {proveedor.link_pagina && (

@@ -1,4 +1,4 @@
-import { withTenant } from '@/lib/api-handler';
+import { withTenant, parseId } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
 import { apiError, verificarResponsableDeArea } from '@/lib/permissions';
 import { registrarAuditoria } from '@/lib/audit';
@@ -6,7 +6,8 @@ import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { getTenantConfigBool } from '@/lib/tenant-config';
 
 export const POST = withTenant(async (request, { session, db, ip }, params) => {
-  const solicitudId = parseInt(params.id);
+  const solicitudId = parseId(params.id);
+  if (!solicitudId) return apiError('BAD_REQUEST', 'ID inválido', 400);
 
   const solicitud = await db.solicitudes.findFirst({ where: { id: solicitudId }, include: { items_solicitud: true } });
   if (!solicitud) return apiError('NOT_FOUND', 'No encontrada', 404);

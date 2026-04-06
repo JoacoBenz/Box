@@ -1,10 +1,11 @@
-import { withTenant, withAuth } from '@/lib/api-handler';
+import { withTenant, withAuth, parseId } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
 import { getSignedUrl, deleteFile } from '@/lib/supabase';
 import { verificarRol } from '@/lib/permissions';
 
 export const GET = withTenant(async (_request, { session }, params) => {
-  const archivoId = parseInt(params.id);
+  const archivoId = parseId(params.id);
+  if (!archivoId) return Response.json({ error: { code: 'BAD_REQUEST', message: 'ID inválido' } }, { status: 400 });
 
   const archivo = await prisma.archivos.findFirst({ where: { id: archivoId, tenant_id: session.tenantId } });
   if (!archivo) return Response.json({ error: { code: 'NOT_FOUND', message: 'Archivo no encontrado' } }, { status: 404 });
@@ -14,7 +15,8 @@ export const GET = withTenant(async (_request, { session }, params) => {
 });
 
 export const DELETE = withTenant(async (_request, { session }, params) => {
-  const archivoId = parseInt(params.id);
+  const archivoId = parseId(params.id);
+  if (!archivoId) return Response.json({ error: { code: 'BAD_REQUEST', message: 'ID inválido' } }, { status: 400 });
 
   const archivo = await prisma.archivos.findFirst({ where: { id: archivoId, tenant_id: session.tenantId } });
   if (!archivo) return Response.json({ error: { code: 'NOT_FOUND', message: 'Archivo no encontrado' } }, { status: 404 });

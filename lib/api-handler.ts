@@ -144,3 +144,11 @@ export function validateBody<T>(schema: { safeParse: (data: unknown) => { succes
   }
   return { success: true, data: result.data as T };
 }
+
+/**
+ * Parses a route param ID and returns the number, or null if invalid.
+ */
+export function parseId(id: string | undefined): number | null {
+  const n = Number(id);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}

@@ -17,6 +17,7 @@ import {
   CheckCircleOutlined,
 } from '@ant-design/icons'
 import { useFormValid } from '@/hooks/useFormValid'
+import { useTheme } from '@/components/ThemeProvider'
 
 const { Title, Text } = Typography
 
@@ -41,6 +42,7 @@ interface Tenant {
 }
 
 export default function AdminTenantsPage() {
+  const { tokens } = useTheme()
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
@@ -144,7 +146,7 @@ export default function AdminTenantsPage() {
       title: '#',
       key: 'index',
       width: 50,
-      render: (_: unknown, __: Tenant, index: number) => <Text strong style={{ color: '#4f46e5' }}>#{index + 1}</Text>,
+      render: (_: unknown, __: Tenant, index: number) => <Text strong style={{ color: tokens.colorPrimary }}>#{index + 1}</Text>,
     },
     {
       title: 'Organización',
@@ -181,7 +183,7 @@ export default function AdminTenantsPage() {
       align: 'center',
       render: (_, t) => (
         <Space size={4}>
-          <TeamOutlined style={{ color: '#4f46e5' }} />
+          <TeamOutlined style={{ color: tokens.colorPrimary }} />
           <Text strong>{t.stats.usuarios}</Text>
         </Space>
       ),
@@ -193,7 +195,7 @@ export default function AdminTenantsPage() {
       align: 'center',
       render: (_, t) => (
         <Space size={4}>
-          <ApartmentOutlined style={{ color: '#7c3aed' }} />
+          <ApartmentOutlined style={{ color: tokens.colorSecondary }} />
           <Text strong>{t.stats.areas}</Text>
         </Space>
       ),
@@ -205,7 +207,7 @@ export default function AdminTenantsPage() {
       align: 'center',
       render: (_, t) => (
         <Space size={4}>
-          <FileTextOutlined style={{ color: '#0891b2' }} />
+          <FileTextOutlined style={{ color: tokens.colorPrimary }} />
           <Text strong>{t.stats.solicitudes}</Text>
         </Space>
       ),
@@ -229,7 +231,7 @@ export default function AdminTenantsPage() {
       align: 'center',
       render: (_, t) => (
         <Space size={4}>
-          <ShopOutlined style={{ color: '#ea580c' }} />
+          <ShopOutlined style={{ color: '#f59e0b' }} />
           <Text strong>{t.stats.proveedores}</Text>
         </Space>
       ),
@@ -280,8 +282,8 @@ export default function AdminTenantsPage() {
       {contextHolder}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <GlobalOutlined style={{ fontSize: 24, color: '#4f46e5' }} />
-          <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>
+          <GlobalOutlined style={{ fontSize: 24, color: tokens.colorPrimary }} />
+          <Title level={3} style={{ margin: 0, fontWeight: 700, color: tokens.textPrimary }}>
             Organizaciones
           </Title>
         </div>
@@ -292,20 +294,20 @@ export default function AdminTenantsPage() {
 
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={8}>
-          <Card size="small" style={{ borderRadius: 16, borderLeft: '4px solid #4f46e5' }}>
+          <Card size="small" style={{ borderRadius: 16, borderLeft: `4px solid ${tokens.colorPrimary}` }}>
             <Statistic
               title={<Text type="secondary" style={{ fontSize: 12 }}>Total Organizaciones</Text>}
               value={tenants.length}
-              prefix={<GlobalOutlined style={{ color: '#4f46e5' }} />}
+              prefix={<GlobalOutlined style={{ color: tokens.colorPrimary }} />}
             />
           </Card>
         </Col>
         <Col xs={24} sm={8}>
-          <Card size="small" style={{ borderRadius: 16, borderLeft: '4px solid #7c3aed' }}>
+          <Card size="small" style={{ borderRadius: 16, borderLeft: `4px solid ${tokens.colorSecondary}` }}>
             <Statistic
               title={<Text type="secondary" style={{ fontSize: 12 }}>Total Usuarios</Text>}
               value={totalUsuarios}
-              prefix={<TeamOutlined style={{ color: '#7c3aed' }} />}
+              prefix={<TeamOutlined style={{ color: tokens.colorSecondary }} />}
             />
           </Card>
         </Col>

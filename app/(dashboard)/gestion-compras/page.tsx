@@ -8,6 +8,7 @@ import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types'
 import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types'
 import dayjs from 'dayjs'
 import { useFormValid } from '@/hooks/useFormValid'
+import { useTheme } from '@/components/ThemeProvider'
 
 const { Title, Text } = Typography
 const { TextArea } = Input
@@ -28,6 +29,7 @@ interface Solicitud {
 const ALL_ESTADOS = Object.entries(ESTADOS_SOLICITUD).map(([value, { label }]) => ({ value, label }))
 
 export default function GestionComprasPage() {
+  const { tokens } = useTheme()
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([])
   const [loading, setLoading] = useState(true)
   const [estadoFilter, setEstadoFilter] = useState<string>('en_compras')
@@ -152,7 +154,7 @@ export default function GestionComprasPage() {
             <Button
               size="small"
               type="primary"
-              style={{ background: '#7c3aed', borderColor: '#7c3aed' }}
+              style={{ background: tokens.colorPrimary, borderColor: tokens.colorPrimary }}
               onClick={() => { setSelectedId(row.id); setProgramarOpen(true) }}
             >
               Programar Pago
@@ -166,7 +168,7 @@ export default function GestionComprasPage() {
   return (
     <div className="page-content">
       <div style={{ marginBottom: 24 }}>
-        <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>Gestión de Compras</Title>
+        <Title level={3} style={{ margin: 0, fontWeight: 700, color: tokens.textPrimary }}>Gestión de Compras</Title>
         <Text type="secondary" style={{ marginTop: 4, display: 'block' }}>Pipeline de solicitudes para programar pagos</Text>
       </div>
 

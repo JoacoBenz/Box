@@ -134,7 +134,11 @@ function UsuarioFormFields({ form, editing, areas }: { form: FormInstance; editi
           mode="multiple"
           placeholder="Seleccionar roles"
           options={(Object.keys(ROL_LABELS) as RolNombre[])
-            .filter((r) => r !== 'admin' || sessionRoles.includes('admin'))
+            .filter((r) => {
+              if (r === 'super_admin') return false
+              if (r === 'admin') return sessionRoles.includes('admin') || sessionRoles.includes('super_admin')
+              return true
+            })
             .map((r) => ({ value: r, label: ROL_LABELS[r] }))}
         />
       </Form.Item>
@@ -196,8 +200,8 @@ export default function AdminUsuariosPage() {
           title: 'Roles',
           key: 'roles',
           render: (_: unknown, r: Usuario) =>
-            r.usuarios_roles?.length > 0
-              ? r.usuarios_roles.map((rr) => {
+            r.usuarios_roles?.filter((rr) => rr.rol?.nombre !== 'super_admin').length > 0
+              ? r.usuarios_roles.filter((rr) => rr.rol?.nombre !== 'super_admin').map((rr) => {
                   const rol = rr.rol?.nombre as RolNombre
                   return (
                     <Tag key={rol} color={ROL_COLORS[rol] ?? 'default'} style={{ marginBottom: 2 }}>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useTheme } from '@/components/ThemeProvider';
 
 type AnimationState = 'idle' | 'morphing' | 'flying' | 'success' | 'done';
 type Variant = 'send' | 'approve' | 'reject';
@@ -104,6 +105,7 @@ export default function AnimatedSubmitButton({
   style,
   className,
 }: AnimatedSubmitButtonProps) {
+  const { tokens } = useTheme();
   const [state, setState] = useState<AnimationState>('idle');
   const timerRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
   const reducedMotion = useReducedMotion();
@@ -166,16 +168,16 @@ export default function AnimatedSubmitButton({
 
   const variantColors: Record<Variant, { gradient: string; successBg: string }> = {
     send: {
-      gradient: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+      gradient: tokens.logoGradient,
       successBg: '#22c55e',
     },
     approve: {
-      gradient: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+      gradient: tokens.logoGradient,
       successBg: '#22c55e',
     },
     reject: {
-      gradient: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
-      successBg: '#ef4444',
+      gradient: tokens.logoGradient,
+      successBg: tokens.colorError,
     },
   };
 

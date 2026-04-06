@@ -15,6 +15,7 @@ import type { ColumnsType } from 'antd/es/table'
 import type { FormInstance } from 'antd/es/form'
 import { useAdminTenant } from '@/components/admin/TenantSelector'
 import { useFormValid } from '@/hooks/useFormValid'
+import { useTheme } from '@/components/ThemeProvider'
 
 const { Title } = Typography
 
@@ -71,6 +72,7 @@ export default function AdminCrudTable<T extends { id: number }>({
   entityName = 'registro',
   useFormSubmit,
 }: AdminCrudTableProps<T>) {
+  const { tokens } = useTheme()
   const { message } = App.useApp()
   const [items, setItems] = useState<T[]>([])
   const [secondaryData, setSecondaryData] = useState<any[]>([])
@@ -201,7 +203,7 @@ export default function AdminCrudTable<T extends { id: number }>({
   return (
     <div className="page-content">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>{pageTitle}</Title>
+        <Title level={3} style={{ margin: 0, fontWeight: 700, color: tokens.textPrimary }}>{pageTitle}</Title>
         {hasTenant && (
           <Button type="primary" onClick={openCreate} style={{ fontWeight: 600 }}>
             {createLabel ?? `+ Nuevo`}
