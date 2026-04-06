@@ -136,7 +136,7 @@ export default function UnirsePage() {
         <Text type="secondary">Ingresá con tu email institucional o código de invitación</Text>
       </div>
 
-      {error && <Alert message={error} type="error" showIcon style={{ marginBottom: 16 }} />}
+      {error && <Alert title={error} type="error" showIcon style={{ marginBottom: 16 }} />}
 
       {step === 'email' && (
         <>

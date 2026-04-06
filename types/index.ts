@@ -1,4 +1,4 @@
-export type RolNombre = 'solicitante' | 'responsable_area' | 'director' | 'tesoreria' | 'compras' | 'admin';
+export type RolNombre = 'solicitante' | 'responsable_area' | 'director' | 'tesoreria' | 'compras' | 'admin' | 'super_admin';
 
 export type EstadoTenant = 'pendiente' | 'activo' | 'rechazado' | 'suspendido';
 

@@ -13,6 +13,7 @@ const ROL_COLORS: Record<RolNombre, string> = {
   tesoreria: 'gold',
   compras: 'orange',
   admin: 'red',
+  super_admin: 'volcano',
 }
 
 const ROL_LABELS: Record<RolNombre, string> = {
@@ -22,6 +23,7 @@ const ROL_LABELS: Record<RolNombre, string> = {
   tesoreria: 'Tesorería',
   compras: 'Compras',
   admin: 'Administrador',
+  super_admin: 'Super Admin',
 }
 
 interface Area {

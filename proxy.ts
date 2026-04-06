@@ -8,7 +8,7 @@ const ROLE_ROUTES: Record<string, string[]> = {
   '/validaciones': ['responsable_area'],
   '/aprobaciones': ['director'],
   '/compras':      ['tesoreria'],
-  '/admin':        ['admin'],
+  '/admin':        ['admin', 'super_admin'],
 };
 
 export async function proxy(request: NextRequest) {

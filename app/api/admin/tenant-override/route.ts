@@ -7,7 +7,7 @@ const COOKIE_NAME = 'admin_tenant_id';
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
-    if (!session.roles.includes('admin')) {
+    if (!session.roles.includes('super_admin')) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 

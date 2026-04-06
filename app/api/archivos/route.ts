@@ -47,5 +47,8 @@ export const POST = withTenant(async (request, { session }) => {
     },
   });
 
-  return Response.json(registro, { status: 201 });
+  return Response.json({
+    ...registro,
+    tamanio_bytes: Number(registro.tamanio_bytes),
+  }, { status: 201 });
 });

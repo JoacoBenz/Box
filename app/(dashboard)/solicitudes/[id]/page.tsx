@@ -58,7 +58,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
   const recepcionIds = solicitud.recepciones.map((r) => r.id)
   const tenantFilter = tenantId ? { tenant_id: tenantId } : {}
 
-  const allArchivos = await prisma.archivos.findMany({
+  const allArchivosRaw = await prisma.archivos.findMany({
     where: {
       ...tenantFilter,
       OR: [
@@ -71,9 +71,19 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
     orderBy: { created_at: 'asc' },
   })
 
-  const archivosSolicitud = allArchivos.filter((a) => a.entidad === 'solicitud')
-  const archivosCompra = allArchivos.filter((a) => a.entidad === 'compra')
-  const archivosRecepcion = allArchivos.filter((a) => a.entidad === 'recepcion')
+  // Convert BigInt/Date fields to serializable types for RSC
+  const archivosSerializados = allArchivosRaw.map((a) => ({
+    id: a.id,
+    entidad: a.entidad,
+    nombre_archivo: a.nombre_archivo,
+    tamanio_bytes: a.tamanio_bytes ? Number(a.tamanio_bytes) : null,
+    created_at: a.created_at.toISOString(),
+    subido_por: a.subido_por,
+  }))
+
+  const archivosSolicitud = archivosSerializados.filter((a) => a.entidad === 'solicitud')
+  const archivosCompra = archivosSerializados.filter((a) => a.entidad === 'compra')
+  const archivosRecepcion = archivosSerializados.filter((a) => a.entidad === 'recepcion')
 
   // Check if session user is the designated responsable of this solicitud's area
   const isAreaResponsable = solicitud.area?.responsable_id === sessionUserId
@@ -263,13 +273,13 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
       </Card>
 
       {/* Archivos adjuntos — all stages */}
-      {allArchivos.length > 0 && (
+      {archivosSerializados.length > 0 && (
         <Card
           title={
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 18 }}>📎</span>
               <span style={{ fontWeight: 700, color: '#1e293b' }}>Documentos Adjuntos</span>
-              <Tag style={{ marginLeft: 4 }}>{allArchivos.length}</Tag>
+              <Tag style={{ marginLeft: 4 }}>{archivosSerializados.length}</Tag>
             </div>
           }
           style={{ marginBottom: 24, borderRadius: 16 }}
@@ -386,8 +396,8 @@ function formatBytes(bytes: number) {
 interface ArchivoRow {
   id: number
   nombre_archivo: string
-  tamanio_bytes: bigint | null
-  created_at: Date
+  tamanio_bytes: number | null
+  created_at: string
   subido_por: { nombre: string } | null
 }
 

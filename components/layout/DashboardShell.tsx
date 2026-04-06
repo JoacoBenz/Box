@@ -18,7 +18,8 @@ interface DashboardShellProps {
 
 export function DashboardShell({ tenantNombre, userName, areaNombre, roles, children }: DashboardShellProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const rolPrincipal = roles.includes('admin') ? 'admin'
+  const rolPrincipal = roles.includes('super_admin') ? 'super_admin'
+    : roles.includes('admin') ? 'admin'
     : roles.includes('director') ? 'director'
     : roles.includes('tesoreria') ? 'tesoreria'
     : roles.includes('responsable_area') ? 'responsable_area'

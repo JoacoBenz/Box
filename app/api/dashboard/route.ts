@@ -236,7 +236,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
   }
 
   // ── Admin section (platform-level metrics) ──
-  if (roles.includes('admin')) {
+  if (roles.includes('super_admin')) {
     const hace30Dias = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
     const [
@@ -253,18 +253,18 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       crecimientoUsuariosData,
       orgsTopUso,
     ] = await Promise.all([
-      prisma.tenants.count(),
-      prisma.tenants.count({ where: { estado: 'activo', desactivado: false } }),
-      prisma.tenants.count({ where: { estado: 'pendiente' } }),
-      prisma.tenants.count({ where: { OR: [{ estado: 'suspendido' }, { desactivado: true }] } }),
-      prisma.usuarios.count({ where: { activo: true } }),
-      prisma.usuarios.count({ where: { created_at: { gte: inicioMes } } }),
-      prisma.tenants.count({ where: { fecha_registro: { gte: inicioMes } } }),
+      prisma.tenants.count({ where: { slug: { not: '__platform__' } } }),
+      prisma.tenants.count({ where: { estado: 'activo', desactivado: false, slug: { not: '__platform__' } } }),
+      prisma.tenants.count({ where: { estado: 'pendiente', slug: { not: '__platform__' } } }),
+      prisma.tenants.count({ where: { slug: { not: '__platform__' }, OR: [{ estado: 'suspendido' }, { desactivado: true }] } }),
+      prisma.usuarios.count({ where: { activo: true, tenant: { slug: { not: '__platform__' } } } }),
+      prisma.usuarios.count({ where: { created_at: { gte: inicioMes }, tenant: { slug: { not: '__platform__' } } } }),
+      prisma.tenants.count({ where: { fecha_registro: { gte: inicioMes }, slug: { not: '__platform__' } } }),
       // Orgs dormidas: activas pero sin actividad en 30 días
       prisma.$queryRaw<{ cantidad: string }[]>`
         SELECT COUNT(*)::text AS cantidad
         FROM tenants t
-        WHERE t.estado = 'activo' AND t.desactivado = false
+        WHERE t.estado = 'activo' AND t.desactivado = false AND t.slug != '__platform__'
           AND NOT EXISTS (
             SELECT 1 FROM usuarios u
             WHERE u.tenant_id = t.id AND u.activo = true
@@ -277,7 +277,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
           SELECT COUNT(u.id) AS cnt
           FROM tenants t
           LEFT JOIN usuarios u ON u.tenant_id = t.id AND u.activo = true
-          WHERE t.estado = 'activo' AND t.desactivado = false
+          WHERE t.estado = 'activo' AND t.desactivado = false AND t.slug != '__platform__'
           GROUP BY t.id
         ) sub
       `,
@@ -285,16 +285,17 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       prisma.$queryRaw<{ mes: string; cantidad: string }[]>`
         SELECT TO_CHAR(fecha_registro, 'YYYY-MM') AS mes, COUNT(*)::text AS cantidad
         FROM tenants
-        WHERE fecha_registro >= CURRENT_DATE - INTERVAL '6 months'
+        WHERE fecha_registro >= CURRENT_DATE - INTERVAL '6 months' AND slug != '__platform__'
         GROUP BY TO_CHAR(fecha_registro, 'YYYY-MM')
         ORDER BY mes ASC
       `,
       // Crecimiento usuarios: nuevos usuarios por mes últimos 6 meses
       prisma.$queryRaw<{ mes: string; cantidad: string }[]>`
-        SELECT TO_CHAR(created_at, 'YYYY-MM') AS mes, COUNT(*)::text AS cantidad
-        FROM usuarios
-        WHERE created_at >= CURRENT_DATE - INTERVAL '6 months'
-        GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+        SELECT TO_CHAR(u2.created_at, 'YYYY-MM') AS mes, COUNT(*)::text AS cantidad
+        FROM usuarios u2
+        JOIN tenants t2 ON u2.tenant_id = t2.id
+        WHERE u2.created_at >= CURRENT_DATE - INTERVAL '6 months' AND t2.slug != '__platform__'
+        GROUP BY TO_CHAR(u2.created_at, 'YYYY-MM')
         ORDER BY mes ASC
       `,
       // Top orgs por uso: más usuarios activos + actividad reciente
@@ -304,7 +305,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
                MAX(u.updated_at)::text AS ultimo_acceso
         FROM tenants t
         LEFT JOIN usuarios u ON u.tenant_id = t.id AND u.activo = true
-        WHERE t.estado = 'activo' AND t.desactivado = false
+        WHERE t.estado = 'activo' AND t.desactivado = false AND t.slug != '__platform__'
         GROUP BY t.id, t.nombre, t.estado
         ORDER BY COUNT(u.id) DESC
         LIMIT 10

@@ -7,7 +7,7 @@ import { logApiError } from '@/lib/logger';
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession();
-    if (!verificarRol(session.roles, ['admin'])) {
+    if (!verificarRol(session.roles, ['super_admin'])) {
       return apiError('FORBIDDEN', 'Sin permisos', 403);
     }
 
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession();
-    if (!verificarRol(session.roles, ['admin'])) {
+    if (!verificarRol(session.roles, ['super_admin'])) {
       return apiError('FORBIDDEN', 'Sin permisos', 403);
     }
 

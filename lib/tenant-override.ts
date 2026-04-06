@@ -32,9 +32,8 @@ export async function getEffectiveTenantId(request?: Request | { nextUrl: { sear
     if (cookieVal) overrideId = Number(cookieVal);
   }
 
-  // Admins: use override if set, otherwise null (= all tenants)
-  // Non-admins: always their own tenant
-  if (session.roles.includes('admin')) {
+  // Only super_admin can override tenant. Regular admin stays in their own org.
+  if (session.roles.includes('super_admin')) {
     return { session, effectiveTenantId: overrideId ?? null };
   }
 
@@ -45,7 +44,7 @@ export async function getEffectiveTenantId(request?: Request | { nextUrl: { sear
  * For server components: read the admin tenant override from cookies.
  */
 export async function getServerTenantId(session: { tenantId: number; roles: string[] }): Promise<number | null> {
-  if (!session.roles.includes('admin')) return session.tenantId;
+  if (!session.roles.includes('super_admin')) return session.tenantId;
 
   const cookieStore = await cookies();
   const cookieVal = cookieStore.get(COOKIE_NAME)?.value;

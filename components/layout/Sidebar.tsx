@@ -47,7 +47,9 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [pulse, setPulse] = useState(true);
-  const isAdmin = roles.includes('admin');
+  const isSuperAdmin = roles.includes('super_admin');
+  const isAdmin = isSuperAdmin; // Only super_admin sees cross-org features
+  const isOrgAdmin = roles.includes('admin'); // Org-level admin
   const [selectedTenant, setSelectedTenant] = useAdminTenant();
   const [tenants, setTenants] = useState<TenantOption[]>([]);
 
@@ -133,17 +135,21 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
     items.push({ key: '/proveedores', icon: <ShopOutlined />, label: 'Proveedores', visible: true });
     items.push({ key: '/mi-area/usuarios', icon: <TeamOutlined />, label: 'Usuarios de mi Área', visible: roles.includes('responsable_area') && !roles.includes('admin') && !roles.includes('director') });
 
-    if (roles.includes('director')) {
+    if (roles.includes('director') || isOrgAdmin) {
+      const adminChildren = [
+        { key: '/gestion/usuarios', icon: <TeamOutlined />, label: 'Usuarios' },
+        { key: '/gestion/areas', icon: <ApartmentOutlined />, label: 'Áreas' },
+        { key: '/gestion/centros-costo', icon: <BankOutlined />, label: 'Centros de Costo' },
+        { key: '/gestion/invitaciones', icon: <KeyOutlined />, label: 'Invitaciones' },
+      ];
+      if (isOrgAdmin) {
+        adminChildren.push({ key: '/gestion/configuracion-sso', icon: <SettingOutlined />, label: 'Config SSO' });
+      }
       items.push({
         type: 'group' as const,
         label: collapsed ? '—' : 'Administración',
         visible: true,
-        children: [
-          { key: '/gestion/usuarios', icon: <TeamOutlined />, label: 'Usuarios' },
-          { key: '/gestion/areas', icon: <ApartmentOutlined />, label: 'Áreas' },
-          { key: '/gestion/centros-costo', icon: <BankOutlined />, label: 'Centros de Costo' },
-          { key: '/gestion/invitaciones', icon: <KeyOutlined />, label: 'Invitaciones' },
-        ],
+        children: adminChildren,
       });
     }
   }

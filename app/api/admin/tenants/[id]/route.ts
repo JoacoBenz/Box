@@ -11,7 +11,7 @@ const ESTADOS_VALIDOS = ['activo', 'rechazado', 'suspendido'] as const;
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession();
-    if (!verificarRol(session.roles, ['admin'])) {
+    if (!verificarRol(session.roles, ['super_admin'])) {
       return apiError('FORBIDDEN', 'Sin permisos', 403);
     }
 
@@ -89,7 +89,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession();
-    if (!verificarRol(session.roles, ['admin'])) {
+    if (!verificarRol(session.roles, ['super_admin'])) {
       return apiError('FORBIDDEN', 'Sin permisos', 403);
     }
 
