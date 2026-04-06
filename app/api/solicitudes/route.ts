@@ -42,7 +42,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
   const where: any = {};
 
   // Role-based visibility filter
-  if (session.roles.includes('director') || session.roles.includes('tesoreria') || session.roles.includes('compras') || session.roles.includes('admin')) {
+  if (session.roles.includes('director') || session.roles.includes('tesoreria') || session.roles.includes('compras') || session.roles.includes('admin') || session.roles.includes('super_admin')) {
     // sees all
   } else if (session.roles.includes('responsable_area')) {
     // Find all areas where this user is the designated responsable

@@ -56,13 +56,21 @@ export function withAuth(options: ApiHandlerOptions, handler: ApiHandler) {
     try {
       const session = await getServerSession();
 
-      if (options.roles && options.roles.length > 0) {
+      // super_admin bypasses role checks (has full platform access)
+      if (options.roles && options.roles.length > 0 && !session.roles.includes('super_admin')) {
         if (!verificarRol(session.roles, options.roles)) {
           return apiError('FORBIDDEN', 'No tenés permisos para esta acción', 403);
         }
       }
 
-      const db = tenantPrisma(session.tenantId);
+      // super_admin uses effective tenant from override cookie/param
+      const isSuperAdmin = session.roles.includes('super_admin');
+      let tenantId = session.tenantId;
+      if (isSuperAdmin) {
+        const { effectiveTenantId } = await getEffectiveTenantId(request);
+        if (effectiveTenantId) tenantId = effectiveTenantId;
+      }
+      const db = tenantPrisma(tenantId);
       const ip = getClientIp(request);
       const params = routeParams?.params ? await routeParams.params : undefined;
 
@@ -94,7 +102,8 @@ export function withAdminOverride(
     try {
       const { session, effectiveTenantId } = await getEffectiveTenantId(request);
 
-      if (options.roles && options.roles.length > 0) {
+      // super_admin bypasses role checks (has full platform access)
+      if (options.roles && options.roles.length > 0 && !session.roles.includes('super_admin')) {
         if (!verificarRol(session.roles, options.roles)) {
           return apiError('FORBIDDEN', 'No tenés permisos para esta acción', 403);
         }

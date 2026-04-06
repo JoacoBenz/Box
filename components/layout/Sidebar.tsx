@@ -81,9 +81,14 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
     items.push({ key: '/gestion/tenants', icon: <GlobalOutlined />, label: 'Organizaciones', visible: true });
     items.push({ key: '/gestion/aprobaciones-org', icon: <AuditOutlined />, label: 'Aprobaciones Org', visible: true });
 
-    // Org-scoped items only when an org is selected
+    // Org-scoped items only when an org is selected (super_admin sees everything like a director)
     if (hasOrgSelected) {
       items.push({ key: '/solicitudes', icon: <FileTextOutlined />, label: 'Solicitudes', visible: true });
+      items.push({ key: '/validaciones', icon: <CheckCircleOutlined />, label: 'Validaciones', visible: true });
+      items.push({ key: '/aprobaciones', icon: <ThunderboltOutlined />, label: 'Aprobaciones', visible: true });
+      items.push({ key: '/compras', icon: <DollarOutlined />, label: 'Compras', visible: true });
+      items.push({ key: '/gestion-compras', icon: <ShoppingCartOutlined />, label: 'Gestión Compras', visible: true });
+      items.push({ key: '/recepciones', icon: <InboxOutlined />, label: 'Recepciones', visible: true });
       items.push({ key: '/proveedores', icon: <ShopOutlined />, label: 'Proveedores', visible: true });
       items.push({
         type: 'group' as const,

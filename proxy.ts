@@ -5,9 +5,9 @@ import { getToken } from 'next-auth/jwt';
 const PUBLIC_ROUTES = ['/login', '/registro', '/recuperar', '/restablecer', '/verificar-email', '/unirse', '/api/auth', '/api/registro', '/api/unirse'];
 
 const ROLE_ROUTES: Record<string, string[]> = {
-  '/validaciones': ['responsable_area'],
-  '/aprobaciones': ['director'],
-  '/compras':      ['tesoreria'],
+  '/validaciones': ['responsable_area', 'super_admin'],
+  '/aprobaciones': ['director', 'super_admin'],
+  '/compras':      ['tesoreria', 'super_admin'],
   '/admin':        ['admin', 'super_admin'],
 };
 
