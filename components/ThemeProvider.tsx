@@ -131,10 +131,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           borderRadius: 8,
           colorBgContainer: tokens.bgInput,
         },
+        Form: {
+          labelColor: tokens.textPrimary,
+        },
         Modal: {
           borderRadiusLG: 16,
           contentBg: tokens.bgCard,
           headerBg: tokens.bgCard,
+          titleColor: tokens.textPrimary,
         },
         Statistic: {
           titleFontSize: 13,

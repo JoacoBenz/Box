@@ -84,20 +84,20 @@ export default function AdminCrudTable<T extends { id: number }>({
   const { hasErrors, formProps } = useFormValid(form)
   const [adminTenant] = useAdminTenant()
   const [ownTenantId, setOwnTenantId] = useState<number | null>(null)
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
+  const [isSuperAdmin, setIsSuperAdmin] = useState<boolean | null>(null)
 
   useEffect(() => {
     fetch('/api/auth/session').then(r => r.json()).then(s => {
       const roles: string[] = s?.user?.roles ?? []
-      setIsAdmin(roles.includes('admin'))
+      setIsSuperAdmin(roles.includes('super_admin'))
       setOwnTenantId(s?.user?.tenantId ?? null)
     }).catch(() => {})
   }, [])
 
-  // For admins, selectedTenant comes from cookie (TenantSelector).
-  // For directors/others, use their own tenant automatically.
-  // isAdmin === null means still loading session
-  const selectedTenant = isAdmin === null ? null : isAdmin ? adminTenant : ownTenantId
+  // Only super_admins can switch between tenants via the TenantSelector cookie.
+  // Org admins/directors always see their own tenant.
+  // isSuperAdmin === null means still loading session
+  const selectedTenant = isSuperAdmin === null ? null : isSuperAdmin ? adminTenant : ownTenantId
   const hasTenant = selectedTenant !== null
 
   const fetchData = useCallback(async () => {

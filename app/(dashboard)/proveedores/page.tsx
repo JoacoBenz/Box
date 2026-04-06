@@ -136,7 +136,7 @@ export default function ProveedoresPage() {
   return (
     <div className="page-content">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>Proveedores</Title>
+        <Title level={3} style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>Proveedores</Title>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
           Nuevo Proveedor
         </Button>

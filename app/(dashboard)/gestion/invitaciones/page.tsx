@@ -137,7 +137,7 @@ export default function InvitacionesPage() {
   return (
     <div className="page-content">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>Códigos de Invitación</Title>
+        <Title level={3} style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>Códigos de Invitación</Title>
         <Button type="primary" onClick={() => setModalOpen(true)} style={{ fontWeight: 600 }}>
           + Generar Código
         </Button>

@@ -63,7 +63,7 @@ export default function ConfiguracionSSOPage() {
 
   return (
     <div className="page-content">
-      <Title level={3} style={{ margin: 0, marginBottom: 24, fontWeight: 700, color: '#1e293b' }}>
+      <Title level={3} style={{ margin: 0, marginBottom: 24, fontWeight: 700, color: 'var(--text-primary)' }}>
         Configuración SSO
       </Title>
 

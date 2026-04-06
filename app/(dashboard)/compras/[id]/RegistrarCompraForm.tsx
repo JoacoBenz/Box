@@ -23,6 +23,7 @@ import { UploadOutlined } from '@ant-design/icons'
 import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
 import { useFormValid } from '@/hooks/useFormValid'
 import ProveedorInfoCard from '@/components/ProveedorInfoCard'
+import { useTheme } from '@/components/ThemeProvider'
 import type { UploadFile } from 'antd/es/upload'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
@@ -81,6 +82,7 @@ interface FormValues {
 
 export default function RegistrarCompraForm({ solicitud, archivos = [] }: Props) {
   const { message } = App.useApp()
+  const { tokens } = useTheme()
   const router = useRouter()
   const [form] = Form.useForm<FormValues>()
   const [loading, setLoading] = useState(false)
@@ -196,17 +198,17 @@ export default function RegistrarCompraForm({ solicitud, archivos = [] }: Props)
   return (
     <div className="page-content" style={{ maxWidth: 880, margin: '0 auto' }}>
       <div style={{ marginBottom: 16, fontSize: 13 }}>
-        <a onClick={() => router.push('/compras')} style={{ color: '#4f46e5', fontWeight: 500, cursor: 'pointer', textDecoration: 'none' }}>
+        <a onClick={() => router.push('/compras')} style={{ color: tokens.colorPrimary, fontWeight: 500, cursor: 'pointer', textDecoration: 'none' }}>
           ← Volver a Compras
         </a>
       </div>
 
-      <Title level={3} style={{ marginBottom: 24, fontWeight: 700, color: '#1e293b' }}>
+      <Title level={3} style={{ marginBottom: 24, fontWeight: 700, color: tokens.textPrimary }}>
         Registrar Compra
       </Title>
 
       {/* Solicitud summary */}
-      <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Solicitud</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
+      <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Solicitud</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
         <Descriptions column={2} size="small">
           <Descriptions.Item label="Número">{solicitud.numero}</Descriptions.Item>
           <Descriptions.Item label="Título">{solicitud.titulo}</Descriptions.Item>
@@ -223,7 +225,7 @@ export default function RegistrarCompraForm({ solicitud, archivos = [] }: Props)
               <Tag color={canSubmit ? 'green' : 'orange'}>
                 {pagoDate.format('DD/MM/YYYY')}
               </Tag>
-              {!canSubmit && <span style={{ color: '#d46b08', fontSize: 12, marginLeft: 8 }}>Aún no habilitado</span>}
+              {!canSubmit && <span style={{ color: 'var(--color-observation)', fontSize: 12, marginLeft: 8 }}>Aún no habilitado</span>}
             </Descriptions.Item>
           )}
         </Descriptions>
@@ -257,18 +259,18 @@ export default function RegistrarCompraForm({ solicitud, archivos = [] }: Props)
 
       {/* Archivos adjuntos */}
       {archivos.length > 0 && (
-        <Card size="small" title={<span style={{ fontWeight: 600, color: '#1e293b' }}>Presupuesto / Archivos</span>} style={{ marginBottom: 24, borderRadius: 12 }}>
+        <Card size="small" title={<span style={{ fontWeight: 600, color: tokens.textPrimary }}>Presupuesto / Archivos</span>} style={{ marginBottom: 24, borderRadius: 12 }}>
           {archivos.map((a) => (
             <div key={a.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0' }}>
-              <span style={{ fontSize: 13, color: '#334155' }}>{a.nombre_archivo}</span>
-              <a href={`/api/archivos/${a.id}`} target="_blank" rel="noopener noreferrer" style={{ color: '#4f46e5', fontWeight: 600, fontSize: 13 }}>Descargar</a>
+              <span style={{ fontSize: 13, color: tokens.textSecondary }}>{a.nombre_archivo}</span>
+              <a href={`/api/archivos/${a.id}`} target="_blank" rel="noopener noreferrer" style={{ color: tokens.colorPrimary, fontWeight: 600, fontSize: 13 }}>Descargar</a>
             </div>
           ))}
         </Card>
       )}
 
       {/* Purchase form */}
-      <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Datos de la Compra</span>} style={{ borderRadius: 16 }}>
+      <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Datos de la Compra</span>} style={{ borderRadius: 16 }}>
         <Form form={form} layout="vertical" {...formProps}>
           <Form.Item
             label="Proveedor"

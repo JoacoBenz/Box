@@ -80,10 +80,10 @@ export default function AprobacionesPage() {
 
   return (
     <div className="page-content">
-      <Title level={3} style={{ margin: 0, marginBottom: 8, fontWeight: 700, color: '#1e293b' }}>
+      <Title level={3} style={{ margin: 0, marginBottom: 8, fontWeight: 700, color: 'var(--text-primary)' }}>
         Solicitudes Pendientes de Aprobación
       </Title>
-      <p style={{ color: '#888', marginBottom: 16 }}>
+      <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>
         Solicitudes validadas por los responsables de área que requieren su aprobación.
       </p>
       <Table

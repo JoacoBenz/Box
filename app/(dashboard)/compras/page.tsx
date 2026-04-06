@@ -136,10 +136,10 @@ export default function ComprasPage() {
 
   return (
     <div className="page-content">
-      <Title level={3} style={{ margin: 0, marginBottom: 8, fontWeight: 700, color: '#1e293b' }}>
+      <Title level={3} style={{ margin: 0, marginBottom: 8, fontWeight: 700, color: 'var(--text-primary)' }}>
         Pagos Programados — Registrar Pagos
       </Title>
-      <p style={{ color: '#888', marginBottom: 16 }}>
+      <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>
         Solicitudes con pago programado, ordenadas por fecha de pago. El botón se habilita cuando llega la fecha.
       </p>
       <Table

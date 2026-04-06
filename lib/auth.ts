@@ -145,7 +145,45 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
 
       if (!usuario) {
-        // No existing user — redirect to login with error
+        // No existing user — try to auto-create if domain matches a tenant with SSO enabled
+        try {
+          const tenants = await prisma.tenants.findMany({
+            where: { estado: 'activo', desactivado: false },
+            include: { configuracion: true },
+          });
+
+          for (const tenant of tenants) {
+            const configs = Object.fromEntries(tenant.configuracion.map(c => [c.clave, c.valor]));
+            const providerKey = provider === 'google' ? 'sso_google_habilitado' : 'sso_microsoft_habilitado';
+            const ssoEnabled = configs[providerKey] === 'true' || configs[providerKey] === '1';
+            const ssoDomain = configs['sso_dominio'];
+
+            if (ssoEnabled && ssoDomain && domain.toLowerCase() === ssoDomain.toLowerCase()) {
+              // Auto-create user with no area (pending onboarding)
+              const rolSolicitante = await prisma.roles.findFirst({ where: { nombre: 'solicitante' } });
+              const newUser = await prisma.usuarios.create({
+                data: {
+                  tenant_id: tenant.id,
+                  nombre: user.name || email.split('@')[0],
+                  email,
+                  password_hash: '',
+                  oauth_provider: provider,
+                  oauth_sub: sub,
+                  activo: true,
+                },
+              });
+              if (rolSolicitante) {
+                await prisma.usuarios_roles.create({
+                  data: { usuario_id: newUser.id, rol_id: rolSolicitante.id },
+                });
+              }
+              return true;
+            }
+          }
+        } catch (err) {
+          console.error('[SSO] Auto-create error:', err);
+        }
+
         return false;
       }
 

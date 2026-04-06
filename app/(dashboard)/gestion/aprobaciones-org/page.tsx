@@ -156,7 +156,7 @@ export default function AprobacionesOrgPage() {
         <Space>
           <span>{email}</span>
           <Tooltip title={`Enviar email a ${email}`}>
-            <a href={`mailto:${email}`}><MailOutlined style={{ color: '#1677ff' }} /></a>
+            <a href={`mailto:${email}`}><MailOutlined style={{ color: 'var(--color-primary)' }} /></a>
           </Tooltip>
         </Space>
       ),
@@ -197,7 +197,7 @@ export default function AprobacionesOrgPage() {
   return (
     <div className="page-content">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>
+        <Title level={3} style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>
           Organizaciones Pendientes
         </Title>
         <Tag color="orange" style={{ fontSize: 14, padding: '4px 12px' }}>
@@ -219,7 +219,7 @@ export default function AprobacionesOrgPage() {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
-          <Title level={4} style={{ margin: 0, fontWeight: 600, color: '#1e293b' }}>
+          <Title level={4} style={{ margin: 0, fontWeight: 600, color: 'var(--text-primary)' }}>
             Registros sin verificar email
           </Title>
           <Text type="secondary" style={{ fontSize: 13 }}>

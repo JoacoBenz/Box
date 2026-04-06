@@ -83,7 +83,7 @@ export default function ProveedorComprasPage() {
       key: 'numero',
       width: 130,
       render: (num: string, record) => (
-        <a onClick={() => router.push(`/solicitudes/${record.id}`)} style={{ color: '#4f46e5', fontWeight: 600 }}>
+        <a onClick={() => router.push(`/solicitudes/${record.id}`)} style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
           {num}
         </a>
       ),
@@ -129,7 +129,7 @@ export default function ProveedorComprasPage() {
       key: 'solicitud',
       width: 130,
       render: (_: unknown, r: Compra) => (
-        <a onClick={() => router.push(`/solicitudes/${r.solicitud_id}`)} style={{ color: '#4f46e5', fontWeight: 600 }}>
+        <a onClick={() => router.push(`/solicitudes/${r.solicitud_id}`)} style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
           {r.solicitud.numero}
         </a>
       ),
@@ -179,15 +179,15 @@ export default function ProveedorComprasPage() {
   return (
     <div className="page-content">
       <div style={{ marginBottom: 16, fontSize: 13 }}>
-        <a onClick={() => router.back()} style={{ color: '#4f46e5', fontWeight: 500, cursor: 'pointer', textDecoration: 'none' }}>
+        <a onClick={() => router.back()} style={{ color: 'var(--color-primary)', fontWeight: 500, cursor: 'pointer', textDecoration: 'none' }}>
           ← Volver
         </a>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <ShoppingCartOutlined style={{ fontSize: 28, color: '#4f46e5' }} />
+        <ShoppingCartOutlined style={{ fontSize: 28, color: 'var(--color-primary)' }} />
         <div>
-          <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>
+          <Title level={3} style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>
             {proveedor?.nombre ?? 'Cargando...'}
           </Title>
           {proveedor && (
@@ -203,7 +203,7 @@ export default function ProveedorComprasPage() {
           <Statistic
             title={<Text type="secondary" style={{ fontSize: 12 }}>Solicitudes</Text>}
             value={solicitudes.length}
-            prefix={<FileTextOutlined style={{ color: '#4f46e5' }} />}
+            prefix={<FileTextOutlined style={{ color: 'var(--color-primary)' }} />}
           />
         </Card>
         <Card size="middle" style={{ minWidth: 160, borderColor: '#e2e8f0' }}>

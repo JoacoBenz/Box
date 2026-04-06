@@ -174,10 +174,10 @@ export default function MiAreaUsuariosPage() {
     <div className="page-content">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
-          <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>
+          <Title level={3} style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>
             Usuarios de {areaNombre}
           </Title>
-          <p style={{ color: '#888', margin: '4px 0 0' }}>Solicitantes de tu área</p>
+          <p style={{ color: 'var(--text-muted)', margin: '4px 0 0' }}>Solicitantes de tu área</p>
         </div>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
           Nuevo Solicitante

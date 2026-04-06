@@ -73,10 +73,10 @@ export default function RecepcionesPage() {
 
   return (
     <div className="page-content">
-      <Title level={3} style={{ margin: 0, marginBottom: 8, fontWeight: 700, color: '#1e293b' }}>
+      <Title level={3} style={{ margin: 0, marginBottom: 8, fontWeight: 700, color: 'var(--text-primary)' }}>
         Recepciones Pendientes
       </Title>
-      <p style={{ color: '#888', marginBottom: 16 }}>
+      <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>
         Estas solicitudes ya fueron abonadas y esperan confirmación de recepción.
         Hacé clic en el número de solicitud para ir al detalle y confirmar.
       </p>

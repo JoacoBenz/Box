@@ -59,18 +59,18 @@ function TotalItems({ form }: { form: ReturnType<typeof Form.useForm<any>>[0] })
     <div style={{
       marginTop: 16,
       padding: '12px 16px',
-      background: '#f0fdf4',
+      background: 'var(--total-estimated-bg)',
       borderRadius: 8,
-      border: '1px solid #bbf7d0',
+      border: '1px solid var(--total-estimated-border)',
       display: 'flex',
       justifyContent: 'flex-end',
       alignItems: 'center',
       gap: 12,
     }}>
-      <span style={{ fontWeight: 600, color: '#15803d', fontSize: 15 }}>
+      <span style={{ fontWeight: 600, color: 'var(--total-estimated-text)', fontSize: 15 }}>
         Total Estimado:
       </span>
-      <span style={{ fontWeight: 700, color: '#15803d', fontSize: 17 }}>
+      <span style={{ fontWeight: 700, color: 'var(--total-estimated-text)', fontSize: 17 }}>
         ${total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
       </span>
     </div>
@@ -195,7 +195,7 @@ export default function EditarSolicitudPage() {
 
   return (
     <div className="page-content" style={{ padding: '32px 24px', maxWidth: 880, margin: '0 auto' }}>
-      <Title level={3} style={{ marginBottom: 24, fontWeight: 700, color: '#1e293b' }}>
+      <Title level={3} style={{ marginBottom: 24, fontWeight: 700, color: 'var(--text-primary)' }}>
         Editar Solicitud
       </Title>
 
@@ -211,7 +211,7 @@ export default function EditarSolicitudPage() {
       )}
 
       <Form form={form} layout="vertical" style={{ display: 'flex', flexDirection: 'column', gap: 24 }} {...formProps}>
-        <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Información General</span>} style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+        <Card title={<span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Información General</span>} style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           <Form.Item
             label="Título"
             name="titulo"
@@ -299,7 +299,7 @@ export default function EditarSolicitudPage() {
           })()}
         </Card>
 
-        <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Items Solicitados</span>} style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+        <Card title={<span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Items Solicitados</span>} style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           <Form.List
             name="items"
             rules={[
@@ -318,15 +318,15 @@ export default function EditarSolicitudPage() {
                   <div
                     key={key}
                     style={{
-                      border: '1px solid #e8e8e8',
+                      border: '1px solid var(--border-color)',
                       borderRadius: 10,
                       padding: '20px 20px 12px',
                       marginBottom: 16,
-                      background: '#fafbfc',
+                      background: 'var(--bg-input)',
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <strong style={{ color: '#666' }}>Ítem {index + 1}</strong>
+                      <strong style={{ color: 'var(--text-secondary)' }}>Ítem {index + 1}</strong>
                       {fields.length > 1 && (
                         <Button
                           type="text"

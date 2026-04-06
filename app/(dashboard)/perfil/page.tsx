@@ -92,7 +92,7 @@ export default function PerfilPage() {
 
   return (
     <div className="page-content" style={{ maxWidth: 640 }}>
-      <Title level={3} style={{ margin: 0, marginBottom: 16, fontWeight: 700, color: '#1e293b' }}>
+      <Title level={3} style={{ margin: 0, marginBottom: 16, fontWeight: 700, color: 'var(--text-primary)' }}>
         Mi Perfil
       </Title>
 

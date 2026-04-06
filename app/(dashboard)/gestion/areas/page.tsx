@@ -43,7 +43,7 @@ export default function AdminAreasPage() {
         {
           title: 'Responsable',
           key: 'responsable',
-          render: (_: unknown, r: Area) => r.responsable?.nombre ?? <span style={{ color: '#bbb' }}>Sin asignar</span>,
+          render: (_: unknown, r: Area) => r.responsable?.nombre ?? <span style={{ color: 'var(--text-muted)' }}>Sin asignar</span>,
         },
         {
           title: 'Presup. Anual',
@@ -51,7 +51,7 @@ export default function AdminAreasPage() {
           width: 140,
           render: (_: unknown, r: Area) => r.presupuesto_anual && Number(r.presupuesto_anual) > 0
             ? `$${Number(r.presupuesto_anual).toLocaleString('es-AR', { minimumFractionDigits: 0 })}`
-            : <span style={{ color: '#bbb' }}>—</span>,
+            : <span style={{ color: 'var(--text-muted)' }}>—</span>,
         },
         {
           title: 'Presup. Mensual',
@@ -59,7 +59,7 @@ export default function AdminAreasPage() {
           width: 140,
           render: (_: unknown, r: Area) => r.presupuesto_mensual && Number(r.presupuesto_mensual) > 0
             ? `$${Number(r.presupuesto_mensual).toLocaleString('es-AR', { minimumFractionDigits: 0 })}`
-            : <span style={{ color: '#bbb' }}>—</span>,
+            : <span style={{ color: 'var(--text-muted)' }}>—</span>,
         },
         {
           title: 'Estado',

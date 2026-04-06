@@ -110,6 +110,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
     devuelta_dir: 'var(--status-bg-devuelta)',
     validada: 'var(--status-bg-validada)',
     aprobada: 'var(--status-bg-aprobada)',
+    en_compras: 'var(--status-bg-validada)',
     rechazada: 'var(--status-bg-rechazada)',
     abonada: 'var(--status-bg-abonada)',
     recibida: 'var(--status-bg-recibida)',
@@ -121,7 +122,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
     <div className="page-content" style={{ maxWidth: 960, margin: '0 auto' }}>
       {/* Hero Header with status color strip */}
       <div style={{
-        background: STATUS_BG[estado] ?? '#f1f5f9',
+        background: STATUS_BG[estado] ?? 'var(--status-bg-borrador)',
         borderRadius: 16,
         padding: '24px 28px',
         marginBottom: 24,
