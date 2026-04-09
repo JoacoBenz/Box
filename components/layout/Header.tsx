@@ -184,6 +184,8 @@ export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, ro
                   value={query}
                   onChange={(e) => handleSearch(e.target.value)}
                   placeholder="Buscar solicitudes, proveedores..."
+                  aria-label="Buscar solicitudes y proveedores"
+                  role="searchbox"
                   style={{
                     border: 'none',
                     outline: 'none',

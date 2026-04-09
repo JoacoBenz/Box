@@ -3,6 +3,7 @@ import { tenantPrisma, prisma } from './prisma';
 import { verificarRol, apiError } from './permissions';
 import { getClientIp } from './audit';
 import { getEffectiveTenantId } from './tenant-override';
+import { checkRateLimitDb } from './rate-limit';
 import type { RolNombre } from '@/types';
 import { logApiError } from './logger';
 
@@ -33,6 +34,8 @@ type AdminApiHandler = (
 
 interface ApiHandlerOptions {
   roles?: RolNombre[];  // Required roles (any of these). Empty = authenticated only.
+  /** Rate limit for write operations (POST/PATCH/PUT/DELETE). Defaults to 30/min per user. Set false to disable. */
+  rateLimit?: { max: number; windowMs: number } | false;
 }
 
 function handleError(request: Request, error: any): Response {
@@ -60,6 +63,17 @@ export function withAuth(options: ApiHandlerOptions, handler: ApiHandler) {
       if (options.roles && options.roles.length > 0 && !session.roles.includes('super_admin')) {
         if (!verificarRol(session.roles, options.roles)) {
           return apiError('FORBIDDEN', 'No tenés permisos para esta acción', 403);
+        }
+      }
+
+      // Rate limit write operations (POST/PATCH/PUT/DELETE)
+      const isWrite = request.method !== 'GET' && request.method !== 'HEAD';
+      if (isWrite && options.rateLimit !== false) {
+        const rl = options.rateLimit ?? { max: 30, windowMs: 60_000 };
+        const url = new URL(request.url);
+        const rlResult = await checkRateLimitDb(`api:${session.userId}:${url.pathname}`, rl.max, rl.windowMs);
+        if (!rlResult.allowed) {
+          return apiError('RATE_LIMITED', 'Demasiados intentos. Intentá de nuevo más tarde.', 429);
         }
       }
 
@@ -109,8 +123,18 @@ export function withAdminOverride(
         }
       }
 
-      // Block write operations without a specific tenant (prevents cross-tenant mutations)
+      // Rate limit write operations
       const isWrite = request.method !== 'GET' && request.method !== 'HEAD';
+      if (isWrite && options.rateLimit !== false) {
+        const rl = (options as any).rateLimit ?? { max: 30, windowMs: 60_000 };
+        const url = new URL(request.url);
+        const rlResult = await checkRateLimitDb(`api:${session.userId}:${url.pathname}`, rl.max, rl.windowMs);
+        if (!rlResult.allowed) {
+          return apiError('RATE_LIMITED', 'Demasiados intentos. Intentá de nuevo más tarde.', 429);
+        }
+      }
+
+      // Block write operations without a specific tenant (prevents cross-tenant mutations)
       if (isWrite && !effectiveTenantId && !options.allowGlobalWrites) {
         return apiError('BAD_REQUEST', 'Seleccioná una organización antes de realizar esta acción', 400);
       }

@@ -1,4 +1,4 @@
-import { tenantPrisma } from './prisma';
+import { tenantPrisma, prisma } from './prisma';
 
 export interface BudgetStatus {
   centroCosto: string;
@@ -31,27 +31,21 @@ export async function verificarPresupuesto(
   const startOfYear = new Date(now.getFullYear(), 0, 1);
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  // Sum approved/in-process spending in a single aggregation query
-  const gastosAnuales = await db.compras.findMany({
-    where: {
-      solicitud: {
-        centro_costo_id: centroCostoId,
-        estado: { in: ['abonada', 'recibida', 'recibida_con_obs', 'cerrada'] },
-      },
-      fecha_compra: { gte: startOfYear },
-    },
-    select: { monto_total: true, fecha_compra: true },
-  });
+  // Use SQL SUM for efficient aggregation instead of fetching all rows
+  const gastos = await prisma.$queryRaw<{ gasto_anual: number; gasto_mensual: number }[]>`
+    SELECT
+      COALESCE(SUM(c.monto_total), 0)::float AS gasto_anual,
+      COALESCE(SUM(CASE WHEN c.fecha_compra >= ${startOfMonth} THEN c.monto_total ELSE 0 END), 0)::float AS gasto_mensual
+    FROM compras c
+    JOIN solicitudes s ON s.id = c.solicitud_id
+    WHERE s.tenant_id = ${tenantId}
+      AND s.centro_costo_id = ${centroCostoId}
+      AND s.estado IN ('abonada', 'recibida', 'recibida_con_obs', 'cerrada')
+      AND c.fecha_compra >= ${startOfYear}
+  `;
 
-  let gastoAnual = 0;
-  let gastoMensual = 0;
-  for (const c of gastosAnuales) {
-    const monto = Number(c.monto_total);
-    gastoAnual += monto;
-    if (c.fecha_compra >= startOfMonth) {
-      gastoMensual += monto;
-    }
-  }
+  const gastoAnual = Number(gastos[0]?.gasto_anual ?? 0);
+  const gastoMensual = Number(gastos[0]?.gasto_mensual ?? 0);
 
   const presupuestoAnual = centroCosto.presupuesto_anual ? Number(centroCosto.presupuesto_anual) : null;
   const presupuestoMensual = centroCosto.presupuesto_mensual ? Number(centroCosto.presupuesto_mensual) : null;

@@ -223,7 +223,7 @@ export default function SolicitudesTable({ roles, areas }: Props) {
 
       {/* Filters */}
       <Card size="small" style={{ borderRadius: 12, marginBottom: 16, border: `1px solid ${tokens.borderColor}` }} styles={{ body: { padding: '12px 16px' } }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'nowrap' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <Input
             prefix={<SearchOutlined style={{ color: tokens.textMuted }} />}
             placeholder="Buscar..."
@@ -300,6 +300,7 @@ export default function SolicitudesTable({ roles, areas }: Props) {
         }}
         onChange={handleTableChange}
         size="middle"
+        locale={{ emptyText: 'No hay solicitudes para mostrar' }}
         style={{ borderRadius: 12, overflow: 'hidden' }}
         rowClassName={(record: Solicitud) =>
           record.urgencia === 'critica' ? 'urgencia-row-critica' :

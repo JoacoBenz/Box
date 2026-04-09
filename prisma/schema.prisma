@@ -248,6 +248,8 @@ model items_recepcion {
 
   recepcion      recepciones     @relation(fields: [recepcion_id], references: [id], onDelete: Cascade)
   item_solicitud items_solicitud @relation(fields: [item_solicitud_id], references: [id])
+
+  @@index([tenant_id, recepcion_id])
 }
 
 model archivos {
@@ -430,4 +432,23 @@ model registros_pendientes {
   created_at          DateTime @default(now())
 
   @@index([email])
+}
+
+// ── Rate limiting & account lockout (DB-backed for distributed safety) ──
+
+model rate_limits {
+  key          String   @id @db.VarChar(255)
+  attempts     Int      @default(1)
+  window_start DateTime @default(now()) @db.Timestamptz
+
+  @@index([window_start])
+  @@map("rate_limits")
+}
+
+model account_lockouts {
+  email        String    @id @db.VarChar(255)
+  attempts     Int       @default(0)
+  locked_until DateTime? @db.Timestamptz
+
+  @@map("account_lockouts")
 }
