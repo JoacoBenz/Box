@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
-const PUBLIC_ROUTES = ['/login', '/registro', '/recuperar', '/restablecer', '/verificar-email', '/unirse', '/api/auth', '/api/registro', '/api/unirse'];
+const PUBLIC_ROUTES = ['/inicio', '/login', '/registro', '/recuperar', '/restablecer', '/verificar-email', '/unirse', '/api/auth', '/api/registro', '/api/unirse'];
 
 // NextAuth v5 (authjs) uses different cookie names than v4
 const AUTH_COOKIE = process.env.NODE_ENV === 'production'
@@ -26,7 +26,7 @@ export async function proxy(request: NextRequest) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET, cookieName: AUTH_COOKIE });
 
   if (!token) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL('/inicio', request.url));
   }
 
   for (const [route, allowedRoles] of Object.entries(ROLE_ROUTES)) {
