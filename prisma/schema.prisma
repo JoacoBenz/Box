@@ -99,6 +99,7 @@ model usuarios {
   delegaciones_recibidas   delegaciones[] @relation("delegaciones_delegado")
   comentarios              comentarios[]
   codigos_creados          codigos_invitacion[] @relation("codigo_creador")
+  tokens_verificacion      tokens_verificacion_email[]
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, email])
@@ -422,6 +423,19 @@ model tokens_password_reset {
   created_at DateTime @default(now())
 
   @@index([email, created_at])
+}
+
+model tokens_verificacion_email {
+  id         Int      @id @default(autoincrement())
+  usuario_id Int
+  token_hash String   @unique @db.VarChar(64)
+  expira_el  DateTime
+  usado      Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  usuario usuarios @relation(fields: [usuario_id], references: [id])
+
+  @@index([usuario_id])
 }
 
 model productos {

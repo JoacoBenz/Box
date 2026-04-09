@@ -1,10 +1,12 @@
 import { NextRequest } from 'next/server';
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { unirseSchema } from '@/lib/validators';
 import { checkRateLimitDb } from '@/lib/rate-limit';
 import { notificarPorRol } from '@/lib/notifications';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
+import { sendEmail } from '@/lib/email';
 import { logApiError } from '@/lib/logger';
 
 function normalizar(s: string): string {
@@ -109,7 +111,11 @@ export async function POST(request: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Create user in transaction
+    // Generate email verification token
+    const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Create inactive user + verification token in transaction
     const usuario = await prisma.$transaction(async (tx) => {
       const newUser = await tx.usuarios.create({
         data: {
@@ -119,11 +125,21 @@ export async function POST(request: NextRequest) {
           password_hash: passwordHash,
           area_id: matchedAreaId,
           area_sugerida: matchedAreaId ? null : area_texto,
+          activo: false,
         },
       });
 
       await tx.usuarios_roles.create({
         data: { usuario_id: newUser.id, rol_id: solicitanteRole.id },
+      });
+
+      // Store verification token
+      await tx.tokens_verificacion_email.create({
+        data: {
+          usuario_id: newUser.id,
+          token_hash: tokenHash,
+          expira_el: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h
+        },
       });
 
       // Increment invitation code usage
@@ -135,6 +151,28 @@ export async function POST(request: NextRequest) {
       }
 
       return newUser;
+    });
+
+    // Send verification email
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const verifyUrl = `${appUrl}/verificar-email?token=${token}&tipo=unirse`;
+    await sendEmail({
+      to: email,
+      subject: 'Verificá tu email — BoxZenj',
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+          <h2>¡Hola ${nombre}!</h2>
+          <p>Gracias por unirte a <strong>${tenant!.nombre}</strong>.</p>
+          <p>Para activar tu cuenta, hacé click en el siguiente enlace:</p>
+          <p style="margin: 24px 0;">
+            <a href="${verifyUrl}" style="background: #00C2CB; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
+              Verificar email
+            </a>
+          </p>
+          <p style="color: #666; font-size: 14px;">Este enlace expira en 24 horas.</p>
+          <p style="color: #666; font-size: 14px;">Si no creaste esta cuenta, ignorá este email.</p>
+        </div>
+      `,
     });
 
     // Notify admins if area was not matched
@@ -153,14 +191,12 @@ export async function POST(request: NextRequest) {
       accion: 'registro_empleado',
       entidad: 'usuario',
       entidadId: usuario.id,
-      datosNuevos: { nombre, email, area_texto, metodo: codigo ? 'codigo_invitacion' : 'dominio' },
+      datosNuevos: { nombre, email, area_texto, metodo: codigo ? 'codigo_invitacion' : 'dominio', verificado: false },
       ipAddress: getClientIp(request),
     });
 
     return Response.json({
-      message: matchedAreaId
-        ? 'Cuenta creada exitosamente. Ya podés ingresar.'
-        : 'Cuenta creada exitosamente. Tu área sugerida fue enviada al administrador para su revisión. Ya podés ingresar.',
+      message: 'Te enviamos un email de verificación. Revisá tu bandeja de entrada para activar tu cuenta.',
     }, { status: 201 });
   } catch (error) {
     logApiError('/api/unirse', 'POST', error);

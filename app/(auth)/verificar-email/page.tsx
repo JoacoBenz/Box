@@ -18,7 +18,10 @@ export default function VerificarEmailPage() {
       return;
     }
 
-    fetch('/api/registro/verificar', {
+    const tipo = searchParams.get('tipo');
+    const endpoint = tipo === 'unirse' ? '/api/unirse/verificar' : '/api/registro/verificar';
+
+    fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token }),
