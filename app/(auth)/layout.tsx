@@ -12,16 +12,16 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     }} className="auth-layout-bg">
       <style>{`
         [data-theme="light"] .auth-layout-bg {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(180deg, #f0fdff 0%, #e0f7fa 100%);
         }
         [data-theme="dark"] .auth-layout-bg {
-          background: linear-gradient(135deg, #0D1B2A 0%, #142233 100%);
+          background: linear-gradient(135deg, #0e1825 0%, #1a1a2e 100%);
         }
-        [data-theme="light"] .auth-circle { background: rgba(255, 255, 255, 0.08); }
+        [data-theme="light"] .auth-circle { background: rgba(0, 194, 203, 0.15); }
         [data-theme="dark"] .auth-circle { background: rgba(0, 194, 203, 0.08); }
-        [data-theme="light"] .auth-circle-2 { background: rgba(255, 255, 255, 0.06); }
-        [data-theme="dark"] .auth-circle-2 { background: rgba(0, 194, 203, 0.06); }
-        [data-theme="light"] .auth-circle-3 { background: rgba(255, 255, 255, 0.05); }
+        [data-theme="light"] .auth-circle-2 { background: rgba(167, 139, 250, 0.12); }
+        [data-theme="dark"] .auth-circle-2 { background: rgba(167, 139, 250, 0.06); }
+        [data-theme="light"] .auth-circle-3 { background: rgba(244, 114, 182, 0.10); }
         [data-theme="dark"] .auth-circle-3 { background: rgba(0, 194, 203, 0.05); }
 
         @keyframes float1 {

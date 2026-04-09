@@ -102,21 +102,9 @@ export default function LoginPage() {
         styles={{ body: { padding: '40px 36px' } }}
       >
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{
-            width: 56,
-            height: 56,
-            borderRadius: 16,
-            background: tokens.logoGradient,
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 16,
-          }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <path d="M16 10a4 4 0 01-8 0" />
-            </svg>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <span style={{ fontSize: 36 }}>📦</span>
+            <span style={{ fontWeight: 800, fontSize: 22, letterSpacing: '-0.5px', color: '#00C2CB' }}>Box</span>
           </div>
           <Title level={3} style={{ marginBottom: 4, fontWeight: 700 }}>Gestión de Compras</Title>
           <Text type="secondary" style={{ fontSize: 14 }}>Ingresá con tu cuenta</Text>
@@ -155,10 +143,10 @@ export default function LoginPage() {
                   fontWeight: 600,
                   fontSize: 15,
                   borderRadius: 10,
-                  background: tokens.logoGradient,
+                  background: 'linear-gradient(135deg, #00C2CB, #0891b2)',
                   border: 'none',
-                  color: tokens.loginBtnTextColor,
-                  boxShadow: `0 4px 14px ${tokens.primaryGlow}`,
+                  color: '#fff',
+                  boxShadow: '0 4px 15px rgba(0,194,203,0.35)',
                 }}
               >
                 Ingresar
@@ -190,12 +178,11 @@ export default function LoginPage() {
             block
             size="large"
             icon={<WindowsOutlined />}
-            loading={oauthLoading === 'microsoft-entra-id'}
-            disabled={!!oauthLoading}
-            onClick={() => handleOAuth('microsoft-entra-id')}
-            style={{ height: 44, fontWeight: 600, borderRadius: 10 }}
+            loading={false}
+            disabled={true}
+            style={{ height: 44, fontWeight: 600, borderRadius: 10, opacity: 0.5 }}
           >
-            Microsoft
+            Microsoft (próximamente)
           </Button>
         </div>
 
