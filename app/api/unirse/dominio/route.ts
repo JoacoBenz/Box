@@ -1,11 +1,12 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { checkRateLimitDb } from '@/lib/rate-limit';
+import { getClientIp } from '@/lib/audit';
 
 export async function GET(request: NextRequest) {
   try {
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ?? 'unknown';
-    const rateLimit = checkRateLimit(`unirse-dominio:${ip}`, 10, 60_000);
+    const ip = getClientIp(request);
+    const rateLimit = await checkRateLimitDb(`unirse-dominio:${ip}`, 10, 60_000);
     if (!rateLimit.allowed) {
       return Response.json({ error: { code: 'RATE_LIMITED', message: 'Demasiados intentos' } }, { status: 429 });
     }

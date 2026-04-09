@@ -2,9 +2,20 @@ import { prisma } from './prisma';
 import { logApiError } from './logger';
 
 export function getClientIp(request: Request): string {
-  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    ?? request.headers.get('x-real-ip')
-    ?? 'unknown';
+  // Use x-real-ip first (set by reverse proxy, harder to spoof)
+  // then fall back to x-forwarded-for (can be spoofed by clients)
+  const realIp = request.headers.get('x-real-ip')?.trim();
+  if (realIp && isValidIp(realIp)) return realIp;
+
+  const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+  if (forwarded && isValidIp(forwarded)) return forwarded;
+
+  return 'unknown';
+}
+
+function isValidIp(ip: string): boolean {
+  // Basic validation: IPv4 or IPv6, no spaces/special chars
+  return /^[\da-fA-F.:]+$/.test(ip) && ip.length <= 45;
 }
 
 interface AuditEntry {

@@ -2,7 +2,8 @@ import { NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { registroSchema } from '@/lib/validators';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { checkRateLimitDb } from '@/lib/rate-limit';
+import { getClientIp } from '@/lib/audit';
 import { logApiError } from '@/lib/logger';
 import { generateToken, hashToken } from '@/lib/tokens';
 import { sendEmail } from '@/lib/email';
@@ -11,8 +12,8 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
 export async function POST(request: NextRequest) {
   try {
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ?? 'unknown';
-    const rateLimit = checkRateLimit(`registro:${ip}`, 3, 3_600_000);
+    const ip = getClientIp(request);
+    const rateLimit = await checkRateLimitDb(`registro:${ip}`, 3, 3_600_000);
     if (!rateLimit.allowed) {
       return Response.json(
         { error: { code: 'RATE_LIMITED', message: 'Demasiados intentos. Intentá de nuevo más tarde.' } },
