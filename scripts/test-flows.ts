@@ -672,6 +672,105 @@ async function main() {
   assert(res.status !== 200, 'F13.2 No editar en enviada', `status=${res.status}`);
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // FLUJO 14: Solicitudes list includes items for monto calculation
+  // ═══════════════════════════════════════════════════════════════════════════
+  console.log('\n══════════════════════════════════════════════');
+  console.log('FLUJO 14: Monto in solicitudes list API');
+  console.log('══════════════════════════════════════════════');
+
+  res = await api('GET', '/api/solicitudes?estado=validada&limit=5', ana);
+  assert(res.status === 200, 'F14.1 GET solicitudes list', `status=${res.status}`);
+  if (res.data?.data?.length > 0) {
+    const firstSol = res.data.data[0];
+    assert(Array.isArray(firstSol.items_solicitud), 'F14.2 items_solicitud included in list response');
+    if (firstSol.items_solicitud?.length > 0) {
+      assert('precio_estimado' in firstSol.items_solicitud[0], 'F14.3 items have precio_estimado');
+      assert('cantidad' in firstSol.items_solicitud[0], 'F14.4 items have cantidad');
+    }
+  } else {
+    // Create one to test
+    const f14Id = await createSolicitud(juan, 'Flujo 14 - Monto test');
+    await api('POST', `/api/solicitudes/${f14Id}/enviar`, juan);
+    await api('POST', `/api/solicitudes/${f14Id}/validar`, maria);
+    res = await api('GET', `/api/solicitudes?estado=validada&limit=5`, ana);
+    const sol14 = res.data?.data?.find((s: any) => s.id === f14Id);
+    assert(sol14 && Array.isArray(sol14.items_solicitud), 'F14.2 items_solicitud included in list response');
+    assert(sol14?.items_solicitud?.[0]?.precio_estimado != null, 'F14.3 items have precio_estimado');
+    assert(sol14?.items_solicitud?.[0]?.cantidad != null, 'F14.4 items have cantidad');
+    // Clean up — approve it
+    await api('POST', `/api/solicitudes/${f14Id}/aprobar`, ana);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FLUJO 15: Inline approve from director
+  // ═══════════════════════════════════════════════════════════════════════════
+  console.log('\n══════════════════════════════════════════════');
+  console.log('FLUJO 15: Inline approve (single)');
+  console.log('══════════════════════════════════════════════');
+
+  const f15Id = await createSolicitud(juan, 'Flujo 15 - Inline approve');
+  await api('POST', `/api/solicitudes/${f15Id}/enviar`, juan);
+  await api('POST', `/api/solicitudes/${f15Id}/validar`, maria);
+
+  // Get updated_at for optimistic locking
+  let sol15 = await getSolicitud(f15Id);
+  res = await api('POST', `/api/solicitudes/${f15Id}/aprobar`, ana, { updated_at: sol15!.updated_at.toISOString() });
+  assert(res.status === 200, 'F15.1 Inline approve with updated_at', `status=${res.status}`);
+
+  sol15 = await getSolicitud(f15Id);
+  assert(sol15!.estado === 'en_compras', 'F15.2 DB estado = en_compras after approve', `estado=${sol15!.estado}`);
+  assert(sol15!.aprobado_por_id !== null, 'F15.3 DB aprobado_por set');
+  assert(sol15!.fecha_aprobacion !== null, 'F15.4 DB fecha_aprobacion set');
+
+  // Verify notification was created for solicitante
+  const notif15 = await prisma.notificaciones.findFirst({
+    where: { solicitud_id: f15Id, tipo: 'solicitud_aprobada' },
+  });
+  assert(notif15 !== null, 'F15.5 Notification created for approval');
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FLUJO 16: Bulk approve endpoint
+  // ═══════════════════════════════════════════════════════════════════════════
+  console.log('\n══════════════════════════════════════════════');
+  console.log('FLUJO 16: Bulk approve (aprobar-masivo)');
+  console.log('══════════════════════════════════════════════');
+
+  // Create 3 solicitudes and get them to validada
+  const bulkIds: number[] = [];
+  for (let i = 1; i <= 3; i++) {
+    const id = await createSolicitud(juan, `Flujo 16 - Bulk ${i}`);
+    await api('POST', `/api/solicitudes/${id}/enviar`, juan);
+    await api('POST', `/api/solicitudes/${id}/validar`, maria);
+    bulkIds.push(id);
+  }
+
+  // Bulk approve
+  res = await api('POST', '/api/solicitudes/aprobar-masivo', ana, { ids: bulkIds });
+  assert(res.status === 200, 'F16.1 Bulk approve returns 200', `status=${res.status}`);
+  assert(res.data.aprobadas === 3, 'F16.2 3 solicitudes approved', `aprobadas=${res.data.aprobadas}`);
+  assert(res.data.errores?.length === 0, 'F16.3 No errors', `errores=${JSON.stringify(res.data.errores)}`);
+
+  // Verify DB state for all 3
+  for (const bulkId of bulkIds) {
+    const solBulk = await getSolicitud(bulkId);
+    assert(solBulk!.estado === 'en_compras', `F16.4 DB sol ${bulkId} estado = en_compras`, `estado=${solBulk!.estado}`);
+  }
+
+  // Bulk approve with invalid IDs (already approved)
+  res = await api('POST', '/api/solicitudes/aprobar-masivo', ana, { ids: bulkIds });
+  assert(res.status === 200, 'F16.5 Bulk re-approve returns 200', `status=${res.status}`);
+  assert(res.data.aprobadas === 0, 'F16.6 0 re-approved (already en_compras)', `aprobadas=${res.data.aprobadas}`);
+  assert(res.data.errores?.length === 3, 'F16.7 3 errors (wrong state)', `errores=${res.data.errores?.length}`);
+
+  // Bulk approve with empty array
+  res = await api('POST', '/api/solicitudes/aprobar-masivo', ana, { ids: [] });
+  assert(res.status === 400, 'F16.8 Empty IDs returns 400', `status=${res.status}`);
+
+  // Non-director cannot bulk approve
+  res = await api('POST', '/api/solicitudes/aprobar-masivo', juan, { ids: [1] });
+  assert(res.status === 403 || res.status === 401, 'F16.9 Solicitante cannot bulk approve', `status=${res.status}`);
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // SUMMARY
   // ═══════════════════════════════════════════════════════════════════════════
   console.log('\n══════════════════════════════════════════════');
