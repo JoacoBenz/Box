@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
     const verifyUrl = `${appUrl}/verificar-email?token=${token}&tipo=unirse`;
     await sendEmail({
       to: email,
-      subject: 'Verificá tu email — BoxZenj',
+      subject: 'Verificá tu email — Box',
       html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
           <h2>¡Hola ${nombre}!</h2>

@@ -15,7 +15,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <DashboardShell
-      tenantNombre={(user.roles ?? []).includes('super_admin') ? 'Plataforma BoxZenj' : (user.tenantName ?? user.tenantNombre ?? 'Mi Organización')}
+      tenantNombre={(user.roles ?? []).includes('super_admin') ? 'Plataforma Box' : (user.tenantName ?? user.tenantNombre ?? 'Mi Organización')}
       userName={user.name ?? ''}
       areaNombre={user.areaNombre ?? null}
       roles={user.roles ?? []}

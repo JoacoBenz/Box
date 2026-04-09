@@ -232,7 +232,7 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
               <path d="M16 10a4 4 0 01-8 0" />
             </svg>
           </div>
-          {!collapsed && <span style={{ fontWeight: 700, fontSize: 15, color: tokens.textPrimary, letterSpacing: '-0.3px' }}>BoxZenj</span>}
+          {!collapsed && <span style={{ fontWeight: 700, fontSize: 15, color: tokens.textPrimary, letterSpacing: '-0.3px' }}>Box</span>}
         </div>
 
         {/* Admin org selector */}

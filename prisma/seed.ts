@@ -34,7 +34,7 @@ async function main() {
     create: {
       nombre: 'Plataforma',
       slug: '__platform__',
-      email_contacto: 'super@boxzenj.com',
+      email_contacto: 'super@box.com',
       moneda: 'ARS',
     },
   });
@@ -44,12 +44,12 @@ async function main() {
 
   const passwordHash = await bcrypt.hash('admin1234', 12);
   const superAdmin = await prisma.usuarios.upsert({
-    where: { tenant_id_email: { tenant_id: platformTenant.id, email: 'super@boxzenj.com' } },
+    where: { tenant_id_email: { tenant_id: platformTenant.id, email: 'super@box.com' } },
     update: {},
     create: {
       tenant_id: platformTenant.id,
       nombre: 'Super Admin',
-      email: 'super@boxzenj.com',
+      email: 'super@box.com',
       password_hash: passwordHash,
     },
   });
@@ -60,7 +60,7 @@ async function main() {
     create: { usuario_id: superAdmin.id, rol_id: superAdminRole.id },
   });
 
-  console.log('Platform tenant & super admin seeded. Login: super@boxzenj.com / admin1234');
+  console.log('Platform tenant & super admin seeded. Login: super@box.com / admin1234');
 
   // --- Demo tenant (for testing) ---
   const testTenant = await prisma.tenants.upsert({
