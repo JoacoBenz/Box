@@ -682,19 +682,31 @@ describe('procesarComprasSchema', () => {
 // ─── devolucionSchema ────────────────────────────────────────────────────────
 describe('devolucionSchema', () => {
   it('accepts valid reason (>= 10 chars)', () => {
-    expect(devolucionSchema.safeParse({ observaciones: 'Falta justificación del pedido' }).success).toBe(true);
+    expect(devolucionSchema.safeParse({ observaciones: 'Falta justificación del pedido', origen: 'responsable' }).success).toBe(true);
+  });
+
+  it('accepts director origen', () => {
+    expect(devolucionSchema.safeParse({ observaciones: 'Falta justificación del pedido', origen: 'director' }).success).toBe(true);
+  });
+
+  it('rejects invalid origen', () => {
+    expect(devolucionSchema.safeParse({ observaciones: 'Falta justificación del pedido', origen: 'invalid' }).success).toBe(false);
+  });
+
+  it('rejects missing origen', () => {
+    expect(devolucionSchema.safeParse({ observaciones: 'Falta justificación del pedido' }).success).toBe(false);
   });
 
   it('rejects too short reason (< 10 chars)', () => {
-    expect(devolucionSchema.safeParse({ observaciones: 'No' }).success).toBe(false);
+    expect(devolucionSchema.safeParse({ observaciones: 'No', origen: 'responsable' }).success).toBe(false);
   });
 
   it('rejects whitespace-only reason', () => {
-    expect(devolucionSchema.safeParse({ observaciones: '          ' }).success).toBe(false);
+    expect(devolucionSchema.safeParse({ observaciones: '          ', origen: 'responsable' }).success).toBe(false);
   });
 
   it('rejects missing observaciones', () => {
-    expect(devolucionSchema.safeParse({}).success).toBe(false);
+    expect(devolucionSchema.safeParse({ origen: 'responsable' }).success).toBe(false);
   });
 });
 
