@@ -2,6 +2,7 @@ import { withAuth, parseId } from '@/lib/api-handler';
 import { apiError } from '@/lib/permissions';
 import { registrarAuditoria } from '@/lib/audit';
 import { crearNotificacion } from '@/lib/notifications';
+import { sincronizarProductos } from '@/lib/productos';
 
 export const POST = withAuth({ roles: ['tesoreria', 'admin'] }, async (request, { session, db, ip }, params) => {
   const solicitudId = parseId(params.id);
@@ -26,6 +27,10 @@ export const POST = withAuth({ roles: ['tesoreria', 'admin'] }, async (request, 
   }
 
   await db.solicitudes.update({ where: { id: solicitudId }, data: { estado: 'cerrada' } });
+
+  // Auto-create/update productos from completed solicitud items
+  await sincronizarProductos(session.tenantId, solicitudId).catch(() => {});
+
   await crearNotificacion({ tenantId: session.tenantId, destinatarioId: solicitud.solicitante_id, tipo: 'solicitud_cerrada', titulo: 'Tu solicitud fue cerrada', mensaje: `Resolución: ${resolucion}`, solicitudId });
 
   await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'cerrar_solicitud', entidad: 'solicitud', entidadId: solicitudId, datosNuevos: { resolucion }, ipAddress: ip });

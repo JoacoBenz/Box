@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, Space, Modal, Form, Input, Popconfirm, Radio, Select, Typography, Tag, DatePicker, Upload } from 'antd'
-import { UploadOutlined } from '@ant-design/icons'
+import { UploadOutlined, CopyOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
@@ -76,10 +76,11 @@ export default function SolicitudActionButtons({
   const canCerrar = (isTesoreria || isAdmin) && estado === 'recibida_con_obs'
   const canAnular = ['enviada', 'validada', 'aprobada', 'en_compras', 'pago_programado'].includes(estado) && (isOwner || isDirector || isAdmin)
   const isCerrada = estado === 'cerrada'
+  const canReusar = estado === 'cerrada'
 
   const hasAnyAction =
     canEditar || canEnviar || canValidar || canDevolver || canAprobar ||
-    canRechazar || canProgramarPago || canRegistrarCompra || canConfirmarRecepcion || canCerrar || canAnular || isCerrada
+    canRechazar || canProgramarPago || canRegistrarCompra || canConfirmarRecepcion || canCerrar || canAnular || isCerrada || canReusar
 
   async function postAction(path: string, body?: Record<string, unknown>) {
     setLoading(true)
@@ -193,6 +194,12 @@ export default function SolicitudActionButtons({
     <>
       {!hasAnyAction ? null : <Space wrap>
         {isCerrada && <Tag color="default">Cerrada</Tag>}
+
+        {canReusar && (
+          <Link href={`/solicitudes/nueva?desde=${solicitudId}`}>
+            <Button icon={<CopyOutlined />}>Reusar como plantilla</Button>
+          </Link>
+        )}
 
         {canEditar && (
           <Link href={`/solicitudes/${solicitudId}/editar`}>

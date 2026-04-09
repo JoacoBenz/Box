@@ -20,6 +20,7 @@ import {
   KeyOutlined,
   SettingOutlined,
   CloseCircleOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
 import type { RolNombre } from '@/types';
@@ -92,6 +93,7 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
       items.push({ key: '/gestion-compras', icon: <ShoppingCartOutlined />, label: 'Gestión Compras', visible: true });
       items.push({ key: '/recepciones', icon: <InboxOutlined />, label: 'Recepciones', visible: true });
       items.push({ key: '/proveedores', icon: <ShopOutlined />, label: 'Proveedores', visible: true });
+      items.push({ key: '/reportes', icon: <BarChartOutlined />, label: 'Reportes', visible: true });
       items.push({
         type: 'group' as const,
         label: collapsed ? '—' : 'Gestión Org',
@@ -140,6 +142,7 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
       visible: roles.includes('compras'),
     });
     items.push({ key: '/proveedores', icon: <ShopOutlined />, label: 'Proveedores', visible: true });
+    items.push({ key: '/reportes', icon: <BarChartOutlined />, label: 'Reportes', visible: roles.includes('director') || roles.includes('compras') || roles.includes('tesoreria') || roles.includes('admin') });
     items.push({ key: '/mi-area/usuarios', icon: <TeamOutlined />, label: 'Usuarios de mi Área', visible: roles.includes('responsable_area') && !roles.includes('admin') && !roles.includes('director') });
 
     if (roles.includes('director') || isOrgAdmin) {

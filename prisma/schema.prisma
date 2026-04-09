@@ -33,6 +33,7 @@ model tenants {
   delegaciones         delegaciones[]
   comentarios          comentarios[]
   codigos_invitacion   codigos_invitacion[]
+  productos            productos[]
 }
 
 model roles {
@@ -178,6 +179,7 @@ model items_solicitud {
   id              Int      @id @default(autoincrement())
   tenant_id       Int
   solicitud_id    Int
+  producto_id     Int?
   descripcion     String   @db.VarChar(255)
   cantidad        Decimal  @db.Decimal(10, 2)
   unidad          String   @default("unidades") @db.VarChar(50)
@@ -185,6 +187,7 @@ model items_solicitud {
   link_producto   String?  @db.VarChar(500)
 
   solicitud solicitudes @relation(fields: [solicitud_id], references: [id], onDelete: Cascade)
+  producto  productos?  @relation(fields: [producto_id], references: [id])
   items_recepcion items_recepcion[]
 
   @@index([solicitud_id])
@@ -416,6 +419,26 @@ model tokens_password_reset {
   created_at DateTime @default(now())
 
   @@index([email, created_at])
+}
+
+model productos {
+  id                Int      @id @default(autoincrement())
+  tenant_id         Int
+  nombre            String   @db.VarChar(255)
+  categoria         String?  @db.VarChar(100)
+  unidad_defecto    String   @default("unidades") @db.VarChar(50)
+  precio_referencia Decimal? @db.Decimal(15, 2)
+  link_producto     String?  @db.VarChar(500)
+  activo            Boolean  @default(true)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  tenant          tenants           @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  items_solicitud items_solicitud[]
+
+  @@unique([tenant_id, nombre])
+  @@index([tenant_id, activo])
+  @@index([tenant_id, categoria])
 }
 
 model registros_pendientes {

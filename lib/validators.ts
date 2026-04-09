@@ -65,6 +65,7 @@ export const usuarioSchema = z.object({
 });
 
 export const itemSolicitudSchema = z.object({
+  producto_id: z.number().int().positive().optional().nullable(),
   descripcion: nonBlank(2, 'La descripción del ítem es requerida').max(255),
   cantidad: z
     .number()

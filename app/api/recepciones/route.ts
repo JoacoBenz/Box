@@ -6,6 +6,7 @@ import { recepcionSchema } from '@/lib/validators';
 import { uploadFile } from '@/lib/supabase';
 import { calcularMatching } from '@/lib/matching';
 import { logApiError } from '@/lib/logger';
+import { sincronizarProductos } from '@/lib/productos';
 
 export const POST = withAuth({ roles: ['solicitante', 'responsable_area'] }, async (request, { session, db, ip }) => {
   const contentType = request.headers.get('content-type') ?? '';
@@ -138,6 +139,11 @@ export const POST = withAuth({ roles: ['solicitante', 'responsable_area'] }, asy
         logApiError('/api/recepciones', 'POST', uploadErr);
       }
     }
+  }
+
+  // Auto-create/update productos when solicitud transitions to cerrada
+  if (nuevoEstado === 'cerrada') {
+    await sincronizarProductos(session.tenantId, solicitud_id).catch(() => {});
   }
 
   if (conforme) {

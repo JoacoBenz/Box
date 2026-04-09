@@ -21,12 +21,14 @@ import Link from 'next/link'
 import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
 import { useFormValid } from '@/hooks/useFormValid'
 import ProveedorSelect from '@/components/ProveedorSelect'
+import ProductoSelect from '@/components/ProductoSelect'
 import ProveedorInfoCard from '@/components/ProveedorInfoCard'
 
 const { TextArea } = Input
 const { Title } = Typography
 
 interface ItemForm {
+  producto_id?: number | null
   descripcion: string
   cantidad: number
   unidad: string
@@ -342,11 +344,30 @@ export default function EditarSolicitudPage() {
 
                     <Form.Item
                       {...restField}
+                      name={[name, 'producto_id']}
+                      hidden
+                    >
+                      <Input type="hidden" />
+                    </Form.Item>
+
+                    <Form.Item
+                      {...restField}
                       label="Descripción"
                       name={[name, 'descripcion']}
                       rules={[{ required: true, message: 'Descripción requerida' }]}
                     >
-                      <Input placeholder="Descripción del ítem" />
+                      <ProductoSelect
+                        onSelect={(producto) => {
+                          form.setFieldValue(['items', name, 'producto_id'], producto.id)
+                          form.setFieldValue(['items', name, 'unidad'], producto.unidad_defecto)
+                          if (producto.precio_referencia != null) {
+                            form.setFieldValue(['items', name, 'precio_estimado'], Number(producto.precio_referencia))
+                          }
+                          if (producto.link_producto) {
+                            form.setFieldValue(['items', name, 'link_producto'], producto.link_producto)
+                          }
+                        }}
+                      />
                     </Form.Item>
 
                     <Space style={{ width: '100%' }} size={16} wrap>

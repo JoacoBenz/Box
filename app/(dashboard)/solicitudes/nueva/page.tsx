@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   App,
   Form,
@@ -19,6 +19,7 @@ import { PlusOutlined, MinusCircleOutlined, UploadOutlined } from '@ant-design/i
 import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
 import { useFormValid } from '@/hooks/useFormValid'
 import ProveedorSelect from '@/components/ProveedorSelect'
+import ProductoSelect from '@/components/ProductoSelect'
 import { useTheme } from '@/components/ThemeProvider'
 import ProveedorInfoCard from '@/components/ProveedorInfoCard'
 
@@ -26,6 +27,7 @@ const { TextArea } = Input
 const { Title } = Typography
 
 interface ItemForm {
+  producto_id?: number | null
   descripcion: string
   cantidad: number
   unidad: string
@@ -80,6 +82,8 @@ export default function NuevaSolicitudPage() {
   const { message } = App.useApp()
   const { tokens } = useTheme()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const desdeId = searchParams.get('desde')
   const [form] = Form.useForm<SolicitudFormValues>()
   const { hasErrors, formProps } = useFormValid(form)
   const [loading, setLoading] = useState<'borrador' | 'enviar' | null>(null)
@@ -88,6 +92,7 @@ export default function NuevaSolicitudPage() {
   const [centrosCosto, setCentrosCosto] = useState<{ id: number; nombre: string; codigo: string; area_id: number | null; area?: { nombre: string } | null }[]>([])
   const [sessionAreaId, setSessionAreaId] = useState<number | null>(null)
   const [esResponsable, setEsResponsable] = useState(false)
+  const [templateTitulo, setTemplateTitulo] = useState<string | null>(null)
   useEffect(() => {
     // Fetch session to get user's area and default centro_costo
     fetch('/api/auth/session').then(r => r.json()).then(s => {
@@ -99,7 +104,38 @@ export default function NuevaSolicitudPage() {
       if (ccId) form.setFieldValue('centro_costo_id', ccId)
     }).catch(() => {})
     fetch('/api/centros-costo').then(r => r.ok ? r.json() : []).then(setCentrosCosto).catch(() => {})
-  }, [form])
+
+    // Load template from previous solicitud
+    if (desdeId) {
+      fetch(`/api/solicitudes/${desdeId}`).then(r => {
+        if (!r.ok) throw new Error('No se pudo cargar la plantilla')
+        return r.json()
+      }).then(data => {
+        setTemplateTitulo(data.titulo)
+        form.setFieldsValue({
+          titulo: data.titulo,
+          descripcion: data.descripcion,
+          justificacion: data.justificacion,
+          urgencia: data.urgencia,
+          proveedor_id: data.proveedor_id ?? undefined,
+          centro_costo_id: data.centro_costo_id ?? undefined,
+          items: (data.items_solicitud ?? []).map((i: any) => ({
+            producto_id: i.producto_id ?? null,
+            descripcion: i.descripcion,
+            cantidad: Number(i.cantidad),
+            unidad: i.unidad,
+            precio_estimado: i.precio_estimado ? Number(i.precio_estimado) : undefined,
+            link_producto: i.link_producto || undefined,
+          })),
+        })
+        if (data.proveedor_id) {
+          fetch(`/api/proveedores/${data.proveedor_id}`).then(r => r.json()).then(setSelectedProveedor).catch(() => {})
+        }
+      }).catch(() => {
+        message.warning('No se pudo cargar la solicitud como plantilla')
+      })
+    }
+  }, [form, desdeId, message])
 
   async function handleSubmit(accion: 'borrador' | 'enviar') {
     try {
@@ -149,6 +185,17 @@ export default function NuevaSolicitudPage() {
       <Title level={3} style={{ marginBottom: 24, fontWeight: 700, color: tokens.textPrimary }}>
         Nueva Solicitud de Compra
       </Title>
+
+      {templateTitulo && (
+        <Alert
+          type="info"
+          showIcon
+          message={`Creando solicitud a partir de: "${templateTitulo}"`}
+          description="Los campos fueron pre-cargados. Podés modificarlos antes de guardar."
+          style={{ borderRadius: 10, marginBottom: 20 }}
+          closable
+        />
+      )}
 
       <Form form={form} layout="vertical" initialValues={{ urgencia: 'normal', items: [{ unidad: 'unidades', cantidad: 1 }] }} style={{ display: 'flex', flexDirection: 'column', gap: 24 }} {...formProps}>
         <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Información General</span>} style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
@@ -283,11 +330,30 @@ export default function NuevaSolicitudPage() {
 
                     <Form.Item
                       {...restField}
+                      name={[name, 'producto_id']}
+                      hidden
+                    >
+                      <Input type="hidden" />
+                    </Form.Item>
+
+                    <Form.Item
+                      {...restField}
                       label="Descripción"
                       name={[name, 'descripcion']}
                       rules={[{ required: true, message: 'Descripción requerida' }]}
                     >
-                      <Input placeholder="Descripción del ítem" />
+                      <ProductoSelect
+                        onSelect={(producto) => {
+                          form.setFieldValue(['items', name, 'producto_id'], producto.id)
+                          form.setFieldValue(['items', name, 'unidad'], producto.unidad_defecto)
+                          if (producto.precio_referencia != null) {
+                            form.setFieldValue(['items', name, 'precio_estimado'], Number(producto.precio_referencia))
+                          }
+                          if (producto.link_producto) {
+                            form.setFieldValue(['items', name, 'link_producto'], producto.link_producto)
+                          }
+                        }}
+                      />
                     </Form.Item>
 
                     <Space style={{ width: '100%' }} size={16} wrap>

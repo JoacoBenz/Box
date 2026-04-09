@@ -147,6 +147,7 @@ export const POST = withAuth({ roles: ['solicitante'] }, async (request, { sessi
       data: items.map(item => ({
         tenant_id: session.tenantId,
         solicitud_id: nueva.id,
+        producto_id: item.producto_id ?? null,
         descripcion: item.descripcion,
         cantidad: item.cantidad,
         unidad: item.unidad ?? 'unidades',

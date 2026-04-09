@@ -85,6 +85,7 @@ export const PATCH = withAuth({}, async (request, { session, db, ip }, params) =
         data: items.map(item => ({
           tenant_id: session.tenantId,
           solicitud_id: solicitudId,
+          producto_id: item.producto_id ?? null,
           descripcion: item.descripcion,
           cantidad: item.cantidad,
           unidad: item.unidad ?? 'unidades',
