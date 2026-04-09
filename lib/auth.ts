@@ -24,6 +24,18 @@ async function loadUsuario(where: Record<string, unknown>) {
   });
 }
 
+/** Load ALL matching users (for login with duplicate emails across tenants) */
+async function loadUsuarios(where: Record<string, unknown>) {
+  return prisma.usuarios.findMany({
+    where: { ...where, activo: true, tenant: { estado: 'activo', desactivado: false } },
+    include: {
+      tenant: { select: { nombre: true } },
+      usuarios_roles: { include: { rol: true } },
+      area: true,
+    },
+  });
+}
+
 function userPayload(usuario: NonNullable<Awaited<ReturnType<typeof loadUsuario>>>) {
   return {
     id: String(usuario.id),
@@ -66,24 +78,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
-        const usuario = await loadUsuario({ email: credentials.email as string });
+        // Find all matching users across tenants (email can exist in multiple orgs)
+        const usuarios = await loadUsuarios({ email: credentials.email as string });
 
-        if (!usuario) {
+        if (usuarios.length === 0) {
           const attempt = recordFailedLogin(email);
           logLoginFailed(email, 'unknown', attempt.attemptsRemaining);
           if (attempt.locked) logAccountLocked(email, 'unknown', 15 * 60 * 1000);
           return null;
         }
 
-        if (!usuario.password_hash) {
-          return null; // OAuth-only user, can't use password login
+        // Try password against each matching user
+        let usuario = null;
+        for (const u of usuarios) {
+          if (!u.password_hash) continue;
+          const match = await bcrypt.compare(credentials.password as string, u.password_hash);
+          if (match) {
+            usuario = u;
+            break;
+          }
         }
 
-        const passwordMatch = await bcrypt.compare(
-          credentials.password as string,
-          usuario.password_hash
-        );
-        if (!passwordMatch) {
+        if (!usuario) {
           const attempt = recordFailedLogin(email);
           logLoginFailed(email, 'unknown', attempt.attemptsRemaining);
           if (attempt.locked) logAccountLocked(email, 'unknown', 15 * 60 * 1000);
