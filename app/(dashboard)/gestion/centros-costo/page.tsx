@@ -57,13 +57,13 @@ export default function CentrosCostoPage() {
           title: 'Presupuesto Anual',
           dataIndex: 'presupuesto_anual',
           width: 160,
-          render: (val: number | null) => val ? `$${Number(val).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` : '—',
+          render: (val: number | null) => `$${Number(val ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`,
         },
         {
           title: 'Presupuesto Mensual',
           dataIndex: 'presupuesto_mensual',
           width: 160,
-          render: (val: number | null) => val ? `$${Number(val).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` : '—',
+          render: (val: number | null) => `$${Number(val ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`,
         },
         {
           title: 'Estado',

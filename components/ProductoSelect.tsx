@@ -8,7 +8,7 @@ const { Text } = Typography
 interface Producto {
   id: number
   nombre: string
-  categoria: string | null
+  area: { id: number; nombre: string } | null
   unidad_defecto: string
   precio_referencia: string | number | null
   link_producto: string | null
@@ -72,9 +72,9 @@ export default function ProductoSelect({ onSelect, placeholder = 'Buscar product
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <Text strong>{p.nombre}</Text>
-              {p.categoria && (
+              {p.area && (
                 <Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
-                  {p.categoria}
+                  {p.area.nombre}
                 </Text>
               )}
             </div>

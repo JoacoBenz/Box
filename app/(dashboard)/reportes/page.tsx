@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card, Table, Select, DatePicker, Space, Typography, Tag, Empty, Spin, Row, Col, Statistic } from 'antd'
-import { BarChartOutlined, ShoppingOutlined, TeamOutlined, RiseOutlined } from '@ant-design/icons'
+import { Card, Table, Select, DatePicker, Space, Typography, Tag, Empty, Spin, Row, Col, Statistic, Button } from 'antd'
+import { BarChartOutlined, ShoppingOutlined, RiseOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useTheme } from '@/components/ThemeProvider'
 import dayjs from 'dayjs'
 
@@ -11,12 +11,11 @@ const { RangePicker } = DatePicker
 
 interface ReportData {
   gastosPorProducto: any[]
-  gastosPorCategoria: any[]
   gastosPorArea: any[]
   evolucionMensual: any[]
   topProveedores: any[]
   productosMasSolicitados: any[]
-  categorias: string[]
+  areas: { id: number; nombre: string }[]
 }
 
 function formatMoney(value: number | null | undefined): string {
@@ -29,7 +28,7 @@ export default function ReportesPage() {
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<ReportData | null>(null)
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([null, null])
-  const [categoria, setCategoria] = useState<string>('')
+  const [areaId, setAreaId] = useState<number | undefined>(undefined)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -37,7 +36,7 @@ export default function ReportesPage() {
       const params = new URLSearchParams()
       if (dateRange[0]) params.set('desde', dateRange[0].format('YYYY-MM-DD'))
       if (dateRange[1]) params.set('hasta', dateRange[1].format('YYYY-MM-DD'))
-      if (categoria) params.set('categoria', categoria)
+      if (areaId) params.set('area_id', String(areaId))
 
       const res = await fetch(`/api/reportes?${params}`)
       if (res.ok) {
@@ -48,7 +47,7 @@ export default function ReportesPage() {
     } finally {
       setLoading(false)
     }
-  }, [dateRange, categoria])
+  }, [dateRange, areaId])
 
   useEffect(() => {
     fetchData()
@@ -57,6 +56,14 @@ export default function ReportesPage() {
   const totalGasto = data?.gastosPorArea?.reduce((sum, r) => sum + Number(r.gasto_total || 0), 0) ?? 0
   const totalCompras = data?.topProveedores?.reduce((sum, r) => sum + Number(r.num_compras || 0), 0) ?? 0
   const totalProductos = data?.productosMasSolicitados?.length ?? 0
+
+  const buildExportParams = () => {
+    const params = new URLSearchParams()
+    if (dateRange[0]) params.set('desde', dateRange[0].format('YYYY-MM-DD'))
+    if (dateRange[1]) params.set('hasta', dateRange[1].format('YYYY-MM-DD'))
+    if (areaId) params.set('area_id', String(areaId))
+    return params.toString()
+  }
 
   return (
     <div className="page-content" style={{ padding: '32px 24px', maxWidth: 1200, margin: '0 auto' }}>
@@ -69,30 +76,37 @@ export default function ReportesPage() {
       </Text>
 
       <Card style={{ borderRadius: 12, marginBottom: 24 }}>
-        <Space size={16} wrap>
-          <div>
-            <Text type="secondary" style={{ display: 'block', marginBottom: 4, fontSize: 12 }}>Período</Text>
-            <RangePicker
-              value={dateRange}
-              onChange={(dates) => setDateRange(dates ? [dates[0], dates[1]] : [null, null])}
-              format="DD/MM/YYYY"
-              placeholder={['Desde', 'Hasta']}
-            />
-          </div>
-          <div>
-            <Text type="secondary" style={{ display: 'block', marginBottom: 4, fontSize: 12 }}>Categoría</Text>
-            <Select
-              allowClear
-              placeholder="Todas las categorías"
-              value={categoria || undefined}
-              onChange={(val) => setCategoria(val || '')}
-              style={{ width: 200 }}
-              options={[
-                ...(data?.categorias ?? []).map(c => ({ value: c, label: c })),
-              ]}
-            />
-          </div>
-        </Space>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
+          <Space size={16} wrap>
+            <div>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 4, fontSize: 12 }}>Período</Text>
+              <RangePicker
+                value={dateRange}
+                onChange={(dates) => setDateRange(dates ? [dates[0], dates[1]] : [null, null])}
+                format="DD/MM/YYYY"
+                placeholder={['Desde', 'Hasta']}
+              />
+            </div>
+            <div>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 4, fontSize: 12 }}>Área</Text>
+              <Select
+                allowClear
+                placeholder="Todas las áreas"
+                value={areaId}
+                onChange={(val) => setAreaId(val)}
+                style={{ width: 200 }}
+                options={(data?.areas ?? []).map(a => ({ value: a.id, label: a.nombre }))}
+              />
+            </div>
+          </Space>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={() => window.open(`/api/reportes/export?${buildExportParams()}`)}
+            disabled={loading || !data}
+          >
+            Descargar Excel
+          </Button>
+        </div>
       </Card>
 
       {loading ? (
@@ -151,7 +165,7 @@ export default function ReportesPage() {
               columns={[
                 { title: 'Producto', dataIndex: 'producto', key: 'producto', ellipsis: true },
                 {
-                  title: 'Categoría', dataIndex: 'categoria', key: 'categoria', width: 130,
+                  title: 'Área', dataIndex: 'area', key: 'area', width: 130,
                   render: (v: string) => v ? <Tag>{v}</Tag> : <Text type="secondary">—</Text>,
                 },
                 {
@@ -175,29 +189,8 @@ export default function ReportesPage() {
             />
           </Card>
 
-          {/* Gasto por categoría */}
+          {/* Gasto por área + Top proveedores */}
           <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-            <Col xs={24} md={12}>
-              <Card
-                title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Gasto por Categoría</span>}
-                style={{ borderRadius: 12, height: '100%' }}
-              >
-                <Table
-                  dataSource={data.gastosPorCategoria}
-                  rowKey="categoria"
-                  size="small"
-                  pagination={false}
-                  columns={[
-                    { title: 'Categoría', dataIndex: 'categoria', key: 'categoria' },
-                    {
-                      title: 'Gasto Total', dataIndex: 'gasto_total', key: 'gasto_total', align: 'right' as const,
-                      render: (v: number) => formatMoney(v),
-                    },
-                    { title: 'Solicitudes', dataIndex: 'num_solicitudes', key: 'num_solicitudes', align: 'center' as const },
-                  ]}
-                />
-              </Card>
-            </Col>
             <Col xs={24} md={12}>
               <Card
                 title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Gasto por Área</span>}
@@ -219,10 +212,6 @@ export default function ReportesPage() {
                 />
               </Card>
             </Col>
-          </Row>
-
-          {/* Top proveedores */}
-          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
             <Col xs={24} md={12}>
               <Card
                 title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Top Proveedores</span>}
@@ -244,32 +233,32 @@ export default function ReportesPage() {
                 />
               </Card>
             </Col>
-            <Col xs={24} md={12}>
-              <Card
-                title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Productos Más Solicitados</span>}
-                style={{ borderRadius: 12, height: '100%' }}
-              >
-                <Table
-                  dataSource={data.productosMasSolicitados}
-                  rowKey="producto"
-                  size="small"
-                  pagination={false}
-                  columns={[
-                    { title: 'Producto', dataIndex: 'producto', key: 'producto', ellipsis: true },
-                    {
-                      title: 'Categoría', dataIndex: 'categoria', key: 'categoria', width: 100,
-                      render: (v: string) => v ? <Tag>{v}</Tag> : '—',
-                    },
-                    { title: 'Solicitudes', dataIndex: 'num_solicitudes', key: 'num_solicitudes', align: 'center' as const },
-                    {
-                      title: 'Cantidad Total', dataIndex: 'cantidad_total', key: 'cantidad_total', align: 'right' as const,
-                      render: (v: number) => Number(v).toLocaleString('es-AR'),
-                    },
-                  ]}
-                />
-              </Card>
-            </Col>
           </Row>
+
+          {/* Productos más solicitados */}
+          <Card
+            title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Productos Más Solicitados</span>}
+            style={{ borderRadius: 12, marginBottom: 24 }}
+          >
+            <Table
+              dataSource={data.productosMasSolicitados}
+              rowKey="producto"
+              size="small"
+              pagination={false}
+              columns={[
+                { title: 'Producto', dataIndex: 'producto', key: 'producto', ellipsis: true },
+                {
+                  title: 'Área', dataIndex: 'area', key: 'area', width: 130,
+                  render: (v: string) => v ? <Tag>{v}</Tag> : '—',
+                },
+                { title: 'Solicitudes', dataIndex: 'num_solicitudes', key: 'num_solicitudes', align: 'center' as const },
+                {
+                  title: 'Cantidad Total', dataIndex: 'cantidad_total', key: 'cantidad_total', align: 'right' as const,
+                  render: (v: number) => Number(v).toLocaleString('es-AR'),
+                },
+              ]}
+            />
+          </Card>
 
           {/* Evolución mensual */}
           <Card

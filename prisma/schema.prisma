@@ -59,6 +59,7 @@ model areas {
   usuarios_area  usuarios[]      @relation("usuario_area")
   solicitudes    solicitudes[]
   centros_costo  centros_costo[]
+  productos      productos[]
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, nombre])
@@ -425,7 +426,7 @@ model productos {
   id                Int      @id @default(autoincrement())
   tenant_id         Int
   nombre            String   @db.VarChar(255)
-  categoria         String?  @db.VarChar(100)
+  area_id           Int?
   unidad_defecto    String   @default("unidades") @db.VarChar(50)
   precio_referencia Decimal? @db.Decimal(15, 2)
   link_producto     String?  @db.VarChar(500)
@@ -434,11 +435,12 @@ model productos {
   updated_at        DateTime @updatedAt
 
   tenant          tenants           @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  area            areas?            @relation(fields: [area_id], references: [id])
   items_solicitud items_solicitud[]
 
   @@unique([tenant_id, nombre])
   @@index([tenant_id, activo])
-  @@index([tenant_id, categoria])
+  @@index([tenant_id, area_id])
 }
 
 model registros_pendientes {

@@ -15,7 +15,7 @@ async function main() {
       solicitud: { estado: 'cerrada' },
     },
     include: {
-      solicitud: { select: { tenant_id: true } },
+      solicitud: { select: { tenant_id: true, area_id: true } },
     },
   });
 
@@ -47,12 +47,14 @@ async function main() {
         create: {
           tenant_id: item.solicitud.tenant_id,
           nombre,
+          area_id: item.solicitud.area_id,
           unidad_defecto: item.unidad,
           precio_referencia: item.precio_estimado,
           link_producto: item.link_producto,
         },
         update: {
           ...(item.precio_estimado != null ? { precio_referencia: item.precio_estimado } : {}),
+          ...(item.solicitud.area_id ? { area_id: item.solicitud.area_id } : {}),
         },
       });
 
