@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { unirseSchema } from '@/lib/validators';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { checkRateLimitDb } from '@/lib/rate-limit';
 import { notificarPorRol } from '@/lib/notifications';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { logApiError } from '@/lib/logger';
@@ -13,8 +13,8 @@ function normalizar(s: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ?? 'unknown';
-    const rateLimit = checkRateLimit(`unirse:${ip}`, 5, 3_600_000);
+    const ip = getClientIp(request);
+    const rateLimit = await checkRateLimitDb(`unirse:${ip}`, 5, 3_600_000);
     if (!rateLimit.allowed) {
       return Response.json({ error: { code: 'RATE_LIMITED', message: 'Demasiados intentos. Intentá de nuevo más tarde.' } }, { status: 429 });
     }

@@ -120,7 +120,7 @@ export function NotificationBell() {
       placement="bottomRight"
     >
       <Badge count={count} size="small" overflowCount={99}>
-        <Button type="text" icon={<BellOutlined style={{ fontSize: 18 }} />} style={{ height: 40, width: 40 }} />
+        <Button type="text" icon={<BellOutlined style={{ fontSize: 18 }} />} style={{ height: 40, width: 40 }} aria-label={`Notificaciones${count > 0 ? ` (${count} sin leer)` : ''}`} />
       </Badge>
     </Dropdown>
   );

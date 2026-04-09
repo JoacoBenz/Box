@@ -186,7 +186,7 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
           transition: width 0.25s cubic-bezier(0.2, 0, 0, 1) !important;
         }
         .sidebar-menu .ant-menu-item-selected {
-          border-left: 3px solid #00C2CB;
+          border-left: 3px solid ${tokens.colorPrimary};
         }
       `}</style>
       <Sider

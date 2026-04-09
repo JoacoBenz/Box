@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Table, Tag, Typography } from 'antd'
+import { Table, Tag, Typography, App } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useRouter } from 'next/navigation'
 import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types'
@@ -22,6 +22,7 @@ interface Solicitud {
 
 export default function ValidacionesPage() {
   const router = useRouter()
+  const { message } = App.useApp()
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -32,11 +33,15 @@ export default function ValidacionesPage() {
       if (res.ok) {
         const data = await res.json()
         setSolicitudes(data.data ?? [])
+      } else {
+        message.error('Error al cargar solicitudes')
       }
+    } catch {
+      message.error('Error al cargar solicitudes')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [message])
 
   useEffect(() => { fetchData() }, [fetchData])
 

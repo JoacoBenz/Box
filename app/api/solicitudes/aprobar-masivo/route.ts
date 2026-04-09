@@ -53,7 +53,7 @@ export const POST = withAuth({ roles: ['director'] }, async (request, { session,
 
       const seg = verificarSegregacion(solicitud, session.userId, 'aprobar');
       if (!seg.permitido) {
-        errores.push({ id: solicitudId, error: seg.motivo });
+        errores.push({ id: solicitudId, error: seg.motivo ?? 'No permitido' });
         continue;
       }
 

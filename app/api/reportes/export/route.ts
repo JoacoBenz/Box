@@ -1,6 +1,7 @@
 import { withAuth } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { checkRateLimitDb } from '@/lib/rate-limit';
+import { getClientIp } from '@/lib/audit';
 import ExcelJS from 'exceljs';
 
 function styleHeader(row: ExcelJS.Row) {
@@ -12,8 +13,8 @@ function styleHeader(row: ExcelJS.Row) {
 }
 
 export const GET = withAuth({ roles: ['director', 'compras', 'tesoreria', 'admin'] }, async (request, { session }) => {
-  const ip = request.headers.get('x-forwarded-for') || 'unknown';
-  const rl = checkRateLimit(`export-reportes:${ip}`, 5, 60_000);
+  const ip = getClientIp(request);
+  const rl = await checkRateLimitDb(`export-reportes:${ip}`, 5, 60_000);
   if (!rl.allowed) {
     return Response.json({ error: { code: 'RATE_LIMITED', message: 'Demasiadas exportaciones. Intentá de nuevo en un minuto.' } }, { status: 429 });
   }

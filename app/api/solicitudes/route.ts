@@ -36,8 +36,11 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
   const busqueda = searchParams.get('busqueda') || undefined;
   const desde = searchParams.get('desde') || undefined;
   const hasta = searchParams.get('hasta') || undefined;
-  const orden = searchParams.get('orden') || 'created_at';
-  const direccion = (searchParams.get('direccion') || 'desc') as 'asc' | 'desc';
+  const ALLOWED_ORDER_COLUMNS = ['created_at', 'updated_at', 'numero', 'titulo', 'urgencia', 'estado', 'fecha_envio'];
+  const ordenParam = searchParams.get('orden') || 'created_at';
+  const orden = ALLOWED_ORDER_COLUMNS.includes(ordenParam) ? ordenParam : 'created_at';
+  const direccionParam = searchParams.get('direccion') || 'desc';
+  const direccion = (direccionParam === 'asc' ? 'asc' : 'desc') as 'asc' | 'desc';
 
   const where: any = {};
 

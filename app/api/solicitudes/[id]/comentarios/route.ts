@@ -3,6 +3,8 @@ import { withAdminOverride, withTenant } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
 import { apiError } from '@/lib/permissions';
 import { crearNotificacion } from '@/lib/notifications';
+import { registrarAuditoria } from '@/lib/audit';
+import { logApiError } from '@/lib/logger';
 
 export const GET = withAdminOverride({}, async (_request, { db }, params) => {
   const solicitudId = Number(params.id);
@@ -39,6 +41,20 @@ export const POST = withTenant(async (request, { session, db }, params) => {
   });
   if (!solicitud) return apiError('NOT_FOUND', 'Solicitud no encontrada', 404);
 
+  // Permission check: user must be involved with this solicitud
+  const { userId, roles } = session;
+  const hasGlobalAccess = roles.includes('director') || roles.includes('tesoreria') || roles.includes('compras') || roles.includes('admin') || roles.includes('super_admin');
+  if (!hasGlobalAccess) {
+    const isOwner = solicitud.solicitante_id === userId;
+    const isResponsable = roles.includes('responsable_area') && await (async () => {
+      const area = await prisma.areas.findFirst({ where: { id: solicitud.area_id, tenant_id: session.tenantId, responsable_id: userId } });
+      return !!area;
+    })();
+    if (!isOwner && !isResponsable) {
+      return apiError('FORBIDDEN', 'No tenés acceso a esta solicitud', 403);
+    }
+  }
+
   const comentario = await db.comentarios.create({
     data: {
       solicitud_id: solicitudId,
@@ -49,7 +65,6 @@ export const POST = withTenant(async (request, { session, db }, params) => {
   });
 
   // ── Notificaciones en cascada por comentario ──
-  const { userId, tenantId, roles } = session;
   const userName = comentario.usuario.nombre;
   const solNumero = solicitud.numero;
   const titulo = `Nuevo comentario en ${solNumero}`;
@@ -59,74 +74,56 @@ export const POST = withTenant(async (request, { session, db }, params) => {
   const destinatarios = new Set<number>();
 
   // Determine commenter's highest role level
-  const isCompras = roles.includes('compras');
-  const isTesoreria = roles.includes('tesoreria');
-  const isAdmin = roles.includes('admin');
   const isDirector = roles.includes('director');
-  const isResponsable = roles.includes('responsable_area');
+  const isHighLevel = roles.includes('compras') || roles.includes('tesoreria') || roles.includes('admin');
 
-  // Level: compras/tesoreria/admin = 4, director = 3, responsable = 2, solicitante = 1
   let commenterLevel = 1;
-  if (isCompras || isTesoreria || isAdmin) commenterLevel = 4;
+  if (isHighLevel) commenterLevel = 4;
   else if (isDirector) commenterLevel = 3;
-  else if (isResponsable) commenterLevel = 2;
+  else if (roles.includes('responsable_area')) commenterLevel = 2;
 
   // 1. Always notify the solicitante (unless they are the commenter)
   if (solicitud.solicitante_id !== userId) {
     destinatarios.add(solicitud.solicitante_id);
   }
 
-  // 2. Notify responsable(s) del área of the solicitud (level 2) if commenter is above them
-  if (commenterLevel > 2) {
-    const responsables = await prisma.usuarios.findMany({
+  // 2. Batch-fetch responsables and directors in a single query to avoid N+1
+  const needResponsables = commenterLevel > 2 || commenterLevel === 1;
+  const needDirectors = commenterLevel > 3;
+
+  const roleNames: string[] = [];
+  if (needResponsables) roleNames.push('responsable_area');
+  if (needDirectors) roleNames.push('director');
+
+  if (roleNames.length > 0) {
+    const usersWithRoles = await prisma.usuarios.findMany({
       where: {
-        tenant_id: tenantId,
-        area_id: solicitud.area_id,
+        tenant_id: session.tenantId,
         activo: true,
-        usuarios_roles: { some: { rol: { nombre: 'responsable_area' } } },
+        usuarios_roles: { some: { rol: { nombre: { in: roleNames } } } },
+        ...(needResponsables && !needDirectors ? { area_id: solicitud.area_id } : {}),
       },
-      select: { id: true },
+      select: { id: true, area_id: true, usuarios_roles: { select: { rol: { select: { nombre: true } } } } },
     });
-    for (const r of responsables) {
-      if (r.id !== userId) destinatarios.add(r.id);
+
+    for (const u of usersWithRoles) {
+      if (u.id === userId) continue;
+      const uRoles = u.usuarios_roles.map(ur => ur.rol.nombre);
+      // Add responsables of the solicitud's area
+      if (uRoles.includes('responsable_area') && u.area_id === solicitud.area_id) {
+        destinatarios.add(u.id);
+      }
+      // Add directors if commenter is level 4
+      if (needDirectors && uRoles.includes('director')) {
+        destinatarios.add(u.id);
+      }
     }
   }
 
-  // 3. Notify director(s) if commenter is above them (level 4: tesoreria/compras/admin)
-  if (commenterLevel > 3) {
-    const directores = await prisma.usuarios.findMany({
-      where: {
-        tenant_id: tenantId,
-        activo: true,
-        usuarios_roles: { some: { rol: { nombre: 'director' } } },
-      },
-      select: { id: true },
-    });
-    for (const d of directores) {
-      if (d.id !== userId) destinatarios.add(d.id);
-    }
-  }
-
-  // 4. If commenter is solicitante, notify responsable(s) of their area
-  if (commenterLevel <= 2 && commenterLevel === 1) {
-    const responsables = await prisma.usuarios.findMany({
-      where: {
-        tenant_id: tenantId,
-        area_id: solicitud.area_id,
-        activo: true,
-        usuarios_roles: { some: { rol: { nombre: 'responsable_area' } } },
-      },
-      select: { id: true },
-    });
-    for (const r of responsables) {
-      if (r.id !== userId) destinatarios.add(r.id);
-    }
-  }
-
-  // Create all notifications (fire and forget)
+  // Create all notifications (fire and forget, with logging)
   const notifPromises = Array.from(destinatarios).map((destId) =>
     crearNotificacion({
-      tenantId,
+      tenantId: session.tenantId,
       destinatarioId: destId,
       tipo: 'comentario',
       titulo,
@@ -135,8 +132,15 @@ export const POST = withTenant(async (request, { session, db }, params) => {
     })
   );
   Promise.all(notifPromises).catch((err) => {
-    console.error('[comentarios] Error sending notifications:', err);
+    logApiError('comentarios', 'notifications', err, userId, session.tenantId);
   });
+
+  // Audit log
+  registrarAuditoria({
+    tenantId: session.tenantId, usuarioId: userId,
+    accion: 'crear_comentario', entidad: 'comentario', entidadId: comentario.id,
+    datosNuevos: { solicitudId, mensaje: msgTexto },
+  }).catch(() => {}); // Non-critical, fire and forget
 
   return NextResponse.json(comentario, { status: 201 });
 });

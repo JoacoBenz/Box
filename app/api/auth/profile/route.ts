@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { apiError } from '@/lib/permissions';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 
 export async function GET() {
   try {
@@ -87,6 +88,13 @@ export async function PATCH(request: NextRequest) {
     await prisma.usuarios.update({
       where: { id: session.userId },
       data: updateData,
+    });
+
+    await registrarAuditoria({
+      tenantId: session.tenantId, usuarioId: session.userId,
+      accion: 'actualizar_perfil', entidad: 'usuario', entidadId: session.userId,
+      datosNuevos: { nombre: updateData.nombre ?? undefined, passwordChanged: !!updateData.password_hash },
+      ipAddress: getClientIp(request),
     });
 
     return Response.json({ ok: true });

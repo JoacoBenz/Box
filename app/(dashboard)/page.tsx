@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { Button, Card, Col, Row, Tag, Typography, Empty, Progress, Table } from 'antd'
 import {
   DollarOutlined,
@@ -255,8 +255,13 @@ export default function DashboardPage() {
     fetchDashboard(value)
   }
 
+  // Chart maxes (memoized to avoid recalculation on every render)
+  const maxAreaTotal = useMemo(() => Math.max(...(data?.gastoPorArea ?? []).map((a: any) => a.total), 1), [data?.gastoPorArea])
+  const maxProvTotal = useMemo(() => Math.max(...(data?.topProveedores ?? []).map((p: any) => p.total), 1), [data?.topProveedores])
+  const maxMesTrend = useMemo(() => Math.max(...(data?.tendenciaMensual ?? []).map((m: any) => m.total), 1), [data?.tendenciaMensual])
+
   if (loading) return <DashboardSkeleton />
-  if (!data) return <Empty description="Error al cargar el dashboard" />
+  if (!data) return <Empty description="No se pudo cargar el dashboard. Intentá recargar la página." />
 
   // Role detection
   const hasAnalytics = data.gastoPorArea !== undefined
@@ -266,11 +271,6 @@ export default function DashboardPage() {
   const hasCompras = data.solicitudesAprobadas !== undefined || data.solicitudesEnCompras !== undefined
   const hasTesoreria = data.pendientesComprar !== undefined
   const hasAdmin = data.adminPlatform !== undefined
-
-  // Chart maxes
-  const maxAreaTotal = Math.max(...(data.gastoPorArea ?? []).map((a: any) => a.total), 1)
-  const maxProvTotal = Math.max(...(data.topProveedores ?? []).map((p: any) => p.total), 1)
-  const maxMesTrend = Math.max(...(data.tendenciaMensual ?? []).map((m: any) => m.total), 1)
 
   // Determine which analytics charts to show per role
   // Admin sees platform-level metrics, not org-level analytics

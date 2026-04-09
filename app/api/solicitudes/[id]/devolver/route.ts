@@ -13,7 +13,7 @@ export const POST = withAuth({}, async (request, { session, db, ip }, params) =>
   const validation = validateBody(devolucionSchema, body);
   if (!validation.success) return validation.response;
 
-  const origen = body.origen as 'responsable' | 'director';
+  const origen = validation.data.origen;
 
   const solicitud = await db.solicitudes.findFirst({ where: { id: solicitudId } });
   if (!solicitud) return apiError('NOT_FOUND', 'No encontrada', 404);

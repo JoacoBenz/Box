@@ -190,6 +190,7 @@ export const recepcionSchema = z
 
 export const devolucionSchema = z.object({
   observaciones: nonBlank(10, 'Describí el motivo de la devolución (mínimo 10 caracteres)').max(2000),
+  origen: z.enum(['responsable', 'director'], { message: 'origen debe ser responsable o director' }),
 });
 
 export const rechazoSchema = z.object({

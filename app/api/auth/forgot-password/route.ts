@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { checkRateLimitDb } from '@/lib/rate-limit';
 import { generateToken, hashToken } from '@/lib/tokens';
 import { sendEmail } from '@/lib/email';
 import { logApiError } from '@/lib/logger';
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     const { email } = parsed.data;
 
-    const rateLimit = checkRateLimit(`forgot:${email}`, 3, 3_600_000);
+    const rateLimit = await checkRateLimitDb(`forgot:${email}`, 3, 3_600_000);
     if (!rateLimit.allowed) {
       // Still return success to not reveal rate limiting per email
       return Response.json({ message: 'Si el email está registrado, te enviamos un enlace para restablecer tu contraseña.' });
