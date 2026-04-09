@@ -4,6 +4,11 @@ import { getToken } from 'next-auth/jwt';
 
 const PUBLIC_ROUTES = ['/login', '/registro', '/recuperar', '/restablecer', '/verificar-email', '/unirse', '/api/auth', '/api/registro', '/api/unirse'];
 
+// NextAuth v5 (authjs) uses different cookie names than v4
+const AUTH_COOKIE = process.env.NODE_ENV === 'production'
+  ? '__Secure-authjs.session-token'
+  : 'authjs.session-token';
+
 const ROLE_ROUTES: Record<string, string[]> = {
   '/validaciones': ['responsable_area', 'super_admin'],
   '/aprobaciones': ['director', 'super_admin'],
@@ -18,7 +23,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET, cookieName: AUTH_COOKIE });
 
   if (!token) {
     return NextResponse.redirect(new URL('/login', request.url));
