@@ -6,13 +6,18 @@ import { UserOutlined, LockOutlined, GoogleOutlined, WindowsOutlined } from '@an
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useFormValid } from '@/hooks/useFormValid';
+import { useTheme } from '@/components/ThemeProvider';
 
 const { Title, Text } = Typography;
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [form] = Form.useForm();
+  const { hasErrors, formProps } = useFormValid(form);
   const [loading, setLoading] = useState(false);
+  const { tokens } = useTheme();
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(() => {
     const err = searchParams.get('error');
@@ -89,9 +94,10 @@ export default function LoginPage() {
         className="login-card"
         style={{
           width: 420,
-          boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
           border: 'none',
           borderRadius: 20,
+          background: tokens.loginCardBg,
         }}
         styles={{ body: { padding: '40px 36px' } }}
       >
@@ -100,7 +106,7 @@ export default function LoginPage() {
             width: 56,
             height: 56,
             borderRadius: 16,
-            background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+            background: tokens.logoGradient,
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -118,17 +124,21 @@ export default function LoginPage() {
 
         {error && <Alert title={error} type="error" showIcon style={{ marginBottom: 20, borderRadius: 10 }} />}
 
-        <Form layout="vertical" onFinish={onFinish} autoComplete="off" size="large">
+        <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off" size="large" {...formProps}>
           <div className="anim-field-1">
             <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email', message: 'Ingresá un email válido' }]}>
-              <Input prefix={<UserOutlined style={{ color: '#a0aec0' }} />} placeholder="tu@empresa.com" />
+              <Input prefix={<UserOutlined style={{ color: tokens.textMuted }} />} placeholder="tu@empresa.com" />
             </Form.Item>
           </div>
 
           <div className="anim-field-2">
             <Form.Item name="password" label="Contraseña" rules={[{ required: true, message: 'Ingresá tu contraseña' }]}>
-              <Input.Password prefix={<LockOutlined style={{ color: '#a0aec0' }} />} placeholder="••••••••" />
+              <Input.Password prefix={<LockOutlined style={{ color: tokens.textMuted }} />} placeholder="••••••••" />
             </Form.Item>
+          </div>
+
+          <div style={{ textAlign: 'right', marginTop: -8, marginBottom: 8 }}>
+            <Link href="/recuperar" style={{ fontSize: 13, color: tokens.forgotPasswordColor }}>¿Olvidaste tu contraseña?</Link>
           </div>
 
           <div className="anim-field-3">
@@ -139,14 +149,16 @@ export default function LoginPage() {
                 block
                 size="large"
                 loading={loading}
+                disabled={hasErrors || loading}
                 style={{
                   height: 46,
                   fontWeight: 600,
                   fontSize: 15,
                   borderRadius: 10,
-                  background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                  background: tokens.logoGradient,
                   border: 'none',
-                  boxShadow: '0 4px 14px rgba(79, 70, 229, 0.4)',
+                  color: tokens.loginBtnTextColor,
+                  boxShadow: `0 4px 14px ${tokens.primaryGlow}`,
                 }}
               >
                 Ingresar
@@ -156,8 +168,8 @@ export default function LoginPage() {
         </Form>
 
         <div style={{ position: 'relative', textAlign: 'center', margin: '20px 0' }}>
-          <div style={{ borderTop: '1px solid #e5e7eb', position: 'absolute', top: '50%', left: 0, right: 0 }} />
-          <Text type="secondary" style={{ fontSize: 12, background: '#fff', padding: '0 12px', position: 'relative' }}>
+          <div style={{ borderTop: `1px solid ${tokens.loginDivider}`, position: 'absolute', top: '50%', left: 0, right: 0 }} />
+          <Text type="secondary" style={{ fontSize: 12, background: tokens.loginContinueBg, padding: '0 12px', position: 'relative' }}>
             o continuar con
           </Text>
         </div>

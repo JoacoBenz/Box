@@ -8,9 +8,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const user = session.user as any;
 
+  // SSO users without area need to complete onboarding
+  if (!user.areaId && !(user.roles ?? []).includes('super_admin') && !(user.roles ?? []).includes('admin')) {
+    redirect('/seleccionar-area');
+  }
+
   return (
     <DashboardShell
-      tenantNombre={user.tenantName ?? user.tenantNombre ?? 'Mi Organización'}
+      tenantNombre={(user.roles ?? []).includes('super_admin') ? 'Plataforma BoxZenj' : (user.tenantName ?? user.tenantNombre ?? 'Mi Organización')}
       userName={user.name ?? ''}
       areaNombre={user.areaNombre ?? null}
       roles={user.roles ?? []}

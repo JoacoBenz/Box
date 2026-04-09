@@ -6,12 +6,14 @@ import {
   PieChart, Pie, Cell, Tooltip as ReTooltip, ResponsiveContainer,
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as AreaTooltip,
 } from 'recharts'
+import { useTheme } from '@/components/ThemeProvider'
 
 const { Text } = Typography
 
 // ── Shared helpers ──
 
-const DONUT_COLORS = ['#4f46e5', '#7c3aed', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899', '#8b5cf6', '#14b8a6', '#f97316']
+// First two are theme-aware; rest are status colors that stay fixed across themes
+const DONUT_COLORS_STATIC = ['#22c55e', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899', '#8b5cf6', '#14b8a6', '#f97316']
 
 function formatMoney(amount: number): string {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount)
@@ -49,9 +51,10 @@ function useCountUp(rawTarget: number | undefined | null, duration = 800) {
 function MetricCard({ title, value, subtitle, color }: {
   title: string; value: number | undefined | null; subtitle?: string; color: string
 }) {
+  const { tokens } = useTheme()
   const count = useCountUp(value)
   return (
-    <Card style={{ borderRadius: 16, border: '1px solid #e2e8f0' }} styles={{ body: { padding: '20px 24px' } }}>
+    <Card style={{ borderRadius: 16, border: `1px solid ${tokens.borderColor}` }} styles={{ body: { padding: '20px 24px' } }}>
       <Text type="secondary" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>{title}</Text>
       <div style={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1.3, marginTop: 4 }}>
         {formatMoney(count)}
@@ -63,31 +66,33 @@ function MetricCard({ title, value, subtitle, color }: {
 
 // ── Custom Donut Tooltip ──
 function DonutTooltipContent({ active, payload }: any) {
+  const { tokens } = useTheme()
   if (!active || !payload?.length) return null
   const { name, value } = payload[0]
   return (
     <div style={{
-      background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10,
+      background: tokens.bgInput, border: `1px solid ${tokens.borderColor}`, borderRadius: 10,
       padding: '10px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
     }}>
-      <div style={{ fontSize: 12, color: '#64748b', marginBottom: 2 }}>{name}</div>
-      <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b' }}>{formatMoney(value)}</div>
+      <div style={{ fontSize: 12, color: tokens.textSecondary, marginBottom: 2 }}>{name}</div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: tokens.textPrimary }}>{formatMoney(value)}</div>
     </div>
   )
 }
 
 // ── Custom Area Tooltip ──
 function TrendTooltipContent({ active, payload, label }: any) {
+  const { tokens } = useTheme()
   if (!active || !payload?.length) return null
   return (
     <div style={{
-      background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10,
+      background: tokens.bgInput, border: `1px solid ${tokens.borderColor}`, borderRadius: 10,
       padding: '10px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
     }}>
-      <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b' }}>{formatMoney(payload[0].value)}</div>
+      <div style={{ fontSize: 12, color: tokens.textSecondary, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: tokens.textPrimary }}>{formatMoney(payload[0].value)}</div>
       {payload[0].payload.cantidad != null && (
-        <div style={{ fontSize: 11, color: '#94a3b8' }}>{payload[0].payload.cantidad} compra{payload[0].payload.cantidad !== 1 ? 's' : ''}</div>
+        <div style={{ fontSize: 11, color: tokens.textMuted }}>{payload[0].payload.cantidad} compra{payload[0].payload.cantidad !== 1 ? 's' : ''}</div>
       )}
     </div>
   )
@@ -95,15 +100,16 @@ function TrendTooltipContent({ active, payload, label }: any) {
 
 // ── Mini Donut Tooltip ──
 function MiniDonutTooltipContent({ active, payload }: any) {
+  const { tokens } = useTheme()
   if (!active || !payload?.length) return null
   const { name, value } = payload[0]
   return (
     <div style={{
-      background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10,
+      background: tokens.bgInput, border: `1px solid ${tokens.borderColor}`, borderRadius: 10,
       padding: '8px 14px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
     }}>
-      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 2 }}>{name}</div>
-      <div style={{ fontSize: 14, fontWeight: 700, color: '#1e293b' }}>{formatMoney(value)}</div>
+      <div style={{ fontSize: 11, color: tokens.textSecondary, marginBottom: 2 }}>{name}</div>
+      <div style={{ fontSize: 14, fontWeight: 700, color: tokens.textPrimary }}>{formatMoney(value)}</div>
     </div>
   )
 }
@@ -122,6 +128,8 @@ interface DirectorDashboardProps {
 }
 
 export default function DirectorDashboard({ data, directorAreaId, onAreaChange }: DirectorDashboardProps) {
+  const { tokens } = useTheme()
+  const DONUT_COLORS = [tokens.colorPrimary, tokens.colorSecondary, ...DONUT_COLORS_STATIC]
   const gastoPorArea: { name: string; value: number; cantidad: number }[] =
     (data.gastoPorArea ?? []).map((g: any) => ({ name: g.area, value: g.total, cantidad: g.cantidad }))
 
@@ -155,12 +163,12 @@ export default function DirectorDashboard({ data, directorAreaId, onAreaChange }
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} lg={12}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <MetricCard title="Gasto del Año" value={data.gastoAnual} color="#4f46e5" />
+            <MetricCard title="Gasto del Año" value={data.gastoAnual} color={tokens.colorPrimary} />
             <MetricCard title="Gasto del Mes" value={data.gastoMensual} color="#22c55e" />
           </div>
         </Col>
         <Col xs={12} lg={6}>
-          <Card title={<span style={{ fontWeight: 700, color: '#1e293b', fontSize: 13 }}>Medio de Pago</span>} style={{ borderRadius: 16, height: '100%' }} styles={{ body: { padding: '8px 12px' } }}>
+          <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary, fontSize: 13 }}>Medio de Pago</span>} style={{ borderRadius: 16, height: '100%' }} styles={{ body: { padding: '8px 12px' } }}>
             {gastoPorMedio.length === 0 ? (
               <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ margin: '8px 0' }} />
             ) : (
@@ -175,10 +183,10 @@ export default function DirectorDashboard({ data, directorAreaId, onAreaChange }
                 </ResponsiveContainer>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   {gastoPorMedio.slice(0, 4).map((m, i) => (
-                    <div key={m.name} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#475569', marginBottom: 3 }}>
+                    <div key={m.name} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: tokens.textSecondary, marginBottom: 3 }}>
                       <div style={{ width: 7, height: 7, borderRadius: '50%', background: DONUT_COLORS[i % DONUT_COLORS.length], flexShrink: 0 }} />
                       <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</span>
-                      <span style={{ fontWeight: 600, color: '#1e293b', flexShrink: 0 }}>{formatMoneyShort(m.value)}</span>
+                      <span style={{ fontWeight: 600, color: tokens.textPrimary, flexShrink: 0 }}>{formatMoneyShort(m.value)}</span>
                     </div>
                   ))}
                 </div>
@@ -187,16 +195,16 @@ export default function DirectorDashboard({ data, directorAreaId, onAreaChange }
           </Card>
         </Col>
         <Col xs={24} lg={6}>
-          <Card title={<span style={{ fontWeight: 700, color: '#1e293b', fontSize: 13 }}>Top Proveedores</span>} style={{ borderRadius: 16, height: '100%' }} styles={{ body: { padding: '8px 12px' } }}>
+          <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary, fontSize: 13 }}>Top Proveedores</span>} style={{ borderRadius: 16, height: '100%' }} styles={{ body: { padding: '8px 12px' } }}>
             {topProveedores.length === 0 ? (
               <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ margin: '8px 0' }} />
             ) : (
               <div>
                 {topProveedores.slice(0, 4).map((p, i) => (
                   <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                    <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, width: 16, textAlign: 'center' }}>{i + 1}</span>
-                    <span style={{ flex: 1, fontSize: 12, color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', flexShrink: 0 }}>{formatMoneyShort(p.value)}</span>
+                    <span style={{ fontSize: 11, color: tokens.textMuted, fontWeight: 600, width: 16, textAlign: 'center' }}>{i + 1}</span>
+                    <span style={{ flex: 1, fontSize: 12, color: tokens.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: tokens.colorSecondary, flexShrink: 0 }}>{formatMoneyShort(p.value)}</span>
                   </div>
                 ))}
               </div>
@@ -210,7 +218,7 @@ export default function DirectorDashboard({ data, directorAreaId, onAreaChange }
         {/* Donut: Gasto por Área */}
         <Col xs={24} lg={12}>
           <Card
-            title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Gasto por Área</span>}
+            title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Gasto por Área</span>}
             extra={areaFilterSelect}
             style={{ borderRadius: 16 }}
             styles={{ body: { padding: '16px 24px' } }}
@@ -246,14 +254,14 @@ export default function DirectorDashboard({ data, directorAreaId, onAreaChange }
                     transform: 'translate(-50%, -50%)',
                     textAlign: 'center', pointerEvents: 'none',
                   }}>
-                    <div style={{ fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: '#1e293b' }}>{formatMoneyShort(totalGasto)}</div>
+                    <div style={{ fontSize: 11, color: tokens.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: tokens.textPrimary }}>{formatMoneyShort(totalGasto)}</div>
                   </div>
                 </div>
                 {/* Legend */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px', justifyContent: 'center', marginTop: 4 }}>
                   {gastoPorArea.map((g, i) => (
-                    <div key={g.name} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#475569' }}>
+                    <div key={g.name} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: tokens.textSecondary }}>
                       <div style={{ width: 8, height: 8, borderRadius: '50%', background: DONUT_COLORS[i % DONUT_COLORS.length], flexShrink: 0 }} />
                       {g.name}
                     </div>
@@ -267,7 +275,7 @@ export default function DirectorDashboard({ data, directorAreaId, onAreaChange }
         {/* Area Chart: Tendencia Mensual */}
         <Col xs={24} lg={12}>
           <Card
-            title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Tendencia Mensual</span>}
+            title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Tendencia Mensual</span>}
             style={{ borderRadius: 16 }}
             styles={{ body: { padding: '16px 24px' } }}
           >
@@ -282,10 +290,10 @@ export default function DirectorDashboard({ data, directorAreaId, onAreaChange }
                       <stop offset="100%" stopColor="#22c55e" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="mes" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={tokens.borderSubtle} />
+                  <XAxis dataKey="mes" tick={{ fontSize: 12, fill: tokens.textMuted }} axisLine={false} tickLine={false} />
                   <YAxis
-                    tick={{ fontSize: 11, fill: '#94a3b8' }}
+                    tick={{ fontSize: 11, fill: tokens.textMuted }}
                     axisLine={false}
                     tickLine={false}
                     tickFormatter={(v) => formatMoneyShort(v)}
@@ -298,8 +306,8 @@ export default function DirectorDashboard({ data, directorAreaId, onAreaChange }
                     stroke="#22c55e"
                     strokeWidth={2.5}
                     fill="url(#gradientGreen)"
-                    dot={{ r: 4, fill: '#22c55e', strokeWidth: 2, stroke: '#fff' }}
-                    activeDot={{ r: 6, fill: '#22c55e', strokeWidth: 2, stroke: '#fff' }}
+                    dot={{ r: 4, fill: '#22c55e', strokeWidth: 2, stroke: tokens.bgInput }}
+                    activeDot={{ r: 6, fill: '#22c55e', strokeWidth: 2, stroke: tokens.bgInput }}
                   />
                 </AreaChart>
               </ResponsiveContainer>

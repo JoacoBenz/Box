@@ -6,6 +6,7 @@ import { BellOutlined, CheckOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useTheme } from '@/components/ThemeProvider';
 
 const { Text } = Typography;
 
@@ -19,6 +20,7 @@ interface Notificacion {
 }
 
 export function NotificationBell() {
+  const { tokens } = useTheme();
   const router = useRouter();
   const [count, setCount] = useState(0);
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
@@ -74,8 +76,8 @@ export function NotificationBell() {
   }
 
   const dropdownContent = (
-    <div style={{ width: 360, background: '#fff', borderRadius: 8, boxShadow: '0 6px 16px rgba(0,0,0,0.12)', border: '1px solid #f0f0f0' }}>
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div style={{ width: 360, background: tokens.notifBg, borderRadius: 8, boxShadow: '0 6px 16px rgba(0,0,0,0.12)', border: `1px solid ${tokens.headerBorder}` }}>
+      <div style={{ padding: '12px 16px', borderBottom: `1px solid ${tokens.borderSubtle}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text strong>Notificaciones</Text>
         {count > 0 && (
           <Button type="link" size="small" icon={<CheckOutlined />} onClick={marcarTodas}>
@@ -92,7 +94,7 @@ export function NotificationBell() {
           {notificaciones.map((notif) => (
             <div
               key={notif.id}
-              style={{ padding: '10px 16px', cursor: 'pointer', background: notif.leida ? '#fff' : '#f6ffed', borderLeft: notif.leida ? 'none' : '3px solid #52c41a', borderBottom: '1px solid #f0f0f0' }}
+              style={{ padding: '10px 16px', cursor: 'pointer', background: notif.leida ? tokens.bgCard : tokens.notifUnreadBg, borderLeft: notif.leida ? 'none' : `3px solid ${tokens.notifAccent}`, borderBottom: `1px solid ${tokens.borderSubtle}` }}
               onClick={() => handleClickNotif(notif)}
             >
               <Space orientation="vertical" size={2} style={{ width: '100%' }}>
@@ -118,7 +120,7 @@ export function NotificationBell() {
       placement="bottomRight"
     >
       <Badge count={count} size="small" overflowCount={99}>
-        <Button type="text" icon={<BellOutlined style={{ fontSize: 18 }} />} style={{ height: 40, width: 40 }} />
+        <Button type="text" icon={<BellOutlined style={{ fontSize: 18 }} />} style={{ height: 40, width: 40 }} aria-label={`Notificaciones${count > 0 ? ` (${count} sin leer)` : ''}`} />
       </Badge>
     </Dropdown>
   );

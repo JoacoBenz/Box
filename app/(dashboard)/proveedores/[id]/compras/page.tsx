@@ -24,7 +24,6 @@ interface Solicitud {
   titulo: string
   estado: string
   urgencia: string
-  monto_estimado_total: number | null
   created_at: string
   solicitante: { nombre: string }
   area: { nombre: string }
@@ -76,7 +75,6 @@ export default function ProveedorComprasPage() {
   }, [fetchData])
 
   const totalCompras = compras.reduce((sum, c) => sum + Number(c.monto_total), 0)
-  const totalEstimado = solicitudes.reduce((sum, s) => sum + Number(s.monto_estimado_total ?? 0), 0)
 
   const solicitudColumns: ColumnsType<Solicitud> = [
     {
@@ -85,7 +83,7 @@ export default function ProveedorComprasPage() {
       key: 'numero',
       width: 130,
       render: (num: string, record) => (
-        <a onClick={() => router.push(`/solicitudes/${record.id}`)} style={{ color: '#4f46e5', fontWeight: 600 }}>
+        <a onClick={() => router.push(`/solicitudes/${record.id}`)} style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
           {num}
         </a>
       ),
@@ -112,14 +110,6 @@ export default function ProveedorComprasPage() {
       },
     },
     {
-      title: 'Monto Est.',
-      dataIndex: 'monto_estimado_total',
-      key: 'monto',
-      width: 120,
-      align: 'right' as const,
-      render: (v: number | null) => v != null ? `$ ${Number(v).toLocaleString('es-AR')}` : '—',
-    },
-    {
       title: 'Área',
       key: 'area',
       width: 140,
@@ -139,7 +129,7 @@ export default function ProveedorComprasPage() {
       key: 'solicitud',
       width: 130,
       render: (_: unknown, r: Compra) => (
-        <a onClick={() => router.push(`/solicitudes/${r.solicitud_id}`)} style={{ color: '#4f46e5', fontWeight: 600 }}>
+        <a onClick={() => router.push(`/solicitudes/${r.solicitud_id}`)} style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
           {r.solicitud.numero}
         </a>
       ),
@@ -189,15 +179,15 @@ export default function ProveedorComprasPage() {
   return (
     <div className="page-content">
       <div style={{ marginBottom: 16, fontSize: 13 }}>
-        <a onClick={() => router.back()} style={{ color: '#4f46e5', fontWeight: 500, cursor: 'pointer', textDecoration: 'none' }}>
+        <a onClick={() => router.back()} style={{ color: 'var(--color-primary)', fontWeight: 500, cursor: 'pointer', textDecoration: 'none' }}>
           ← Volver
         </a>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <ShoppingCartOutlined style={{ fontSize: 28, color: '#4f46e5' }} />
+        <ShoppingCartOutlined style={{ fontSize: 28, color: 'var(--color-primary)' }} />
         <div>
-          <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>
+          <Title level={3} style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>
             {proveedor?.nombre ?? 'Cargando...'}
           </Title>
           {proveedor && (
@@ -213,7 +203,7 @@ export default function ProveedorComprasPage() {
           <Statistic
             title={<Text type="secondary" style={{ fontSize: 12 }}>Solicitudes</Text>}
             value={solicitudes.length}
-            prefix={<FileTextOutlined style={{ color: '#4f46e5' }} />}
+            prefix={<FileTextOutlined style={{ color: 'var(--color-primary)' }} />}
           />
         </Card>
         <Card size="middle" style={{ minWidth: 160, borderColor: '#e2e8f0' }}>
@@ -229,15 +219,6 @@ export default function ProveedorComprasPage() {
             value={totalCompras}
             precision={2}
             prefix={<DollarOutlined style={{ color: '#f59e0b' }} />}
-            formatter={(val) => `$ ${Number(val).toLocaleString('es-AR')}`}
-          />
-        </Card>
-        <Card size="middle" style={{ minWidth: 180, borderColor: '#e2e8f0' }}>
-          <Statistic
-            title={<Text type="secondary" style={{ fontSize: 12 }}>Total Estimado</Text>}
-            value={totalEstimado}
-            precision={2}
-            prefix={<DollarOutlined style={{ color: '#94a3b8' }} />}
             formatter={(val) => `$ ${Number(val).toLocaleString('es-AR')}`}
           />
         </Card>

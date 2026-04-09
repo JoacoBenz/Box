@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   App,
   Form,
@@ -11,18 +11,23 @@ import {
   Button,
   Card,
   Space,
-  Divider,
+  Upload,
+  Alert,
   Typography,
 } from 'antd'
-import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons'
+import { PlusOutlined, MinusCircleOutlined, UploadOutlined } from '@ant-design/icons'
 import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
+import { useFormValid } from '@/hooks/useFormValid'
 import ProveedorSelect from '@/components/ProveedorSelect'
+import ProductoSelect from '@/components/ProductoSelect'
+import { useTheme } from '@/components/ThemeProvider'
 import ProveedorInfoCard from '@/components/ProveedorInfoCard'
 
 const { TextArea } = Input
 const { Title } = Typography
 
 interface ItemForm {
+  producto_id?: number | null
   descripcion: string
   cantidad: number
   unidad: string
@@ -37,20 +42,100 @@ interface SolicitudFormValues {
   urgencia: 'normal' | 'urgente' | 'critica'
   proveedor_id?: number | null
   centro_costo_id?: number | null
-  monto_estimado_total?: number
   items: ItemForm[]
+}
+
+function TotalItems({ form }: { form: ReturnType<typeof Form.useForm<any>>[0] }) {
+  const items = Form.useWatch('items', form) as ItemForm[] | undefined
+  const total = (items ?? []).reduce((acc, item) => {
+    if (item?.precio_estimado && item?.cantidad) {
+      return acc + Number(item.precio_estimado) * Number(item.cantidad)
+    }
+    return acc
+  }, 0)
+
+  if (total <= 0) return null
+
+  return (
+    <div style={{
+      marginTop: 16,
+      padding: '12px 16px',
+      background: 'var(--total-estimated-bg)',
+      borderRadius: 8,
+      border: '1px solid var(--total-estimated-border)',
+      display: 'flex',
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      gap: 12,
+    }}>
+      <span style={{ fontWeight: 600, color: 'var(--total-estimated-text)', fontSize: 15 }}>
+        Total Estimado:
+      </span>
+      <span style={{ fontWeight: 700, color: 'var(--total-estimated-text)', fontSize: 17 }}>
+        ${total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </span>
+    </div>
+  )
 }
 
 export default function NuevaSolicitudPage() {
   const { message } = App.useApp()
+  const { tokens } = useTheme()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const desdeId = searchParams.get('desde')
   const [form] = Form.useForm<SolicitudFormValues>()
+  const { hasErrors, formProps } = useFormValid(form)
   const [loading, setLoading] = useState<'borrador' | 'enviar' | null>(null)
   const [selectedProveedor, setSelectedProveedor] = useState<any>(null)
-  const [centrosCosto, setCentrosCosto] = useState<{ id: number; nombre: string; codigo: string }[]>([])
+  const [presupuestoFile, setPresupuestoFile] = useState<File | null>(null)
+  const [centrosCosto, setCentrosCosto] = useState<{ id: number; nombre: string; codigo: string; area_id: number | null; area?: { nombre: string } | null }[]>([])
+  const [sessionAreaId, setSessionAreaId] = useState<number | null>(null)
+  const [esResponsable, setEsResponsable] = useState(false)
+  const [templateTitulo, setTemplateTitulo] = useState<string | null>(null)
   useEffect(() => {
+    // Fetch session to get user's area and default centro_costo
+    fetch('/api/auth/session').then(r => r.json()).then(s => {
+      const areaId = s?.user?.areaId ?? null
+      const ccId = s?.user?.centroCostoId ?? null
+      const roles: string[] = s?.user?.roles ?? []
+      setSessionAreaId(areaId)
+      setEsResponsable(roles.includes('responsable_area'))
+      if (ccId) form.setFieldValue('centro_costo_id', ccId)
+    }).catch(() => {})
     fetch('/api/centros-costo').then(r => r.ok ? r.json() : []).then(setCentrosCosto).catch(() => {})
-  }, [])
+
+    // Load template from previous solicitud
+    if (desdeId) {
+      fetch(`/api/solicitudes/${desdeId}`).then(r => {
+        if (!r.ok) throw new Error('No se pudo cargar la plantilla')
+        return r.json()
+      }).then(data => {
+        setTemplateTitulo(data.titulo)
+        form.setFieldsValue({
+          titulo: data.titulo,
+          descripcion: data.descripcion,
+          justificacion: data.justificacion,
+          urgencia: data.urgencia,
+          proveedor_id: data.proveedor_id ?? undefined,
+          centro_costo_id: data.centro_costo_id ?? undefined,
+          items: (data.items_solicitud ?? []).map((i: any) => ({
+            producto_id: i.producto_id ?? null,
+            descripcion: i.descripcion,
+            cantidad: Number(i.cantidad),
+            unidad: i.unidad,
+            precio_estimado: i.precio_estimado ? Number(i.precio_estimado) : undefined,
+            link_producto: i.link_producto || undefined,
+          })),
+        })
+        if (data.proveedor_id) {
+          fetch(`/api/proveedores/${data.proveedor_id}`).then(r => r.json()).then(setSelectedProveedor).catch(() => {})
+        }
+      }).catch(() => {
+        message.warning('No se pudo cargar la solicitud como plantilla')
+      })
+    }
+  }, [form, desdeId, message])
 
   async function handleSubmit(accion: 'borrador' | 'enviar') {
     try {
@@ -70,6 +155,17 @@ export default function NuevaSolicitudPage() {
         throw new Error(err?.error?.message ?? 'Error al guardar la solicitud')
       }
 
+      const solicitud = await res.json()
+
+      // Upload presupuesto file if provided
+      if (presupuestoFile) {
+        const formData = new FormData()
+        formData.append('archivo', presupuestoFile)
+        formData.append('entidad', 'solicitud')
+        formData.append('entidad_id', String(solicitud.id))
+        await fetch('/api/archivos', { method: 'POST', body: formData })
+      }
+
       message.success(
         accion === 'borrador' ? 'Borrador guardado correctamente' : 'Solicitud enviada correctamente'
       )
@@ -86,12 +182,23 @@ export default function NuevaSolicitudPage() {
 
   return (
     <div className="page-content" style={{ padding: '32px 24px', maxWidth: 880, margin: '0 auto' }}>
-      <Title level={3} style={{ marginBottom: 24, fontWeight: 700, color: '#1e293b' }}>
+      <Title level={3} style={{ marginBottom: 24, fontWeight: 700, color: tokens.textPrimary }}>
         Nueva Solicitud de Compra
       </Title>
 
-      <Form form={form} layout="vertical" initialValues={{ urgencia: 'normal', items: [{ unidad: 'unidades', cantidad: 1 }] }} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Información General</span>} style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+      {templateTitulo && (
+        <Alert
+          type="info"
+          showIcon
+          title={`Creando solicitud a partir de: "${templateTitulo}"`}
+          description="Los campos fueron pre-cargados. Podés modificarlos antes de guardar."
+          style={{ borderRadius: 10, marginBottom: 20 }}
+          closable
+        />
+      )}
+
+      <Form form={form} layout="vertical" initialValues={{ urgencia: 'normal', items: [{ unidad: 'unidades', cantidad: 1 }] }} style={{ display: 'flex', flexDirection: 'column', gap: 24 }} {...formProps}>
+        <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Información General</span>} style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           <Form.Item
             label="Título"
             name="titulo"
@@ -119,7 +226,7 @@ export default function NuevaSolicitudPage() {
           <Form.Item
             label="Urgencia"
             name="urgencia"
-            rules={[{ required: true }]}
+            rules={[{ required: true, message: 'Seleccioná la urgencia' }]}
           >
             <Select
               options={[
@@ -148,29 +255,39 @@ export default function NuevaSolicitudPage() {
             <ProveedorInfoCard proveedor={selectedProveedor} style={{ marginBottom: 16 }} />
           )}
 
-          <Form.Item label="Monto Estimado Total" name="monto_estimado_total">
-            <InputNumber
-              min={0}
-              precision={2}
-              prefix="$"
-              style={{ width: 200 }}
-              placeholder="0.00"
-            />
+          <Form.Item label="Presupuesto (opcional)">
+            <Upload
+              beforeUpload={(file) => { setPresupuestoFile(file); return false }}
+              onRemove={() => setPresupuestoFile(null)}
+              maxCount={1}
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+              fileList={presupuestoFile ? [{ uid: '-1', name: presupuestoFile.name, status: 'done' as const }] : []}
+            >
+              <Button icon={<UploadOutlined />}>Adjuntar presupuesto</Button>
+            </Upload>
           </Form.Item>
 
-          {centrosCosto.length > 0 && (
-            <Form.Item label="Centro de Costo" name="centro_costo_id">
-              <Select
-                allowClear
-                placeholder="Seleccionar centro de costo"
-                style={{ width: 300 }}
-                options={centrosCosto.map(c => ({ value: c.id, label: `${c.codigo} — ${c.nombre}` }))}
-              />
-            </Form.Item>
-          )}
+          {(() => {
+            const filtered = centrosCosto.filter(cc => cc.area_id === sessionAreaId)
+            return filtered.length > 0 ? (
+              <Form.Item label="Centro de Costo" name="centro_costo_id">
+                <Select
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  placeholder="Seleccionar centro de costo"
+                  style={{ width: '100%' }}
+                  options={filtered.map(c => ({
+                    value: c.id,
+                    label: `${c.codigo} — ${c.nombre}`,
+                  }))}
+                />
+              </Form.Item>
+            ) : null
+          })()}
         </Card>
 
-        <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Items Solicitados</span>} style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+        <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Items Solicitados</span>} style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           <Form.List
             name="items"
             rules={[
@@ -189,15 +306,15 @@ export default function NuevaSolicitudPage() {
                   <div
                     key={key}
                     style={{
-                      border: '1px solid #e8e8e8',
+                      border: '1px solid var(--border-color)',
                       borderRadius: 10,
                       padding: '20px 20px 12px',
                       marginBottom: 16,
-                      background: '#fafbfc',
+                      background: 'var(--bg-input)',
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <strong style={{ color: '#666' }}>Ítem {index + 1}</strong>
+                      <strong style={{ color: 'var(--text-secondary)' }}>Ítem {index + 1}</strong>
                       {fields.length > 1 && (
                         <Button
                           type="text"
@@ -213,11 +330,30 @@ export default function NuevaSolicitudPage() {
 
                     <Form.Item
                       {...restField}
+                      name={[name, 'producto_id']}
+                      hidden
+                    >
+                      <Input type="hidden" />
+                    </Form.Item>
+
+                    <Form.Item
+                      {...restField}
                       label="Descripción"
                       name={[name, 'descripcion']}
                       rules={[{ required: true, message: 'Descripción requerida' }]}
                     >
-                      <Input placeholder="Descripción del ítem" />
+                      <ProductoSelect
+                        onSelect={(producto) => {
+                          form.setFieldValue(['items', name, 'producto_id'], producto.id)
+                          form.setFieldValue(['items', name, 'unidad'], producto.unidad_defecto)
+                          if (producto.precio_referencia != null) {
+                            form.setFieldValue(['items', name, 'precio_estimado'], Number(producto.precio_referencia))
+                          }
+                          if (producto.link_producto) {
+                            form.setFieldValue(['items', name, 'link_producto'], producto.link_producto)
+                          }
+                        }}
+                      />
                     </Form.Item>
 
                     <Space style={{ width: '100%' }} size={16} wrap>
@@ -255,6 +391,7 @@ export default function NuevaSolicitudPage() {
                       {...restField}
                       label="Link del producto"
                       name={[name, 'link_producto']}
+                      rules={[{ type: 'url', message: 'Ingresá una URL válida (ej: https://...)' }]}
                       style={{ marginTop: 12, marginBottom: 0 }}
                     >
                       <Input placeholder="https://pagina.com/producto" maxLength={500} />
@@ -276,21 +413,32 @@ export default function NuevaSolicitudPage() {
               </>
             )}
           </Form.List>
+
+          <TotalItems form={form} />
         </Card>
+
+        {esResponsable && (
+          <Alert
+            type="warning"
+            showIcon
+            title="Como responsable de área, esta solicitud irá directamente a Dirección para aprobación. Asegurate de que todos los datos sean correctos."
+            style={{ borderRadius: 10 }}
+          />
+        )}
 
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', paddingTop: 8 }}>
           <Button
             size="large"
             onClick={() => handleSubmit('borrador')}
             loading={loading === 'borrador'}
-            disabled={loading === 'enviar'}
+            disabled={loading === 'enviar' || hasErrors}
           >
             Guardar Borrador
           </Button>
           <AnimatedSubmitButton
             variant="send"
             onClick={() => handleSubmit('enviar')}
-            disabled={loading === 'borrador'}
+            disabled={loading === 'borrador' || hasErrors}
           >
             Enviar Solicitud
           </AnimatedSubmitButton>

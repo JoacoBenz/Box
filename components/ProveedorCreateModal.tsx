@@ -82,7 +82,7 @@ export default function ProveedorCreateModal({ open, onClose, onCreated }: Props
           <Input.TextArea rows={2} placeholder="CBU, alias, banco, tipo de cuenta" maxLength={500} />
         </Form.Item>
 
-        <Form.Item label="Link de Página Web" name="link_pagina">
+        <Form.Item label="Link de Página Web" name="link_pagina" rules={[{ type: 'url', message: 'Ingresá una URL válida (ej: https://...)' }]}>
           <Input placeholder="https://..." maxLength={500} />
         </Form.Item>
 
@@ -90,7 +90,7 @@ export default function ProveedorCreateModal({ open, onClose, onCreated }: Props
           <PhoneInput />
         </Form.Item>
 
-        <Form.Item label="Email" name="email">
+        <Form.Item label="Email" name="email" rules={[{ type: 'email', message: 'Ingresá un email válido' }]}>
           <Input placeholder="email@proveedor.com" maxLength={255} />
         </Form.Item>
 

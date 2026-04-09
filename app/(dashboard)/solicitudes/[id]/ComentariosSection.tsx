@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, Input, Button, Typography, message, Avatar, Spin } from 'antd'
+import { App, Card, Input, Button, Typography, Avatar, Spin } from 'antd'
 import { SendOutlined, CommentOutlined, UserOutlined } from '@ant-design/icons'
+import { useTheme } from '@/components/ThemeProvider'
 
 const { Text } = Typography
 const { TextArea } = Input
@@ -15,6 +16,8 @@ interface Comentario {
 }
 
 export default function ComentariosSection({ solicitudId }: { solicitudId: number }) {
+  const { message } = App.useApp()
+  const { tokens } = useTheme()
   const [comentarios, setComentarios] = useState<Comentario[]>([])
   const [mensaje, setMensaje] = useState('')
   const [loading, setLoading] = useState(false)
@@ -77,8 +80,8 @@ export default function ComentariosSection({ solicitudId }: { solicitudId: numbe
       {loading && <div style={{ textAlign: 'center', padding: 20 }}><Spin /></div>}
 
       {!loading && comentarios.map(c => (
-        <div key={c.id} style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
-          <Avatar size={32} icon={<UserOutlined />} style={{ background: '#4f46e5', flexShrink: 0 }}>
+        <div key={c.id} style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: `1px solid ${tokens.borderSubtle}` }}>
+          <Avatar size={32} icon={<UserOutlined />} style={{ background: tokens.colorPrimary, flexShrink: 0 }}>
             {c.usuario.nombre.charAt(0).toUpperCase()}
           </Avatar>
           <div style={{ flex: 1 }}>

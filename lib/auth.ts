@@ -33,6 +33,7 @@ function userPayload(usuario: NonNullable<Awaited<ReturnType<typeof loadUsuario>
     tenantName: usuario.tenant.nombre,
     areaId: usuario.area_id,
     areaNombre: usuario.area?.nombre ?? null,
+    centroCostoId: usuario.centro_costo_id,
     roles: usuario.usuarios_roles.map((ur) => ur.rol.nombre as RolNombre),
   };
 }
@@ -144,7 +145,45 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
 
       if (!usuario) {
-        // No existing user — redirect to login with error
+        // No existing user — try to auto-create if domain matches a tenant with SSO enabled
+        try {
+          const tenants = await prisma.tenants.findMany({
+            where: { estado: 'activo', desactivado: false },
+            include: { configuracion: true },
+          });
+
+          for (const tenant of tenants) {
+            const configs = Object.fromEntries(tenant.configuracion.map(c => [c.clave, c.valor]));
+            const providerKey = provider === 'google' ? 'sso_google_habilitado' : 'sso_microsoft_habilitado';
+            const ssoEnabled = configs[providerKey] === 'true' || configs[providerKey] === '1';
+            const ssoDomain = configs['sso_dominio'];
+
+            if (ssoEnabled && ssoDomain && domain.toLowerCase() === ssoDomain.toLowerCase()) {
+              // Auto-create user with no area (pending onboarding)
+              const rolSolicitante = await prisma.roles.findFirst({ where: { nombre: 'solicitante' } });
+              const newUser = await prisma.usuarios.create({
+                data: {
+                  tenant_id: tenant.id,
+                  nombre: user.name || email.split('@')[0],
+                  email,
+                  password_hash: '',
+                  oauth_provider: provider,
+                  oauth_sub: sub,
+                  activo: true,
+                },
+              });
+              if (rolSolicitante) {
+                await prisma.usuarios_roles.create({
+                  data: { usuario_id: newUser.id, rol_id: rolSolicitante.id },
+                });
+              }
+              return true;
+            }
+          }
+        } catch (err) {
+          console.error('[SSO] Auto-create error:', err);
+        }
+
         return false;
       }
 
@@ -155,11 +194,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user && account?.provider === 'credentials') {
         // Credentials: user payload already set by authorize()
         token.userId = Number(user.id);
-        token.tenantId = (user as any).tenantId;
-        token.tenantName = (user as any).tenantName;
-        token.areaId = (user as any).areaId;
-        token.areaNombre = (user as any).areaNombre;
-        token.roles = (user as any).roles;
+        token.tenantId = user.tenantId;
+        token.tenantName = user.tenantName;
+        token.areaId = user.areaId;
+        token.areaNombre = user.areaNombre;
+        token.centroCostoId = user.centroCostoId;
+        token.roles = user.roles;
       } else if (account && account.provider !== 'credentials') {
         // OAuth: load user from DB
         const usuario = await loadUsuario({
@@ -173,7 +213,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.tenantName = payload.tenantName;
           token.areaId = payload.areaId;
           token.areaNombre = payload.areaNombre;
+          token.centroCostoId = payload.centroCostoId;
           token.roles = payload.roles;
+        }
+      } else if (token.userId) {
+        // Subsequent requests: refresh roles and user data from DB
+        const usuario = await cached(
+          `user:${token.userId}:session`,
+          30_000, // 30s TTL — roles update within 30s of change
+          () => loadUsuario({ id: Number(token.userId) }),
+        );
+        if (usuario) {
+          const payload = userPayload(usuario);
+          token.roles = payload.roles;
+          token.areaId = payload.areaId;
+          token.areaNombre = payload.areaNombre;
+          token.centroCostoId = payload.centroCostoId;
+          token.tenantName = payload.tenantName;
         }
       }
       return token;
@@ -181,11 +237,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
     async session({ session, token }) {
       session.user.id = String(token.userId);
-      (session.user as any).tenantId = token.tenantId as number;
-      (session.user as any).tenantName = token.tenantName as string;
-      (session.user as any).areaId = token.areaId as number | null;
-      (session.user as any).areaNombre = token.areaNombre as string | null;
-      (session.user as any).roles = token.roles as RolNombre[];
+      session.user.tenantId = token.tenantId;
+      session.user.tenantName = token.tenantName;
+      session.user.areaId = token.areaId;
+      session.user.areaNombre = token.areaNombre;
+      session.user.centroCostoId = token.centroCostoId;
+      session.user.roles = token.roles;
       return session;
     },
   },
@@ -202,21 +259,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 export async function getServerSession() {
   const session = await auth();
   if (!session?.user) throw new Error('No autenticado');
-  const user = session.user as any;
-  const baseRoles = user.roles as RolNombre[];
+  const user = session.user;
+  const baseRoles = user.roles;
 
   // Enrich with delegated roles (cached 5min per user)
   const { roles: rolesEfectivos, delegaciones } = await cached(
     `t:${user.tenantId}:roles:${user.id}`,
     5 * 60 * 1000,
-    () => getRolesEfectivos(user.tenantId as number, Number(user.id), baseRoles)
+    () => getRolesEfectivos(user.tenantId, Number(user.id), baseRoles)
   );
 
   return {
     userId: Number(user.id),
-    tenantId: user.tenantId as number,
-    areaId: user.areaId as number | null,
-    areaNombre: user.areaNombre as string | null,
+    tenantId: user.tenantId,
+    areaId: user.areaId,
+    areaNombre: user.areaNombre,
+    centroCostoId: user.centroCostoId,
     roles: rolesEfectivos,
     delegaciones,
     nombre: user.name as string,

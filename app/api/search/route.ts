@@ -1,26 +1,20 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
-import { tenantPrisma, prisma } from '@/lib/prisma';
-import { getEffectiveTenantId } from '@/lib/tenant-override';
+import { withAdminOverride } from '@/lib/api-handler';
 
-export async function GET(request: Request) {
-  const { session, effectiveTenantId } = await getEffectiveTenantId(request);
+export const GET = withAdminOverride({}, async (request, { db }) => {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q')?.trim();
 
   if (!q || q.length < 2) {
-    return NextResponse.json({ solicitudes: [], proveedores: [], compras: [] });
+    return Response.json({ solicitudes: [], proveedores: [], compras: [] });
   }
-
-  const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
 
   const [solicitudes, proveedores] = await Promise.all([
     db.solicitudes.findMany({
       where: {
         OR: [
-          { numero: { contains: q, mode: 'insensitive' as any } },
-          { titulo: { contains: q, mode: 'insensitive' as any } },
-          { descripcion: { contains: q, mode: 'insensitive' as any } },
+          { numero: { contains: q, mode: 'insensitive' as const } },
+          { titulo: { contains: q, mode: 'insensitive' as const } },
+          { descripcion: { contains: q, mode: 'insensitive' as const } },
         ],
       },
       select: {
@@ -33,8 +27,8 @@ export async function GET(request: Request) {
       where: {
         activo: true,
         OR: [
-          { nombre: { contains: q, mode: 'insensitive' as any } },
-          { cuit: { contains: q, mode: 'insensitive' as any } },
+          { nombre: { contains: q, mode: 'insensitive' as const } },
+          { cuit: { contains: q, mode: 'insensitive' as const } },
         ],
       },
       select: { id: true, nombre: true, cuit: true },
@@ -42,5 +36,5 @@ export async function GET(request: Request) {
     }),
   ]);
 
-  return NextResponse.json({ solicitudes, proveedores });
-}
+  return Response.json({ solicitudes, proveedores });
+});

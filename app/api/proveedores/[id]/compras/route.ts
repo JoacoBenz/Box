@@ -29,7 +29,6 @@ export async function GET(
         titulo: true,
         estado: true,
         urgencia: true,
-        monto_estimado_total: true,
         created_at: true,
         solicitante: { select: { nombre: true } },
         area: { select: { nombre: true } },

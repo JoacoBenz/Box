@@ -27,7 +27,7 @@ export default function RecepcionesPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/solicitudes?estado=comprada&limit=100')
+      const res = await fetch('/api/solicitudes?estado=abonada&limit=100')
       if (res.ok) {
         const data = await res.json()
         setSolicitudes(data.data ?? [])
@@ -73,11 +73,11 @@ export default function RecepcionesPage() {
 
   return (
     <div className="page-content">
-      <Title level={3} style={{ margin: 0, marginBottom: 8, fontWeight: 700, color: '#1e293b' }}>
+      <Title level={3} style={{ margin: 0, marginBottom: 8, fontWeight: 700, color: 'var(--text-primary)' }}>
         Recepciones Pendientes
       </Title>
-      <p style={{ color: '#888', marginBottom: 16 }}>
-        Estas solicitudes ya fueron compradas y esperan confirmación de recepción.
+      <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>
+        Estas solicitudes ya fueron abonadas y esperan confirmación de recepción.
         Hacé clic en el número de solicitud para ir al detalle y confirmar.
       </p>
       <Table

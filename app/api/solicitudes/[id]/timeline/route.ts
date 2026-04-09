@@ -1,21 +1,15 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
-import { tenantPrisma, prisma } from '@/lib/prisma';
+import { withAdminOverride } from '@/lib/api-handler';
 import { apiError } from '@/lib/permissions';
-import { getEffectiveTenantId } from '@/lib/tenant-override';
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { effectiveTenantId } = await getEffectiveTenantId(request);
-  const { id } = await params;
-  const solicitudId = Number(id);
+export const GET = withAdminOverride({}, async (_request, { db }, params) => {
+  const solicitudId = Number(params.id);
   if (isNaN(solicitudId)) return apiError('VALIDATION', 'ID inválido', 400);
-
-  const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
 
   // Get audit log entries for this solicitud
   const events = await db.log_auditoria.findMany({
     where: {
-      entidad: 'solicitudes',
+      entidad: { in: ['solicitud', 'solicitudes'] },
       entidad_id: solicitudId,
     },
     include: {
@@ -35,4 +29,4 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }));
 
   return NextResponse.json(timeline);
-}
+});

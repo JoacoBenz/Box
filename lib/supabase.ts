@@ -37,11 +37,15 @@ export async function uploadFile(
   return { path, url: path };
 }
 
-// Generate a signed URL for downloading
+// Generate a signed URL for downloading (short-lived: 5 minutes)
 export async function getSignedUrl(path: string): Promise<string> {
+  // Validate path doesn't contain traversal sequences
+  if (path.includes('..') || path.startsWith('/')) {
+    throw new Error('Ruta de archivo inválida');
+  }
   const { data, error } = await getSupabaseAdmin().storage
     .from('compras-escolar')
-    .createSignedUrl(path, 3600);
+    .createSignedUrl(path, 300); // 5 minutes instead of 1 hour
 
   if (error || !data) throw new Error('Error generando URL de descarga');
   return data.signedUrl;

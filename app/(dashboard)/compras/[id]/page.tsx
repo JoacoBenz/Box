@@ -24,17 +24,23 @@ export default async function RegistrarCompraPage({ params }: PageProps) {
   const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma
 
   const solicitud = await db.solicitudes.findFirst({
-    where: { id: Number(id), estado: 'aprobada' },
+    where: { id: Number(id), estado: 'pago_programado' },
     include: {
       area: { select: { nombre: true } },
       solicitante: { select: { nombre: true } },
       proveedor: true,
+      items_solicitud: { select: { cantidad: true, precio_estimado: true } },
     },
   })
 
   if (!solicitud) notFound()
 
+  const archivos = await prisma.archivos.findMany({
+    where: { entidad: 'solicitud', entidad_id: solicitud.id },
+    orderBy: { created_at: 'desc' },
+  })
+
   return (
-    <RegistrarCompraForm solicitud={JSON.parse(JSON.stringify(solicitud))} />
+    <RegistrarCompraForm solicitud={JSON.parse(JSON.stringify(solicitud))} archivos={JSON.parse(JSON.stringify(archivos))} />
   )
 }

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Select, Space, Typography, Tag } from 'antd'
 import { GlobalOutlined } from '@ant-design/icons'
 import { useRouter } from 'next/navigation'
+import { useTheme } from '@/components/ThemeProvider'
 
 const { Text } = Typography
 
@@ -61,6 +62,7 @@ export function useAdminTenant(): [number | null, (id: number | null) => void] {
 }
 
 export default function TenantSelector({ value, onChange, compact }: Props) {
+  const { tokens } = useTheme()
   const [tenants, setTenants] = useState<Tenant[]>([])
 
   useEffect(() => {
@@ -75,7 +77,7 @@ export default function TenantSelector({ value, onChange, compact }: Props) {
   if (compact) {
     return (
       <Space size={6}>
-        <GlobalOutlined style={{ color: '#4f46e5', fontSize: 14 }} />
+        <GlobalOutlined style={{ color: tokens.colorPrimary, fontSize: 14 }} />
         <Select
           value={value}
           onChange={onChange}
@@ -98,13 +100,13 @@ export default function TenantSelector({ value, onChange, compact }: Props) {
   return (
     <Space size={8} style={{
       padding: '8px 16px',
-      background: 'linear-gradient(135deg, #f0f0ff, #e8e5ff)',
+      background: tokens.tenantSelectorBg,
       borderRadius: 12,
       marginBottom: 20,
-      border: '1px solid #d9d6fe',
+      border: `1px solid ${tokens.tenantSelectorBorder}`,
     }}>
-      <GlobalOutlined style={{ color: '#4f46e5', fontSize: 16 }} />
-      <Text strong style={{ fontSize: 13, color: '#4f46e5' }}>Organización:</Text>
+      <GlobalOutlined style={{ color: tokens.colorPrimary, fontSize: 16 }} />
+      <Text strong style={{ fontSize: 13, color: tokens.colorPrimary }}>Organización:</Text>
       <Select
         value={value}
         onChange={onChange}

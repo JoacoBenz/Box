@@ -7,7 +7,7 @@ const COOKIE_NAME = 'admin_tenant_id';
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
-    if (!session.roles.includes('admin')) {
+    if (!session.roles.includes('super_admin')) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     if (tenantId) {
       cookieStore.set(COOKIE_NAME, String(tenantId), {
         path: '/',
-        httpOnly: false,
+        httpOnly: true,
         sameSite: 'lax',
         maxAge: 60 * 60 * 24, // 24h
       });

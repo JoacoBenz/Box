@@ -17,10 +17,13 @@ import {
   Card,
   Descriptions,
   Tag,
+  Modal,
 } from 'antd'
 import { UploadOutlined } from '@ant-design/icons'
 import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
+import { useFormValid } from '@/hooks/useFormValid'
 import ProveedorInfoCard from '@/components/ProveedorInfoCard'
+import { useTheme } from '@/components/ThemeProvider'
 import type { UploadFile } from 'antd/es/upload'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
@@ -47,15 +50,23 @@ interface SolicitudSummary {
   titulo: string
   estado: string
   urgencia: string
-  monto_estimado_total: number | null
+  items_solicitud?: Array<{ cantidad: number; precio_estimado: number | null }>
   area: { nombre: string } | null
   solicitante: { nombre: string }
   proveedor?: ProveedorData | null
   proveedor_id?: number | null
+  dia_pago_programado?: string | null
+}
+
+interface Archivo {
+  id: number
+  nombre_archivo: string
+  tamanio_bytes: number | null
 }
 
 interface Props {
   solicitud: SolicitudSummary
+  archivos?: Archivo[]
 }
 
 interface FormValues {
@@ -69,15 +80,24 @@ interface FormValues {
   observaciones?: string
 }
 
-export default function RegistrarCompraForm({ solicitud }: Props) {
+export default function RegistrarCompraForm({ solicitud, archivos = [] }: Props) {
   const { message } = App.useApp()
+  const { tokens } = useTheme()
   const router = useRouter()
   const [form] = Form.useForm<FormValues>()
   const [loading, setLoading] = useState(false)
   const [fileList, setFileList] = useState<UploadFile[]>([])
+  const { hasErrors, formProps } = useFormValid(form)
   const medioPago = Form.useWatch('medio_pago', form)
 
-  const prov = solicitud.proveedor
+  const [proveedorData, setProveedorData] = useState<ProveedorData | null | undefined>(solicitud.proveedor)
+  const [editBancariosOpen, setEditBancariosOpen] = useState(false)
+  const [savingBancarios, setSavingBancarios] = useState(false)
+  const [bancariosForm] = Form.useForm()
+
+  const prov = proveedorData
+  const pagoDate = solicitud.dia_pago_programado ? dayjs(solicitud.dia_pago_programado) : null
+  const canSubmit = !pagoDate || !pagoDate.startOf('day').isAfter(dayjs().startOf('day'))
 
   // Auto-fill proveedor fields from solicitud's proveedor
   useEffect(() => {
@@ -139,20 +159,56 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
     }
   }
 
+  function openEditBancarios() {
+    bancariosForm.setFieldsValue({
+      datos_bancarios: prov?.datos_bancarios ?? '',
+    })
+    setEditBancariosOpen(true)
+  }
+
+  async function handleSaveBancarios() {
+    if (!prov) return
+    try {
+      const values = await bancariosForm.validateFields()
+      setSavingBancarios(true)
+      const res = await fetch(`/api/proveedores/${prov.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ datos_bancarios: values.datos_bancarios || null }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err?.error ?? 'Error al guardar')
+      }
+      const updated = await res.json()
+      setProveedorData((prev) => prev ? { ...prev, datos_bancarios: updated.datos_bancarios ?? values.datos_bancarios } : prev)
+      // Also update the proveedor_detalle form field
+      const detalle = [prov.cuit && `CUIT: ${prov.cuit}`, values.datos_bancarios, prov.direccion && `Dir: ${prov.direccion}`, prov.telefono && `Tel: ${prov.telefono}`].filter(Boolean).join('\n')
+      form.setFieldsValue({ proveedor_detalle: detalle || undefined })
+      message.success('Datos bancarios actualizados')
+      setEditBancariosOpen(false)
+    } catch (err: any) {
+      if (err?.errorFields) return
+      message.error(err?.message ?? 'Error inesperado')
+    } finally {
+      setSavingBancarios(false)
+    }
+  }
+
   return (
     <div className="page-content" style={{ maxWidth: 880, margin: '0 auto' }}>
       <div style={{ marginBottom: 16, fontSize: 13 }}>
-        <a onClick={() => router.push('/compras')} style={{ color: '#4f46e5', fontWeight: 500, cursor: 'pointer', textDecoration: 'none' }}>
+        <a onClick={() => router.push('/compras')} style={{ color: tokens.colorPrimary, fontWeight: 500, cursor: 'pointer', textDecoration: 'none' }}>
           ← Volver a Compras
         </a>
       </div>
 
-      <Title level={3} style={{ marginBottom: 24, fontWeight: 700, color: '#1e293b' }}>
+      <Title level={3} style={{ marginBottom: 24, fontWeight: 700, color: tokens.textPrimary }}>
         Registrar Compra
       </Title>
 
       {/* Solicitud summary */}
-      <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Solicitud</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
+      <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Solicitud</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
         <Descriptions column={2} size="small">
           <Descriptions.Item label="Número">{solicitud.numero}</Descriptions.Item>
           <Descriptions.Item label="Título">{solicitud.titulo}</Descriptions.Item>
@@ -164,22 +220,58 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
           <Descriptions.Item label="Urgencia">
             {urgenciaInfo && <Tag color={urgenciaInfo.color}>{urgenciaInfo.label}</Tag>}
           </Descriptions.Item>
-          {solicitud.monto_estimado_total != null && (
-            <Descriptions.Item label="Monto Estimado">
-              ${Number(solicitud.monto_estimado_total).toFixed(2)}
+          {pagoDate && (
+            <Descriptions.Item label="Fecha de Pago Programado">
+              <Tag color={canSubmit ? 'green' : 'orange'}>
+                {pagoDate.format('DD/MM/YYYY')}
+              </Tag>
+              {!canSubmit && <span style={{ color: 'var(--color-observation)', fontSize: 12, marginLeft: 8 }}>Aún no habilitado</span>}
             </Descriptions.Item>
           )}
         </Descriptions>
       </Card>
 
-      {/* Proveedor info from solicitud (read-only) */}
+      {/* Proveedor info from solicitud */}
       {prov && (
-        <ProveedorInfoCard proveedor={prov} style={{ marginBottom: 24 }} />
+        <ProveedorInfoCard proveedor={prov} style={{ marginBottom: 24 }} editable onEditBancarios={openEditBancarios} />
+      )}
+
+      {/* Modal editar datos bancarios */}
+      <Modal
+        title="Editar Datos Bancarios"
+        open={editBancariosOpen}
+        onCancel={() => setEditBancariosOpen(false)}
+        onOk={handleSaveBancarios}
+        confirmLoading={savingBancarios}
+        okText="Guardar"
+        cancelText="Cancelar"
+      >
+        <Form form={bancariosForm} layout="vertical" style={{ marginTop: 16 }}>
+          <Form.Item
+            label="Datos Bancarios (CBU / Alias / Banco)"
+            name="datos_bancarios"
+            rules={[{ max: 500, message: 'Máximo 500 caracteres' }]}
+          >
+            <Input.TextArea rows={4} placeholder="CBU: 0000000000000000000000&#10;Alias: mi-alias&#10;Banco: Banco Nación" maxLength={500} showCount />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Archivos adjuntos */}
+      {archivos.length > 0 && (
+        <Card size="small" title={<span style={{ fontWeight: 600, color: tokens.textPrimary }}>Presupuesto / Archivos</span>} style={{ marginBottom: 24, borderRadius: 12 }}>
+          {archivos.map((a) => (
+            <div key={a.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0' }}>
+              <span style={{ fontSize: 13, color: tokens.textSecondary }}>{a.nombre_archivo}</span>
+              <a href={`/api/archivos/${a.id}`} target="_blank" rel="noopener noreferrer" style={{ color: tokens.colorPrimary, fontWeight: 600, fontSize: 13 }}>Descargar</a>
+            </div>
+          ))}
+        </Card>
       )}
 
       {/* Purchase form */}
-      <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Datos de la Compra</span>} style={{ borderRadius: 16 }}>
-        <Form form={form} layout="vertical">
+      <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Datos de la Compra</span>} style={{ borderRadius: 16 }}>
+        <Form form={form} layout="vertical" {...formProps}>
           <Form.Item
             label="Proveedor"
             name="proveedor_nombre"
@@ -224,17 +316,19 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
                 { required: true, message: 'El monto es obligatorio' },
                 { type: 'number', min: 0.01, message: 'El monto debe ser mayor a 0' },
                 { type: 'number', max: 999_999_999, message: 'Monto excesivo' },
-                ...(solicitud.monto_estimado_total
-                  ? [{
-                      validator: (_: any, value: number) => {
-                        if (!value) return Promise.resolve();
-                        const estimado = Number(solicitud.monto_estimado_total);
-                        if (value > estimado * 3)
-                          return Promise.reject(`El monto ($${value.toFixed(2)}) supera 3x el estimado ($${estimado.toFixed(2)}). Verificá si es correcto.`);
-                        return Promise.resolve();
-                      },
-                    }]
-                  : []),
+                ...(() => {
+                  const totalEstimado = (solicitud.items_solicitud ?? []).reduce((acc, item) => acc + Number(item.cantidad) * Number(item.precio_estimado ?? 0), 0);
+                  return totalEstimado > 0
+                    ? [{
+                        validator: (_: any, value: number) => {
+                          if (!value) return Promise.resolve();
+                          if (value > totalEstimado * 3)
+                            return Promise.reject(`El monto ($${value.toFixed(2)}) supera 3x el estimado ($${totalEstimado.toFixed(2)}). Verificá si es correcto.`);
+                          return Promise.resolve();
+                        },
+                      }]
+                    : [];
+                })(),
               ]}
             >
               <InputNumber min={0.01} precision={2} prefix="$" style={{ width: 180 }} placeholder="0.00" />
@@ -350,9 +444,9 @@ export default function RegistrarCompraForm({ solicitud }: Props) {
             <AnimatedSubmitButton
               variant="send"
               onClick={handleSubmit}
-              disabled={loading}
+              disabled={loading || !canSubmit || hasErrors}
             >
-              Registrar Compra
+              {canSubmit ? 'Registrar Pago' : `Habilitado el ${pagoDate?.format('DD/MM/YYYY') ?? ''}`}
             </AnimatedSubmitButton>
             <Button size="large" onClick={() => router.push('/compras')} disabled={loading}>
               Cancelar

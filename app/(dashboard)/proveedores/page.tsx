@@ -5,6 +5,7 @@ import { App, Table, Button, Input, Space, Tag, Popconfirm, Modal, Form, Typogra
 import { PlusOutlined, SearchOutlined, EditOutlined, StopOutlined } from '@ant-design/icons'
 import ProveedorCreateModal from '@/components/ProveedorCreateModal'
 import CuitInput from '@/components/CuitInput'
+import { useFormValid } from '@/hooks/useFormValid'
 
 const { Title } = Typography
 import PhoneInput from '@/components/PhoneInput'
@@ -30,6 +31,7 @@ export default function ProveedoresPage() {
   const [editOpen, setEditOpen] = useState(false)
   const [editingProv, setEditingProv] = useState<Proveedor | null>(null)
   const [editForm] = Form.useForm()
+  const { hasErrors, formProps } = useFormValid(editForm)
   const [saving, setSaving] = useState(false)
 
   const fetchProveedores = useCallback(async () => {
@@ -134,7 +136,7 @@ export default function ProveedoresPage() {
   return (
     <div className="page-content">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>Proveedores</Title>
+        <Title level={3} style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>Proveedores</Title>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
           Nuevo Proveedor
         </Button>
@@ -168,9 +170,10 @@ export default function ProveedoresPage() {
         okText="Guardar"
         cancelText="Cancelar"
         confirmLoading={saving}
+        okButtonProps={{ disabled: hasErrors }}
         width={520}
       >
-        <Form form={editForm} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={editForm} layout="vertical" style={{ marginTop: 16 }} {...formProps}>
           <Form.Item label="Nombre" name="nombre" rules={[{ required: true, message: 'Obligatorio' }]}>
             <Input maxLength={255} />
           </Form.Item>
@@ -184,13 +187,13 @@ export default function ProveedoresPage() {
           <Form.Item label="Datos Bancarios" name="datos_bancarios">
             <Input.TextArea rows={2} maxLength={500} />
           </Form.Item>
-          <Form.Item label="Link de Página Web" name="link_pagina">
+          <Form.Item label="Link de Página Web" name="link_pagina" rules={[{ type: 'url', message: 'Ingresá una URL válida (ej: https://...)' }]}>
             <Input maxLength={500} />
           </Form.Item>
           <Form.Item label="Teléfono" name="telefono">
             <PhoneInput />
           </Form.Item>
-          <Form.Item label="Email" name="email">
+          <Form.Item label="Email" name="email" rules={[{ type: 'email', message: 'Ingresá un email válido' }]}>
             <Input maxLength={255} />
           </Form.Item>
           <Form.Item label="Dirección" name="direccion">

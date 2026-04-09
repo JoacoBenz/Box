@@ -5,10 +5,12 @@ interface CacheEntry<T> {
 
 const MAX_CACHE_SIZE = 500;
 const store = new Map<string, CacheEntry<any>>();
+const pendingRequests = new Map<string, Promise<any>>();
 
 /**
- * Simple in-memory TTL cache.
+ * Simple in-memory TTL cache with request coalescing.
  * Key should include tenantId for tenant isolation.
+ * Concurrent requests for the same key share one fetch (stampede protection).
  */
 export async function cached<T>(
   key: string,
@@ -20,13 +22,23 @@ export async function cached<T>(
     return entry.data;
   }
 
-  const data = await fetcher();
-  if (store.size >= MAX_CACHE_SIZE) {
-    const firstKey = store.keys().next().value;
-    if (firstKey !== undefined) store.delete(firstKey);
-  }
-  store.set(key, { data, expiresAt: Date.now() + ttlMs });
-  return data;
+  // Coalesce concurrent requests for the same key
+  const pending = pendingRequests.get(key);
+  if (pending) return pending;
+
+  const promise = fetcher().then((data) => {
+    if (store.size >= MAX_CACHE_SIZE) {
+      const firstKey = store.keys().next().value;
+      if (firstKey !== undefined) store.delete(firstKey);
+    }
+    store.set(key, { data, expiresAt: Date.now() + ttlMs });
+    return data;
+  }).finally(() => {
+    pendingRequests.delete(key);
+  });
+
+  pendingRequests.set(key, promise);
+  return promise;
 }
 
 /**

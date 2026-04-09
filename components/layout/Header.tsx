@@ -2,12 +2,12 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Layout, Button, Dropdown, Space, Typography, Avatar, MenuProps, Tag, Input } from 'antd';
-import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, LogoutOutlined, SearchOutlined, CloseOutlined, LoadingOutlined } from '@ant-design/icons';
+import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, LogoutOutlined, SearchOutlined, CloseOutlined, LoadingOutlined, SunOutlined, MoonOutlined } from '@ant-design/icons';
 import { signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { NotificationBell } from './NotificationBell';
-import TenantSelector, { useAdminTenant } from '@/components/admin/TenantSelector';
 import { ESTADO_COLOR, ESTADO_LABEL } from '@/lib/constants';
+import { useTheme } from '@/components/ThemeProvider';
 
 const { Header: AntHeader } = Layout;
 const { Text } = Typography;
@@ -23,6 +23,7 @@ interface HeaderProps {
 }
 
 const ROL_LABELS: Record<string, string> = {
+  super_admin: 'Super Admin',
   admin: 'Admin',
   director: 'Director',
   tesoreria: 'Tesorería',
@@ -37,9 +38,8 @@ interface SearchResult {
 }
 
 export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, roles, collapsed, onToggle }: HeaderProps) {
+  const { tokens, mode, toggleTheme } = useTheme();
   const router = useRouter()
-  const isAdmin = roles.includes('admin')
-  const [selectedTenant, setSelectedTenant] = useAdminTenant()
 
   // Search state
   const [searchOpen, setSearchOpen] = useState(false)
@@ -118,6 +118,13 @@ export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, ro
 
   const menuItems: MenuProps['items'] = [
     {
+      key: 'profile',
+      icon: <UserOutlined />,
+      label: 'Mi Perfil',
+      onClick: () => router.push('/perfil'),
+    },
+    { type: 'divider' },
+    {
       key: 'logout',
       icon: <LogoutOutlined />,
       label: 'Cerrar sesión',
@@ -128,8 +135,8 @@ export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, ro
   return (
     <>
       <AntHeader style={{
-        background: '#fff',
-        borderBottom: '1px solid #e2e8f0',
+        background: tokens.headerBg,
+        borderBottom: `1px solid ${tokens.headerBorder}`,
         padding: '0 24px',
         display: 'flex',
         alignItems: 'center',
@@ -138,19 +145,16 @@ export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, ro
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        boxShadow: '0 1px 3px rgb(0 0 0 / 0.04)',
+        boxShadow: tokens.headerShadow,
       }}>
         <Space>
           <Button
             type="text"
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             onClick={onToggle}
-            style={{ fontSize: 16, width: 38, height: 38, borderRadius: 10, color: '#64748b' }}
+            style={{ fontSize: 16, width: 38, height: 38, borderRadius: 10, color: tokens.textMuted }}
           />
-          <Text strong style={{ fontSize: 15, color: '#334155' }}>{tenantNombre}</Text>
-          {isAdmin && (
-            <TenantSelector value={selectedTenant} onChange={setSelectedTenant} compact />
-          )}
+          <Text strong style={{ fontSize: 15, color: tokens.textPrimary }}>{tenantNombre}</Text>
         </Space>
 
         <Space size="middle">
@@ -161,25 +165,27 @@ export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, ro
                 display: 'flex',
                 alignItems: 'center',
                 border: '1px solid',
-                borderColor: searchOpen ? '#4f46e5' : '#e2e8f0',
+                borderColor: searchOpen ? tokens.colorPrimary : tokens.borderColor,
                 borderRadius: 10,
                 height: 36,
                 width: searchOpen ? 320 : 160,
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                background: searchOpen ? '#fff' : '#fafafa',
-                boxShadow: searchOpen ? '0 0 0 3px rgba(79, 70, 229, 0.1)' : 'none',
+                background: searchOpen ? tokens.searchBgActive : tokens.searchBgInactive,
+                boxShadow: searchOpen ? tokens.searchShadow : 'none',
                 overflow: 'hidden',
                 cursor: searchOpen ? 'text' : 'pointer',
               }}
               onClick={() => { if (!searchOpen) setSearchOpen(true) }}
             >
-              <SearchOutlined style={{ color: searchOpen ? '#4f46e5' : '#94a3b8', fontSize: 14, marginLeft: 10, flexShrink: 0 }} />
+              <SearchOutlined style={{ color: searchOpen ? tokens.colorPrimary : tokens.textMuted, fontSize: 14, marginLeft: 10, flexShrink: 0 }} />
               {searchOpen ? (
                 <input
                   ref={inputRef}
                   value={query}
                   onChange={(e) => handleSearch(e.target.value)}
                   placeholder="Buscar solicitudes, proveedores..."
+                  aria-label="Buscar solicitudes y proveedores"
+                  role="searchbox"
                   style={{
                     border: 'none',
                     outline: 'none',
@@ -187,13 +193,13 @@ export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, ro
                     flex: 1,
                     fontSize: 13,
                     padding: '0 8px',
-                    color: '#1e293b',
+                    color: tokens.textPrimary,
                     height: '100%',
                   }}
                   onKeyDown={(e) => { if (e.key === 'Escape') closeSearch() }}
                 />
               ) : (
-                <span style={{ fontSize: 13, color: '#94a3b8', fontWeight: 400, padding: '0 8px', flex: 1 }}>Buscar...</span>
+                <span style={{ fontSize: 13, color: tokens.textMuted, fontWeight: 400, padding: '0 8px', flex: 1 }}>Buscar...</span>
               )}
               {searchOpen && query ? (
                 <Button
@@ -201,7 +207,7 @@ export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, ro
                   size="small"
                   icon={searching ? <LoadingOutlined spin /> : <CloseOutlined />}
                   onClick={(e) => { e.stopPropagation(); if (!searching) { setQuery(''); setResults(null); inputRef.current?.focus() } }}
-                  style={{ color: '#94a3b8', marginRight: 4, width: 24, height: 24, minWidth: 24 }}
+                  style={{ color: tokens.textMuted, marginRight: 4, width: 24, height: 24, minWidth: 24 }}
                 />
               ) : null}
             </div>
@@ -215,10 +221,10 @@ export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, ro
                 width: 400,
                 maxHeight: 420,
                 overflowY: 'auto',
-                background: '#fff',
+                background: tokens.bgInput,
                 borderRadius: 10,
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 12px 40px rgba(0, 0, 0, 0.12)',
+                border: `1px solid ${tokens.headerBorder}`,
+                boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)',
                 zIndex: 1001,
                 animation: 'searchDropIn 0.15s ease-out',
               }}>
@@ -230,7 +236,7 @@ export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, ro
 
                 {results?.solicitudes?.length > 0 && (
                   <div>
-                    <div style={{ padding: '7px 15px 5px', fontSize: 12, fontWeight: 700, color: '#526077', textTransform: 'uppercase', letterSpacing: '0.06em', background: '#f1f5f9', lineHeight: 1.2, borderBottom: '1px solid #e2e8f0' }}>
+                    <div style={{ padding: '7px 15px 5px', fontSize: 12, fontWeight: 700, color: tokens.textSecondary, textTransform: 'uppercase', letterSpacing: '0.06em', background: tokens.bgCard, lineHeight: 1.2, borderBottom: `1px solid ${tokens.borderSubtle}` }}>
                       Solicitudes
                     </div>
                     {results.solicitudes.map((s) => (
@@ -244,14 +250,14 @@ export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, ro
                           alignItems: 'center',
                           gap: 10,
                           transition: 'background 0.15s',
-                          borderBottom: '1px solid #f5f5f5',
+                          borderBottom: `1px solid ${tokens.borderSubtle}`,
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = tokens.bgCard)}
                         onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                       >
                         <div style={{ flex: 1, minWidth: 0, lineHeight: 1.3 }}>
-                          <div style={{ color: '#4f46e5', fontWeight: 600, fontSize: 12 }}>{s.numero}</div>
-                          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#8c8c8c', fontSize: 12 }}>{s.titulo}</div>
+                          <div style={{ color: tokens.colorPrimary, fontWeight: 600, fontSize: 12 }}>{s.numero}</div>
+                          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: tokens.textSecondary, fontSize: 12 }}>{s.titulo}</div>
                         </div>
                         <Tag color={ESTADO_COLOR[s.estado] ?? 'default'} style={{ margin: 0, flexShrink: 0, fontSize: 11 }}>{ESTADO_LABEL[s.estado] ?? s.estado}</Tag>
                       </div>
@@ -261,8 +267,8 @@ export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, ro
 
                 {results?.proveedores?.length > 0 && (
                   <div>
-                    {results?.solicitudes?.length > 0 && <div style={{ borderTop: '1px solid #f1f5f9' }} />}
-                    <div style={{ padding: '7px 15px 5px', fontSize: 12, fontWeight: 700, color: '#526077', textTransform: 'uppercase', letterSpacing: '0.06em', background: '#f1f5f9', lineHeight: 1.2, borderBottom: '1px solid #e2e8f0' }}>
+                    {results?.solicitudes?.length > 0 && <div style={{ borderTop: `1px solid ${tokens.borderSubtle}` }} />}
+                    <div style={{ padding: '7px 15px 5px', fontSize: 12, fontWeight: 700, color: tokens.textSecondary, textTransform: 'uppercase', letterSpacing: '0.06em', background: tokens.bgCard, lineHeight: 1.2, borderBottom: `1px solid ${tokens.borderSubtle}` }}>
                       Proveedores
                     </div>
                     {results.proveedores.map((p) => (
@@ -276,14 +282,14 @@ export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, ro
                           alignItems: 'center',
                           gap: 10,
                           transition: 'background 0.15s',
-                          borderBottom: '1px solid #f5f5f5',
+                          borderBottom: `1px solid ${tokens.borderSubtle}`,
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = tokens.bgCard)}
                         onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                       >
                         <div style={{ flex: 1, minWidth: 0, lineHeight: 1.3 }}>
-                          <div style={{ color: '#4f46e5', fontWeight: 600, fontSize: 12 }}>{p.nombre}</div>
-                          {p.cuit && <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#8c8c8c', fontSize: 12 }}>{p.cuit}</div>}
+                          <div style={{ color: tokens.colorPrimary, fontWeight: 600, fontSize: 12 }}>{p.nombre}</div>
+                          {p.cuit && <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: tokens.textSecondary, fontSize: 12 }}>{p.cuit}</div>}
                         </div>
                       </div>
                     ))}
@@ -293,16 +299,23 @@ export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, ro
             )}
           </div>
 
+          <Button
+            type="text"
+            icon={mode === 'dark' ? <SunOutlined /> : <MoonOutlined />}
+            onClick={toggleTheme}
+            style={{ fontSize: 16, width: 38, height: 38, borderRadius: 10, color: tokens.textMuted }}
+            title={mode === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+          />
           <NotificationBell />
           <Dropdown menu={{ items: menuItems }} placement="bottomRight">
             <Space style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: 12, transition: 'background 0.2s' }}>
               <Avatar
                 icon={<UserOutlined />}
-                style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}
+                style={{ background: tokens.avatarGradient }}
                 size={34}
               />
               <Space orientation="vertical" size={0} style={{ lineHeight: 1.2 }}>
-                <Text strong style={{ fontSize: 13, color: '#1e293b' }}>{userName}</Text>
+                <Text strong style={{ fontSize: 13, color: tokens.textPrimary }}>{userName}</Text>
                 <Text type="secondary" style={{ fontSize: 11 }}>
                   {areaNombre ? `${areaNombre} · ` : ''}{ROL_LABELS[rolPrincipal] ?? rolPrincipal}
                 </Text>

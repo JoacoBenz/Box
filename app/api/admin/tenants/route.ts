@@ -7,15 +7,18 @@ import { logApiError } from '@/lib/logger';
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession();
-    if (!verificarRol(session.roles, ['admin'])) {
+    if (!verificarRol(session.roles, ['super_admin'])) {
       return apiError('FORBIDDEN', 'No tenés permisos para ver tenants', 403);
     }
 
     const { searchParams } = new URL(request.url);
     const estadoFilter = searchParams.get('estado');
 
+    const where: any = { slug: { not: '__platform__' } };
+    if (estadoFilter) where.estado = estadoFilter;
+
     const tenants = await prisma.tenants.findMany({
-      ...(estadoFilter && { where: { estado: estadoFilter } }),
+      where,
       orderBy: { id: 'asc' },
       select: {
         id: true,
@@ -73,7 +76,7 @@ function slugify(text: string): string {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
-    if (!verificarRol(session.roles, ['admin'])) {
+    if (!verificarRol(session.roles, ['super_admin'])) {
       return apiError('FORBIDDEN', 'Sin permisos', 403);
     }
 

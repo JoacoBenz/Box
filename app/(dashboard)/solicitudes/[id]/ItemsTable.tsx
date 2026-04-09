@@ -19,7 +19,7 @@ const columns = [
     key: 'link_producto',
     width: 80,
     render: (v: string | null) =>
-      v ? <a href={v} target="_blank" rel="noopener noreferrer" style={{ color: '#1677ff' }}>Ver</a> : null,
+      v ? <a href={v} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)' }}>Ver</a> : null,
   },
   { title: 'Cantidad', dataIndex: 'cantidad', key: 'cantidad', width: 100 },
   { title: 'Unidad', dataIndex: 'unidad', key: 'unidad', width: 110 },

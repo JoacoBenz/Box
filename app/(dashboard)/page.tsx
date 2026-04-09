@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { Button, Card, Col, Row, Tag, Typography, Empty, Progress, Table } from 'antd'
 import {
   DollarOutlined,
@@ -24,12 +24,14 @@ import {
 } from '@ant-design/icons'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import type { DashboardData } from '@/types/dashboard'
 
 const DirectorDashboard = dynamic(() => import('./components/DirectorDashboard'), {
   loading: () => <div style={{ textAlign: 'center', padding: 40 }}>Cargando dashboard...</div>,
   ssr: false,
 })
 
+import { useTheme } from '@/components/ThemeProvider'
 import { ESTADO_COLOR, ESTADO_LABEL, URGENCIA_COLOR } from '@/lib/constants'
 
 const { Title, Text } = Typography
@@ -72,6 +74,7 @@ function useCountUp(rawTarget: number | undefined | null, duration = 800) {
 function StatCard({ title, value, icon, color, format, suffix, delay = 0 }: {
   title: string; value: number | undefined | null; icon: React.ReactNode; color: string; format?: 'money' | 'percent'; suffix?: string; delay?: number
 }) {
+  const { tokens } = useTheme()
   const count = useCountUp(value)
   return (
     <Card className={`glass-card glass-${color}`} style={{ animationDelay: `${delay}ms` }} styles={{ body: { padding: '20px 24px' } }}>
@@ -79,7 +82,7 @@ function StatCard({ title, value, icon, color, format, suffix, delay = 0 }: {
         <div className={`stat-icon icon-${color}`}>{icon}</div>
         <div>
           <Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 500 }}>{title}</Text>
-          <div className="count-up" style={{ fontSize: 28, fontWeight: 800, color: '#1e293b', lineHeight: 1.2 }}>
+          <div className="count-up" style={{ fontSize: 28, fontWeight: 800, color: tokens.textPrimary, lineHeight: 1.2 }}>
             {format === 'money' ? formatMoney(count) : format === 'percent' ? `${count}%` : count}{suffix ?? ''}
           </div>
         </div>
@@ -92,6 +95,7 @@ function StatCard({ title, value, icon, color, format, suffix, delay = 0 }: {
 function MiniStatCard({ title, value, icon, color, format, suffix }: {
   title: string; value: number | undefined | null; icon: React.ReactNode; color: string; format?: 'money' | 'percent'; suffix?: string
 }) {
+  const { tokens } = useTheme()
   const count = useCountUp(value)
   return (
     <Card className={`glass-card glass-${color}`} size="small" styles={{ body: { padding: '14px 18px' } }}>
@@ -99,7 +103,7 @@ function MiniStatCard({ title, value, icon, color, format, suffix }: {
         <div className={`stat-icon icon-${color}`} style={{ width: 32, height: 32, borderRadius: 8, fontSize: 14 }}>{icon}</div>
         <div>
           <Text type="secondary" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</Text>
-          <div className="count-up" style={{ fontSize: 20, fontWeight: 700, color: '#1e293b' }}>
+          <div className="count-up" style={{ fontSize: 20, fontWeight: 700, color: tokens.textPrimary }}>
             {format === 'money' ? formatMoney(count) : format === 'percent' ? `${count}%` : count}{suffix ?? ''}
           </div>
         </div>
@@ -112,10 +116,11 @@ function MiniStatCard({ title, value, icon, color, format, suffix }: {
 function PendingActionCard({ count, label, href, buttonText }: {
   count: number; label: string; href: string; buttonText: string
 }) {
+  const { tokens } = useTheme()
   return (
-    <Card style={{ borderRadius: 16, borderColor: count > 0 ? '#ff7a45' : '#22c55e', borderWidth: 2 }} styles={{ body: { padding: '20px' } }}>
+    <Card style={{ borderRadius: 16, borderColor: count > 0 ? '#f59e0b' : '#22c55e', borderWidth: 2 }} styles={{ body: { padding: '20px' } }}>
       <div style={{ textAlign: 'center', marginBottom: 12 }}>
-        <div style={{ fontSize: 32, fontWeight: 800, color: '#1e293b' }}>{count}</div>
+        <div style={{ fontSize: 32, fontWeight: 800, color: tokens.textPrimary }}>{count}</div>
         <Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 500 }}>{label}</Text>
       </div>
       <Link href={href} style={{ textDecoration: 'none' }}>
@@ -127,8 +132,9 @@ function PendingActionCard({ count, label, href, buttonText }: {
 
 // ── Section Title ──
 function SectionTitle({ children }: { children: React.ReactNode }) {
+  const { tokens } = useTheme()
   return (
-    <div style={{ fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 16, letterSpacing: '-0.5px' }}>{children}</div>
+    <div style={{ fontSize: 18, fontWeight: 700, color: tokens.textPrimary, marginBottom: 16, letterSpacing: '-0.5px' }}>{children}</div>
   )
 }
 
@@ -148,13 +154,14 @@ function EstadoTags({ data }: { data: { estado: string; cantidad: number }[] }) 
 
 // ── Greeting ──
 function Greeting() {
+  const { tokens } = useTheme()
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches'
   const date = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
   return (
     <div style={{ marginBottom: 28 }}>
-      <div style={{ fontSize: 28, fontWeight: 800, color: '#1e293b', letterSpacing: '-0.5px' }}>
+      <div style={{ fontSize: 28, fontWeight: 800, color: tokens.textPrimary, letterSpacing: '-0.5px' }}>
         {greeting} 👋
       </div>
       <Text type="secondary" style={{ fontSize: 14, textTransform: 'capitalize' }}>{date}</Text>
@@ -164,16 +171,17 @@ function Greeting() {
 
 // ── Loading Skeleton ──
 function DashboardSkeleton() {
+  const { tokens } = useTheme()
   return (
     <div className="page-content" style={{ padding: 4 }}>
       <div style={{ marginBottom: 28 }}>
-        <div style={{ width: 240, height: 32, background: '#e2e8f0', borderRadius: 8, marginBottom: 8, animation: 'pulse 1.5s ease-in-out infinite' }} />
-        <div style={{ width: 180, height: 16, background: '#e2e8f0', borderRadius: 6, animation: 'pulse 1.5s ease-in-out infinite' }} />
+        <div style={{ width: 240, height: 32, background: tokens.skeletonBg, borderRadius: 8, marginBottom: 8, animation: 'pulse 1.5s ease-in-out infinite' }} />
+        <div style={{ width: 180, height: 16, background: tokens.skeletonBg, borderRadius: 6, animation: 'pulse 1.5s ease-in-out infinite' }} />
       </div>
       <Row gutter={[16, 16]}>
         {[1, 2, 3, 4].map(i => (
           <Col key={i} xs={24} sm={12} lg={6}>
-            <div style={{ height: 100, background: '#e2e8f0', borderRadius: 16, animation: 'pulse 1.5s ease-in-out infinite', animationDelay: `${i * 100}ms` }} />
+            <div style={{ height: 100, background: tokens.skeletonBg, borderRadius: 16, animation: 'pulse 1.5s ease-in-out infinite', animationDelay: `${i * 100}ms` }} />
           </Col>
         ))}
       </Row>
@@ -191,11 +199,12 @@ function DashboardSkeleton() {
 function BarChartRow({ label, value, maxValue, color, subtext, index }: {
   label: string; value: number; maxValue: number; color: string; subtext: string; index: number
 }) {
+  const { tokens } = useTheme()
   return (
     <div style={{ padding: '12px 0', borderBottom: 'none', animation: `staggerIn 0.3s ease-out ${index * 80}ms both` }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
         <Text style={{ fontWeight: 500 }}>{label}</Text>
-        <Text strong style={{ color: '#1e293b' }}>{formatMoney(value)}</Text>
+        <Text strong style={{ color: tokens.textPrimary }}>{formatMoney(value)}</Text>
       </div>
       <Progress
         percent={maxValue > 0 ? Math.round((value / maxValue) * 100) : 0}
@@ -209,7 +218,9 @@ function BarChartRow({ label, value, maxValue, color, subtext, index }: {
 }
 
 export default function DashboardPage() {
-  const [data, setData] = useState<any>(null)
+  const { tokens } = useTheme()
+  // Fields are populated conditionally by role — accessed within role-conditional blocks
+  const [data, setData] = useState<Record<string, any> | null>(null)
   const [loading, setLoading] = useState(true)
   const [directorAreaId, setDirectorAreaId] = useState<number | null>(null)
 
@@ -244,8 +255,13 @@ export default function DashboardPage() {
     fetchDashboard(value)
   }
 
+  // Chart maxes (memoized to avoid recalculation on every render)
+  const maxAreaTotal = useMemo(() => Math.max(...(data?.gastoPorArea ?? []).map((a: any) => a.total), 1), [data?.gastoPorArea])
+  const maxProvTotal = useMemo(() => Math.max(...(data?.topProveedores ?? []).map((p: any) => p.total), 1), [data?.topProveedores])
+  const maxMesTrend = useMemo(() => Math.max(...(data?.tendenciaMensual ?? []).map((m: any) => m.total), 1), [data?.tendenciaMensual])
+
   if (loading) return <DashboardSkeleton />
-  if (!data) return <Empty description="Error al cargar el dashboard" />
+  if (!data) return <Empty description="No se pudo cargar el dashboard. Intentá recargar la página." />
 
   // Role detection
   const hasAnalytics = data.gastoPorArea !== undefined
@@ -255,11 +271,6 @@ export default function DashboardPage() {
   const hasCompras = data.solicitudesAprobadas !== undefined || data.solicitudesEnCompras !== undefined
   const hasTesoreria = data.pendientesComprar !== undefined
   const hasAdmin = data.adminPlatform !== undefined
-
-  // Chart maxes
-  const maxAreaTotal = Math.max(...(data.gastoPorArea ?? []).map((a: any) => a.total), 1)
-  const maxProvTotal = Math.max(...(data.topProveedores ?? []).map((p: any) => p.total), 1)
-  const maxMesTrend = Math.max(...(data.tendenciaMensual ?? []).map((m: any) => m.total), 1)
 
   // Determine which analytics charts to show per role
   // Admin sees platform-level metrics, not org-level analytics
@@ -378,9 +389,6 @@ export default function DashboardPage() {
                 <MiniStatCard title="Este Mes" value={data.solicitudesMesSolicitante} icon={<FileTextOutlined />} color="purple" />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Monto Mes" value={data.montoSolicitadoMes} icon={<DollarOutlined />} color="cyan" format="money" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
                 <MiniStatCard title="Tasa Aprobación" value={data.tasaAprobacion} icon={<PercentageOutlined />} color="green" suffix="%" />
               </Col>
             </>
@@ -437,9 +445,6 @@ export default function DashboardPage() {
                 <MiniStatCard title="Pagos Próximos (7d)" value={data.pagoProgramadoProximo} icon={<ClockCircleOutlined />} color="orange" />
               </Col>
               <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Monto Pagos Próx." value={data.montoPagosProximos} icon={<DollarOutlined />} color="orange" format="money" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
                 <MiniStatCard title="Sin Recepción" value={data.comprasSinRecepcion} icon={<InboxOutlined />} color={data.comprasSinRecepcion > 0 ? 'red' : 'green'} />
               </Col>
             </>
@@ -490,13 +495,13 @@ export default function DashboardPage() {
         <div style={{ marginBottom: 28 }}>
           {/* Pending approvals banner */}
           {data.adminPlatform.orgPendientes > 0 && (
-            <Card style={{ borderRadius: 16, marginBottom: 16, background: 'linear-gradient(135deg, #fff7ed, #fed7aa)', border: '1px solid #fdba74' }}>
+            <Card style={{ borderRadius: 16, marginBottom: 16, background: tokens.adminBannerBg, border: `1px solid ${tokens.adminBannerBorder}` }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text strong style={{ fontSize: 15, color: '#9a3412' }}>
-                  {data.adminPlatform.orgPendientes} organizaci{data.adminPlatform.orgPendientes !== 1 ? 'ones' : '\u00f3n'} pendiente{data.adminPlatform.orgPendientes !== 1 ? 's' : ''} de aprobaci\u00f3n
+                <Text strong style={{ fontSize: 15, color: tokens.adminBannerText }}>
+                  {data.adminPlatform.orgPendientes} {data.adminPlatform.orgPendientes !== 1 ? 'organizaciones pendientes' : 'organización pendiente'} de aprobación
                 </Text>
-                <Link href="/admin/aprobaciones-org">
-                  <Button type="primary" style={{ background: '#ea580c', borderColor: '#ea580c', fontWeight: 600 }}>
+                <Link href="/gestion/aprobaciones-org">
+                  <Button type="primary" style={{ background: tokens.adminBannerBtn, borderColor: tokens.adminBannerBtn, fontWeight: 600 }}>
                     Revisar Aprobaciones
                   </Button>
                 </Link>
@@ -509,9 +514,9 @@ export default function DashboardPage() {
             {data.adminPlatform.orgsTopUso?.length > 0 && (
               <Col xs={24} lg={14}>
                 <Card
-                  title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Organizaciones por Uso</span>}
+                  title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Organizaciones por Uso</span>}
                   style={{ borderRadius: 16 }}
-                  extra={<Link href="/admin/tenants" style={{ color: '#4f46e5', fontWeight: 600 }}>Ver todas <ArrowRightOutlined /></Link>}
+                  extra={<Link href="/gestion/tenants" style={{ color: tokens.colorPrimary, fontWeight: 600 }}>Ver todas <ArrowRightOutlined /></Link>}
                 >
                   <Table
                     dataSource={data.adminPlatform.orgsTopUso}
@@ -531,14 +536,14 @@ export default function DashboardPage() {
             {/* Growth charts */}
             <Col xs={24} lg={10}>
               {data.adminPlatform.crecimientoOrgs?.length > 0 && (
-                <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Crecimiento Orgs (6 meses)</span>} style={{ borderRadius: 16, marginBottom: 16 }} styles={{ body: { padding: '16px 24px' } }}>
+                <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Crecimiento Orgs (6 meses)</span>} style={{ borderRadius: 16, marginBottom: 16 }} styles={{ body: { padding: '16px 24px' } }}>
                   {data.adminPlatform.crecimientoOrgs.map((item: any, i: number) => (
                     <BarChartRow
                       key={item.mes}
                       label={item.mes}
                       value={item.cantidad}
                       maxValue={Math.max(...data.adminPlatform.crecimientoOrgs.map((r: any) => r.cantidad), 1)}
-                      color="linear-gradient(90deg, #4f46e5, #7c3aed)"
+                      color={tokens.chartPrimaryGradient}
                       subtext={`${item.cantidad} org${item.cantidad !== 1 ? 's' : ''}`}
                       index={i}
                     />
@@ -546,14 +551,14 @@ export default function DashboardPage() {
                 </Card>
               )}
               {data.adminPlatform.crecimientoUsuarios?.length > 0 && (
-                <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Crecimiento Usuarios (6 meses)</span>} style={{ borderRadius: 16 }} styles={{ body: { padding: '16px 24px' } }}>
+                <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Crecimiento Usuarios (6 meses)</span>} style={{ borderRadius: 16 }} styles={{ body: { padding: '16px 24px' } }}>
                   {data.adminPlatform.crecimientoUsuarios.map((item: any, i: number) => (
                     <BarChartRow
                       key={item.mes}
                       label={item.mes}
                       value={item.cantidad}
                       maxValue={Math.max(...data.adminPlatform.crecimientoUsuarios.map((r: any) => r.cantidad), 1)}
-                      color="linear-gradient(90deg, #22c55e, #16a34a)"
+                      color={tokens.chartSecondaryGradient}
                       subtext={`${item.cantidad} usuario${item.cantidad !== 1 ? 's' : ''}`}
                       index={i}
                     />
@@ -574,17 +579,17 @@ export default function DashboardPage() {
         <div style={{ marginBottom: 28 }}>
           {data.misSolicitudesPorEstado?.length > 0 && (
             <Card
-              title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Mis Solicitudes por Estado</span>}
+              title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Mis Solicitudes por Estado</span>}
               style={{ borderRadius: 16, marginBottom: 16 }}
               styles={{ body: { padding: '12px 20px' } }}
             >
               <EstadoTags data={data.misSolicitudesPorEstado} />
             </Card>
           )}
-          <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Mis Solicitudes Recientes</span>} style={{ borderRadius: 16 }} styles={{ body: { padding: '16px 20px' } }}>
+          <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Mis Solicitudes Recientes</span>} style={{ borderRadius: 16 }} styles={{ body: { padding: '16px 20px' } }}>
             {data.misSolicitudes.length === 0 ? (
               <div className="empty-state">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 48, height: 48, color: '#94a3b8' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 48, height: 48, color: tokens.textMuted }}>
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                   <polyline points="14 2 14 8 20 8" />
                   <line x1="16" y1="13" x2="8" y2="13" />
@@ -602,12 +607,12 @@ export default function DashboardPage() {
                     >
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                          <Text style={{ fontSize: 13, color: '#4f46e5', fontWeight: 600 }}>{sol.numero}</Text>
+                          <Text style={{ fontSize: 13, color: tokens.colorPrimary, fontWeight: 600 }}>{sol.numero}</Text>
                           <Tag color={ESTADO_COLOR[sol.estado]} style={{ margin: 0 }}>{ESTADO_LABEL[sol.estado] ?? sol.estado}</Tag>
                         </div>
-                        <Text style={{ fontWeight: 500, color: '#1e293b' }}>{sol.titulo}</Text>
+                        <Text style={{ fontWeight: 500, color: tokens.textPrimary }}>{sol.titulo}</Text>
                       </div>
-                      <ArrowRightOutlined style={{ color: '#94a3b8', fontSize: 14 }} />
+                      <ArrowRightOutlined style={{ color: tokens.textMuted, fontSize: 14 }} />
                     </div>
                   </Link>
                 ))}
@@ -622,14 +627,14 @@ export default function DashboardPage() {
         <div style={{ marginBottom: 28 }}>
           {data.solicitudesAreaPorEstado?.length > 0 && (
             <Card
-              title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Solicitudes del Área por Estado</span>}
+              title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Solicitudes del Área por Estado</span>}
               style={{ borderRadius: 16, marginBottom: 16 }}
               styles={{ body: { padding: '12px 20px' } }}
             >
               <EstadoTags data={data.solicitudesAreaPorEstado} />
             </Card>
           )}
-          <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Solicitudes del Área</span>} style={{ borderRadius: 16 }}>
+          <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Solicitudes del Área</span>} style={{ borderRadius: 16 }}>
             {data.solicitudesArea.length === 0 ? <Empty description="Sin solicitudes en el área" image={Empty.PRESENTED_IMAGE_SIMPLE} /> : (
               <Table
                 dataSource={data.solicitudesArea}
@@ -637,7 +642,7 @@ export default function DashboardPage() {
                 pagination={false}
                 size="small"
                 columns={[
-                  { title: 'Número', dataIndex: 'numero', render: (v: string, r: any) => <Link href={`/solicitudes/${r.id}`} style={{ color: '#4f46e5', fontWeight: 600 }}>{v}</Link> },
+                  { title: 'Número', dataIndex: 'numero', render: (v: string, r: any) => <Link href={`/solicitudes/${r.id}`} style={{ color: tokens.colorPrimary, fontWeight: 600 }}>{v}</Link> },
                   { title: 'Título', dataIndex: 'titulo', ellipsis: true },
                   { title: 'Estado', dataIndex: 'estado', render: (v: string) => <Tag color={ESTADO_COLOR[v]}>{ESTADO_LABEL[v] ?? v}</Tag> },
                   { title: 'Urgencia', dataIndex: 'urgencia', render: (v: string) => <Tag color={URGENCIA_COLOR[v]}>{v}</Tag> },
@@ -651,9 +656,9 @@ export default function DashboardPage() {
       {/* Compras: Pipeline */}
       {hasCompras && (
         <Card
-          title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Pipeline de Compras</span>}
+          title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Pipeline de Compras</span>}
           style={{ borderRadius: 16, marginBottom: 28 }}
-          extra={<Link href="/gestion-compras" style={{ color: '#4f46e5', fontWeight: 600 }}>Ver todo <ArrowRightOutlined /></Link>}
+          extra={<Link href="/gestion-compras" style={{ color: tokens.colorPrimary, fontWeight: 600 }}>Ver todo <ArrowRightOutlined /></Link>}
         >
           {data.pipeline?.length > 0 ? (
             <Table
@@ -662,11 +667,10 @@ export default function DashboardPage() {
               pagination={false}
               size="small"
               columns={[
-                { title: 'N°', dataIndex: 'numero', width: 120, render: (v: string, r: any) => <Link href={`/solicitudes/${r.id}`} style={{ color: '#4f46e5', fontWeight: 600 }}>{v}</Link> },
+                { title: 'N°', dataIndex: 'numero', width: 120, render: (v: string, r: any) => <Link href={`/solicitudes/${r.id}`} style={{ color: tokens.colorPrimary, fontWeight: 600 }}>{v}</Link> },
                 { title: 'Título', dataIndex: 'titulo', ellipsis: true },
                 { title: 'Estado', dataIndex: 'estado', width: 140, render: (v: string) => <Tag color={ESTADO_COLOR[v] ?? 'default'}>{ESTADO_LABEL[v] ?? v}</Tag> },
                 { title: 'Pago', dataIndex: 'dia_pago_programado', width: 110, render: (v: string | null) => v ? new Date(v).toLocaleDateString('es-AR') : '—' },
-                { title: 'Monto', dataIndex: 'monto_estimado_total', width: 120, align: 'right' as const, render: (v: any) => v != null ? formatMoney(Number(v)) : '—' },
               ]}
             />
           ) : (
@@ -677,14 +681,14 @@ export default function DashboardPage() {
 
       {/* Tesorería: Recent purchases */}
       {hasTesoreria && data.ultimasCompras?.length > 0 && (
-        <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Últimas Compras Registradas</span>} style={{ borderRadius: 16, marginBottom: 28 }}>
+        <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Últimas Compras Registradas</span>} style={{ borderRadius: 16, marginBottom: 28 }}>
           <Table
             dataSource={data.ultimasCompras}
             rowKey="id"
             pagination={false}
             size="small"
             columns={[
-              { title: 'Solicitud', dataIndex: ['solicitud', 'numero'], render: (v: string, r: any) => <Link href={`/solicitudes/${r.solicitud_id}`} style={{ color: '#4f46e5', fontWeight: 600 }}>{v}</Link> },
+              { title: 'Solicitud', dataIndex: ['solicitud', 'numero'], render: (v: string, r: any) => <Link href={`/solicitudes/${r.solicitud_id}`} style={{ color: tokens.colorPrimary, fontWeight: 600 }}>{v}</Link> },
               { title: 'Proveedor', dataIndex: 'proveedor_nombre', ellipsis: true },
               { title: 'Monto', dataIndex: 'monto_total', align: 'right' as const, render: (v: any) => <Text strong>{formatMoney(Number(v))}</Text> },
               { title: 'Medio', dataIndex: 'medio_pago', render: (v: string) => MEDIO_PAGO_LABEL[v] ?? v },
@@ -703,7 +707,7 @@ export default function DashboardPage() {
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
               {showGastoPorArea && (
                 <Col xs={24} lg={12}>
-                  <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Gasto por Área</span>} style={{ borderRadius: 16 }} styles={{ body: { padding: '16px 24px' } }}>
+                  <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Gasto por Área</span>} style={{ borderRadius: 16 }} styles={{ body: { padding: '16px 24px' } }}>
                     {data.gastoPorArea.length === 0 ? <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} /> : (
                       <div>
                         {data.gastoPorArea.map((item: any, i: number) => (
@@ -712,7 +716,7 @@ export default function DashboardPage() {
                             label={item.area}
                             value={item.total}
                             maxValue={maxAreaTotal}
-                            color="linear-gradient(90deg, #4f46e5, #7c3aed)"
+                            color={tokens.chartPrimaryGradient}
                             subtext={`${item.cantidad} compra${item.cantidad !== 1 ? 's' : ''}`}
                             index={i}
                           />
@@ -724,7 +728,7 @@ export default function DashboardPage() {
               )}
               {showTendenciaMensual && (
                 <Col xs={24} lg={12}>
-                  <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Tendencia Mensual (6 meses)</span>} style={{ borderRadius: 16 }} styles={{ body: { padding: '16px 24px' } }}>
+                  <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Tendencia Mensual (6 meses)</span>} style={{ borderRadius: 16 }} styles={{ body: { padding: '16px 24px' } }}>
                     {data.tendenciaMensual.length === 0 ? <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} /> : (
                       <div>
                         {data.tendenciaMensual.map((item: any, i: number) => (
@@ -733,7 +737,7 @@ export default function DashboardPage() {
                             label={item.mes}
                             value={item.total}
                             maxValue={maxMesTrend}
-                            color="linear-gradient(90deg, #22c55e, #16a34a)"
+                            color={tokens.chartSecondaryGradient}
                             subtext={`${item.cantidad} compra${item.cantidad !== 1 ? 's' : ''}`}
                             index={i}
                           />
@@ -751,7 +755,7 @@ export default function DashboardPage() {
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
               {showGastoPorMedioPago && (
                 <Col xs={24} lg={12}>
-                  <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Gasto por Medio de Pago</span>} style={{ borderRadius: 16 }}>
+                  <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Gasto por Medio de Pago</span>} style={{ borderRadius: 16 }}>
                     {data.gastoPorMedioPago.length === 0 ? <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} /> : (
                       <Table
                         dataSource={data.gastoPorMedioPago}
@@ -770,23 +774,23 @@ export default function DashboardPage() {
               )}
               {showTopProveedores && (
                 <Col xs={24} lg={12}>
-                  <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Top 5 Proveedores</span>} style={{ borderRadius: 16 }} styles={{ body: { padding: '16px 24px' } }}>
+                  <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Top 5 Proveedores</span>} style={{ borderRadius: 16 }} styles={{ body: { padding: '16px 24px' } }}>
                     {data.topProveedores.length === 0 ? <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} /> : (
                       <div>
                         {data.topProveedores.map((item: any, idx: number) => (
                           <div key={item.proveedor} style={{ padding: '12px 0', animation: `staggerIn 0.3s ease-out ${idx * 80}ms both` }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                               <Text>
-                                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 6, background: '#f1f5f9', fontSize: 11, fontWeight: 700, color: '#64748b', marginRight: 8 }}>{idx + 1}</span>
+                                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 6, background: tokens.rankBg, fontSize: 11, fontWeight: 700, color: tokens.rankText, marginRight: 8 }}>{idx + 1}</span>
                                 {item.proveedor}
                               </Text>
-                              <Text strong style={{ color: '#1e293b' }}>{formatMoney(item.total)}</Text>
+                              <Text strong style={{ color: tokens.textPrimary }}>{formatMoney(item.total)}</Text>
                             </div>
                             <Progress
                               percent={Math.round((item.total / maxProvTotal) * 100)}
                               showInfo={false}
                               size="small"
-                              strokeColor={{ from: '#8b5cf6', to: '#a855f7' }}
+                              strokeColor={{ from: tokens.progressStrokeFrom, to: tokens.progressStrokeTo }}
                             />
                             <Text type="secondary" style={{ fontSize: 11 }}>{item.cantidad} compra{item.cantidad !== 1 ? 's' : ''}</Text>
                           </div>
@@ -804,7 +808,7 @@ export default function DashboardPage() {
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
               {showSolicitudesPorEstado && (
                 <Col xs={24} lg={showSolicitudesPorUrgencia ? 12 : 24}>
-                  <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Solicitudes por Estado</span>} style={{ borderRadius: 16 }}>
+                  <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Solicitudes por Estado</span>} style={{ borderRadius: 16 }}>
                     {data.solicitudesPorEstado.length === 0 ? <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} /> : (
                       <EstadoTags data={data.solicitudesPorEstado} />
                     )}
@@ -813,7 +817,7 @@ export default function DashboardPage() {
               )}
               {showSolicitudesPorUrgencia && (
                 <Col xs={24} lg={showSolicitudesPorEstado ? 12 : 24}>
-                  <Card title={<span style={{ fontWeight: 700, color: '#1e293b' }}>Solicitudes por Urgencia (año)</span>} style={{ borderRadius: 16 }}>
+                  <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Solicitudes por Urgencia (año)</span>} style={{ borderRadius: 16 }}>
                     {data.solicitudesPorUrgencia.length === 0 ? <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} /> : (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '8px 0' }}>
                         {data.solicitudesPorUrgencia.map((item: any) => (

@@ -5,6 +5,7 @@ import { App, Layout } from 'antd';
 import { Sidebar } from './Sidebar';
 import { AppHeader } from './Header';
 import type { RolNombre } from '@/types';
+import { useTheme } from '@/components/ThemeProvider';
 
 const { Content } = Layout;
 
@@ -17,18 +18,22 @@ interface DashboardShellProps {
 }
 
 export function DashboardShell({ tenantNombre, userName, areaNombre, roles, children }: DashboardShellProps) {
+  const { tokens } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
-  const rolPrincipal = roles.includes('admin') ? 'admin'
+  const rolPrincipal = roles.includes('super_admin') ? 'super_admin'
+    : roles.includes('admin') ? 'admin'
     : roles.includes('director') ? 'director'
     : roles.includes('tesoreria') ? 'tesoreria'
     : roles.includes('responsable_area') ? 'responsable_area'
     : 'solicitante';
 
+  const siderWidth = collapsed ? 80 : 240;
+
   return (
     <App>
       <Layout style={{ minHeight: '100vh' }}>
         <Sidebar roles={roles} collapsed={collapsed} />
-        <Layout style={{ background: '#f1f5f9' }}>
+        <Layout style={{ background: tokens.bgLayout, marginLeft: siderWidth, transition: 'margin-left 0.25s cubic-bezier(0.2, 0, 0, 1)' }}>
           <AppHeader
             tenantNombre={tenantNombre}
             userName={userName}

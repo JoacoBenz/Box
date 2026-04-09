@@ -1,17 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
-import { tenantPrisma } from '@/lib/prisma';
+import { withAuth } from '@/lib/api-handler';
 import { verificarRol, apiError } from '@/lib/permissions';
-import { registrarAuditoria, getClientIp } from '@/lib/audit';
+import { registrarAuditoria } from '@/lib/audit';
 import { crearNotificacion } from '@/lib/notifications';
 
 // States that can be cancelled
 const ESTADOS_ANULABLES = ['enviada', 'validada', 'aprobada', 'en_compras', 'pago_programado'];
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession();
-  const { id } = await params;
-  const solicitudId = Number(id);
+export const POST = withAuth({}, async (request, { session, db, ip }, params) => {
+  const solicitudId = Number(params.id);
   if (isNaN(solicitudId)) return apiError('VALIDATION', 'ID inválido', 400);
 
   const body = await request.json().catch(() => ({}));
@@ -20,7 +17,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return apiError('VALIDATION', 'Indicá el motivo de la anulación (mínimo 10 caracteres)', 400);
   }
 
-  const db = tenantPrisma(session.tenantId);
   const solicitud = await db.solicitudes.findFirst({
     where: { id: solicitudId },
     include: { solicitante: { select: { id: true, nombre: true } } },
@@ -75,12 +71,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     tenantId: session.tenantId,
     usuarioId: session.userId,
     accion: 'anular_solicitud',
-    entidad: 'solicitudes',
+    entidad: 'solicitud',
     entidadId: solicitudId,
     datosAnteriores: { estado: estadoAnterior },
     datosNuevos: { estado: 'anulada', motivo },
-    ipAddress: getClientIp(request),
+    ipAddress: ip,
   });
 
   return NextResponse.json({ ok: true, estado: 'anulada' });
-}
+});

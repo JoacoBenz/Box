@@ -2,7 +2,7 @@ import { PrismaClient } from '../app/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+const adapter = new PrismaPg(process.env.DATABASE_URL!);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
@@ -11,8 +11,10 @@ async function main() {
     { nombre: 'solicitante', descripcion: 'Crea solicitudes de compra' },
     { nombre: 'responsable_area', descripcion: 'Valida solicitudes de su área' },
     { nombre: 'director', descripcion: 'Aprueba o rechaza gastos' },
-    { nombre: 'tesoreria', descripcion: 'Ejecuta compras y registra pagos' },
-    { nombre: 'admin', descripcion: 'Administrador del sistema' },
+    { nombre: 'compras', descripcion: 'Gestiona compras y programa pagos' },
+    { nombre: 'tesoreria', descripcion: 'Ejecuta pagos y controla finanzas' },
+    { nombre: 'admin', descripcion: 'Administrador de organización' },
+    { nombre: 'super_admin', descripcion: 'Administrador de plataforma' },
   ];
 
   for (const role of roleNames) {
@@ -25,7 +27,42 @@ async function main() {
 
   console.log('Roles seeded successfully');
 
-  // Seed a test tenant
+  // --- Platform tenant (hidden, for super admin only) ---
+  const platformTenant = await prisma.tenants.upsert({
+    where: { slug: '__platform__' },
+    update: {},
+    create: {
+      nombre: 'Plataforma',
+      slug: '__platform__',
+      email_contacto: 'super@boxzenj.com',
+      moneda: 'ARS',
+    },
+  });
+
+  const superAdminRole = await prisma.roles.findUnique({ where: { nombre: 'super_admin' } });
+  if (!superAdminRole) throw new Error('super_admin role not found');
+
+  const passwordHash = await bcrypt.hash('admin1234', 12);
+  const superAdmin = await prisma.usuarios.upsert({
+    where: { tenant_id_email: { tenant_id: platformTenant.id, email: 'super@boxzenj.com' } },
+    update: {},
+    create: {
+      tenant_id: platformTenant.id,
+      nombre: 'Super Admin',
+      email: 'super@boxzenj.com',
+      password_hash: passwordHash,
+    },
+  });
+
+  await prisma.usuarios_roles.upsert({
+    where: { usuario_id_rol_id: { usuario_id: superAdmin.id, rol_id: superAdminRole.id } },
+    update: {},
+    create: { usuario_id: superAdmin.id, rol_id: superAdminRole.id },
+  });
+
+  console.log('Platform tenant & super admin seeded. Login: super@boxzenj.com / admin1234');
+
+  // --- Demo tenant (for testing) ---
   const testTenant = await prisma.tenants.upsert({
     where: { slug: 'org-demo' },
     update: {},
@@ -50,7 +87,6 @@ async function main() {
   });
 
   // Create admin user
-  const passwordHash = await bcrypt.hash('admin1234', 12);
   const adminUser = await prisma.usuarios.upsert({
     where: { tenant_id_email: { tenant_id: testTenant.id, email: 'admin@demo.com' } },
     update: {},

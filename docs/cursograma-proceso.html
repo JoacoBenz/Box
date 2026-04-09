@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Cursograma - Proceso de Solicitud de Compra</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f8f9fa; margin: 0; padding: 20px; }
+    h1 { text-align: center; color: #1e293b; }
+    .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+    .legend { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin: 20px 0; font-size: 14px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-color { width: 16px; height: 16px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Cursograma - Proceso de Solicitud de Compra</h1>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-color" style="background:#3b82f6"></div> Solicitante</div>
+      <div class="legend-item"><div class="legend-color" style="background:#8b5cf6"></div> Responsable de Área</div>
+      <div class="legend-item"><div class="legend-color" style="background:#f59e0b"></div> Director</div>
+      <div class="legend-item"><div class="legend-color" style="background:#10b981"></div> Compras</div>
+      <div class="legend-item"><div class="legend-color" style="background:#06b6d4"></div> Tesorería</div>
+      <div class="legend-item"><div class="legend-color" style="background:#ef4444"></div> Estados terminales</div>
+    </div>
+
+    <pre class="mermaid">
+flowchart TD
+    %% ── INICIO ──
+    START(("🟢 Inicio")) --> CREATE
+
+    %% ── SOLICITANTE ──
+    subgraph SOL["👤 SOLICITANTE"]
+        CREATE["📝 Crear Solicitud\n(borrador)"]
+        EDIT["✏️ Editar items,\njustificación, urgencia"]
+        SEND{"Enviar\nsolicitud?"}
+        CREATE --> EDIT
+        EDIT --> SEND
+    end
+
+    SEND -->|Sí| ENVIADA["📨 ENVIADA"]
+    SEND -->|No| EDIT
+
+    %% ── AUTO-VALIDACIÓN ──
+    ENVIADA --> CHECK_AUTO{"¿Solicitante es\nResponsable de Área?"}
+    CHECK_AUTO -->|Sí| AUTO_VAL["⚡ Auto-validada"]
+    AUTO_VAL --> VALIDADA
+    CHECK_AUTO -->|No| RESP_REV
+
+    %% ── RESPONSABLE DE ÁREA ──
+    subgraph RESP["👥 RESPONSABLE DE ÁREA"]
+        RESP_REV{"Revisar\nsolicitud"}
+        RESP_VAL["✅ Validar"]
+        RESP_DEV["↩️ Devolver\n(observaciones)"]
+    end
+
+    RESP_REV -->|Aprobar| RESP_VAL
+    RESP_REV -->|Observaciones| RESP_DEV
+    RESP_VAL --> VALIDADA["✅ VALIDADA"]
+    RESP_DEV --> DEV_RESP["🔙 DEVUELTA_RESP"]
+    DEV_RESP -->|"Solicitante corrige\ny re-envía"| ENVIADA
+
+    %% ── DIRECTOR ──
+    subgraph DIR["👔 DIRECTOR"]
+        DIR_REV{"Revisar\nsolicitud"}
+        DIR_APR["✅ Aprobar"]
+        DIR_DEV["↩️ Devolver\n(observaciones)"]
+        DIR_RECH["❌ Rechazar\n(motivo)"]
+    end
+
+    VALIDADA --> DIR_REV
+    DIR_REV -->|Aprobar| DIR_APR
+    DIR_REV -->|Observaciones| DIR_DEV
+    DIR_REV -->|Rechazar| DIR_RECH
+
+    DIR_APR --> EN_COMPRAS["🛒 EN_COMPRAS"]
+    DIR_DEV --> DEV_DIR["🔙 DEVUELTA_DIR"]
+    DIR_RECH --> RECHAZADA["🚫 RECHAZADA"]
+
+    DEV_DIR -->|"Solicitante corrige\ny re-envía"| ENVIADA
+    DEV_DIR -->|"Responsable\nre-valida"| VALIDADA
+
+    %% ── COMPRAS ──
+    subgraph COMP["🛒 COMPRAS"]
+        COMP_PROC{"Procesar\nsolicitud"}
+        COMP_PRIO["📋 Asignar prioridad\ny día de pago"]
+    end
+
+    EN_COMPRAS --> COMP_PROC
+    COMP_PROC --> COMP_PRIO
+    COMP_PRIO --> PAGO_PROG["💳 PAGO_PROGRAMADO"]
+
+    %% ── TESORERÍA ──
+    subgraph TES["💰 TESORERÍA"]
+        TES_COMPRA{"Registrar compra"}
+        TES_REG["📄 Cargar comprobante,\nmonto, proveedor,\nmedio de pago"]
+    end
+
+    PAGO_PROG --> TES_COMPRA
+    TES_COMPRA --> TES_REG
+    TES_REG --> ABONADA["💰 ABONADA"]
+
+    %% ── RECEPCIÓN (SOLICITANTE) ──
+    subgraph RECEP["📦 RECEPCIÓN"]
+        RECEP_CHECK{"¿Recepción\nconforme?"}
+        RECEP_OK["✅ Conforme"]
+        RECEP_OBS["⚠️ Con observaciones\n(tipo problema + detalle)"]
+    end
+
+    ABONADA --> RECEP_CHECK
+    RECEP_CHECK -->|Sí| RECEP_OK
+    RECEP_CHECK -->|No| RECEP_OBS
+
+    RECEP_OK --> CERRADA["🏁 CERRADA"]
+    RECEP_OBS --> RECIB_OBS["⚠️ RECIBIDA_CON_OBS"]
+
+    %% ── CIERRE ──
+    RECIB_OBS -->|"Compras/Tesorería\nresuelve y cierra"| CERRADA
+
+    %% ── ANULACIÓN (cualquier momento) ──
+    ANULADA["🚫 ANULADA"]
+    ENVIADA -.->|"Anular\n(solicitante/director/admin)"| ANULADA
+    VALIDADA -.->|Anular| ANULADA
+    EN_COMPRAS -.->|Anular| ANULADA
+    PAGO_PROG -.->|Anular| ANULADA
+
+    %% ── FIN ──
+    CERRADA --> FIN(("🔴 Fin"))
+    RECHAZADA --> FIN
+    ANULADA --> FIN
+
+    %% ── ESTILOS ──
+    classDef solicitante fill:#dbeafe,stroke:#3b82f6,color:#1e293b
+    classDef responsable fill:#ede9fe,stroke:#8b5cf6,color:#1e293b
+    classDef director fill:#fef3c7,stroke:#f59e0b,color:#1e293b
+    classDef compras fill:#d1fae5,stroke:#10b981,color:#1e293b
+    classDef tesoreria fill:#cffafe,stroke:#06b6d4,color:#1e293b
+    classDef terminal fill:#fee2e2,stroke:#ef4444,color:#991b1b
+    classDef estado fill:#f1f5f9,stroke:#64748b,color:#1e293b
+    classDef devuelto fill:#fff7ed,stroke:#f97316,color:#1e293b
+
+    class CREATE,EDIT,SEND solicitante
+    class RESP_REV,RESP_VAL,RESP_DEV responsable
+    class DIR_REV,DIR_APR,DIR_DEV,DIR_RECH director
+    class COMP_PROC,COMP_PRIO compras
+    class TES_COMPRA,TES_REG tesoreria
+    class RECEP_CHECK,RECEP_OK,RECEP_OBS solicitante
+    class RECHAZADA,ANULADA,CERRADA terminal
+    class ENVIADA,VALIDADA,EN_COMPRAS,PAGO_PROG,ABONADA,RECIB_OBS estado
+    class DEV_RESP,DEV_DIR devuelto
+    class AUTO_VAL estado
+    </pre>
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#e2e8f0',
+        primaryTextColor: '#1e293b',
+        lineColor: '#64748b',
+        fontSize: '14px',
+      },
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true,
+        curve: 'basis',
+        rankSpacing: 60,
+        nodeSpacing: 40,
+      },
+    });
+  </script>
+</body>
+</html>

@@ -1,66 +1,84 @@
-import { NextRequest } from 'next/server';
-import { getServerSession } from '@/lib/auth';
-import { tenantPrisma, prisma } from '@/lib/prisma';
-import { registrarAuditoria, getClientIp } from '@/lib/audit';
+import { withTenant, parseId } from '@/lib/api-handler';
+import { prisma } from '@/lib/prisma';
+import { apiError, verificarResponsableDeArea } from '@/lib/permissions';
+import { registrarAuditoria } from '@/lib/audit';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { getTenantConfigBool } from '@/lib/tenant-config';
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const session = await getServerSession();
-    const { id } = await params;
-    const solicitudId = parseInt(id);
-    const db = tenantPrisma(session.tenantId);
+export const POST = withTenant(async (request, { session, db, ip }, params) => {
+  const solicitudId = parseId(params.id);
+  if (!solicitudId) return apiError('BAD_REQUEST', 'ID inválido', 400);
 
-    const solicitud = await db.solicitudes.findFirst({ where: { id: solicitudId }, include: { items_solicitud: true } });
-    if (!solicitud) return Response.json({ error: { code: 'NOT_FOUND', message: 'No encontrada' } }, { status: 404 });
-    if (!['borrador', 'devuelta_resp', 'devuelta_dir'].includes(solicitud.estado)) {
-      return Response.json({ error: { code: 'BAD_REQUEST', message: 'Solo se pueden enviar solicitudes en borrador o devueltas' } }, { status: 400 });
+  const solicitud = await db.solicitudes.findFirst({ where: { id: solicitudId }, include: { items_solicitud: true } });
+  if (!solicitud) return apiError('NOT_FOUND', 'No encontrada', 404);
+  if (!['borrador', 'devuelta_resp', 'devuelta_dir'].includes(solicitud.estado)) {
+    return apiError('BAD_REQUEST', 'Solo se pueden enviar solicitudes en borrador o devueltas', 400);
+  }
+  if (solicitud.solicitante_id !== session.userId) {
+    return apiError('FORBIDDEN', 'Solo el solicitante puede enviar', 403);
+  }
+  if (solicitud.items_solicitud.length === 0) {
+    return apiError('BAD_REQUEST', 'La solicitud debe tener al menos un ítem', 400);
+  }
+
+  // Optimistic locking: verify no concurrent modification
+  const body = await request.json().catch(() => ({}));
+  const expectedUpdatedAt = body?.updated_at;
+  if (expectedUpdatedAt) {
+    const current = solicitud.updated_at.toISOString();
+    if (current !== expectedUpdatedAt) {
+      return apiError('CONFLICT', 'Esta solicitud fue modificada por otro usuario. Recargá la página.', 409);
     }
-    if (solicitud.solicitante_id !== session.userId) {
-      return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo el solicitante puede enviar' } }, { status: 403 });
-    }
-    if (solicitud.items_solicitud.length === 0) {
-      return Response.json({ error: { code: 'BAD_REQUEST', message: 'La solicitud debe tener al menos un ítem' } }, { status: 400 });
+  }
+
+  // Check if the solicitante is the responsable of the solicitud's area
+  const esResponsableDelArea = session.roles.includes('responsable_area')
+    && await verificarResponsableDeArea(session.tenantId, session.userId, solicitud.area_id);
+
+  const requiereValidacion = await getTenantConfigBool(session.tenantId, 'requiere_validacion_responsable', true);
+  const skipValidacion = !requiereValidacion || esResponsableDelArea;
+
+  if (skipValidacion) {
+    // Go directly to pendiente_dir (auto-validated or config skip)
+    await db.solicitudes.update({
+      where: { id: solicitudId },
+      data: {
+        estado: 'validada',
+        fecha_envio: new Date(),
+        validado_por_id: esResponsableDelArea ? session.userId : null,
+        fecha_validacion: esResponsableDelArea ? new Date() : null,
+      },
+    });
+
+    // Register auto-validation in audit for timeline
+    if (esResponsableDelArea) {
+      await registrarAuditoria({
+        tenantId: session.tenantId, usuarioId: session.userId,
+        accion: 'validar_solicitud', entidad: 'solicitud', entidadId: solicitudId,
+        datosNuevos: { automatico: true },
+        ipAddress: ip,
+      });
     }
 
-    // Optimistic locking: verify no concurrent modification
-    const body = await request.json().catch(() => ({}));
-    const expectedUpdatedAt = body?.updated_at;
-    if (expectedUpdatedAt) {
-      const current = solicitud.updated_at.toISOString();
-      if (current !== expectedUpdatedAt) {
-        return Response.json({ error: { code: 'CONFLICT', message: 'Esta solicitud fue modificada por otro usuario. Recargá la página.' } }, { status: 409 });
-      }
-    }
-
+    await notificarPorRol(session.tenantId, 'director', 'Nueva solicitud para aprobar', `${session.nombre} solicita: ${solicitud.titulo}`, solicitudId);
+  } else {
     await db.solicitudes.update({ where: { id: solicitudId }, data: { estado: 'enviada', fecha_envio: new Date() } });
 
-    const requiereValidacion = await getTenantConfigBool(session.tenantId, 'requiere_validacion_responsable', true);
-
-    if (!requiereValidacion) {
-      // Skip responsable validation — notify directors directly
-      await notificarPorRol(session.tenantId, 'director', 'Nueva solicitud para aprobar', `${session.nombre} solicita: ${solicitud.titulo}`, solicitudId);
+    const area = await prisma.areas.findFirst({ where: { id: solicitud.area_id, tenant_id: session.tenantId } });
+    if (!area?.responsable_id) {
+      await notificarPorRol(session.tenantId, 'director', 'Área sin responsable', `La solicitud "${solicitud.titulo}" fue enviada pero el área no tiene responsable asignado. Asigná uno para que pueda ser validada.`, solicitudId);
     } else {
-      const area = await prisma.areas.findFirst({ where: { id: solicitud.area_id, tenant_id: session.tenantId } });
-      if (!area?.responsable_id) {
-        await notificarPorRol(session.tenantId, 'director', 'Área sin responsable', `La solicitud "${solicitud.titulo}" fue enviada pero el área no tiene responsable asignado. Asigná uno para que pueda ser validada.`, solicitudId);
-      } else {
-        await crearNotificacion({
-          tenantId: session.tenantId,
-          destinatarioId: area.responsable_id,
-          tipo: 'solicitud_enviada',
-          titulo: 'Nueva solicitud para validar',
-          mensaje: `${session.nombre} solicita: ${solicitud.titulo}`,
-          solicitudId: solicitudId,
-        });
-      }
+      await crearNotificacion({
+        tenantId: session.tenantId,
+        destinatarioId: area.responsable_id,
+        tipo: 'solicitud_enviada',
+        titulo: 'Nueva solicitud para validar',
+        mensaje: `${session.nombre} solicita: ${solicitud.titulo}`,
+        solicitudId: solicitudId,
+      });
     }
-
-    await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'enviar_solicitud', entidad: 'solicitud', entidadId: solicitudId, ipAddress: getClientIp(request) });
-    return Response.json({ message: 'Solicitud enviada' });
-  } catch (error: any) {
-    if (error.message === 'No autenticado') return Response.json({ error: { code: 'UNAUTHORIZED', message: 'No autenticado' } }, { status: 401 });
-    return Response.json({ error: { code: 'INTERNAL', message: 'Error interno' } }, { status: 500 });
   }
-}
+
+  await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'enviar_solicitud', entidad: 'solicitud', entidadId: solicitudId, ipAddress: ip });
+  return Response.json({ message: 'Solicitud enviada', autoValidada: esResponsableDelArea });
+});

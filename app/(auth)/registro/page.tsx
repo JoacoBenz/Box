@@ -3,10 +3,13 @@
 import { useState } from 'react';
 import { Form, Input, Button, Card, Typography, Alert, Space, Result } from 'antd';
 import Link from 'next/link';
+import { useFormValid } from '@/hooks/useFormValid';
 
 const { Title, Text } = Typography;
 
 export default function RegistroPage() {
+  const [form] = Form.useForm();
+  const { hasErrors, formProps } = useFormValid(form);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [registrado, setRegistrado] = useState(false);
@@ -47,8 +50,8 @@ export default function RegistroPage() {
       <Card style={{ width: 480, boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
         <Result
           status="success"
-          title="Registro enviado"
-          subTitle="Tu organización fue registrada y está pendiente de aprobación. Te notificaremos cuando sea activada."
+          title="Verificá tu email"
+          subTitle="Te enviamos un email de verificación. Revisá tu bandeja de entrada (y spam) para completar el registro."
           extra={<Link href="/login"><Button type="primary">Volver al inicio</Button></Link>}
         />
       </Card>
@@ -65,7 +68,7 @@ export default function RegistroPage() {
 
         {error && <Alert title={error} type="error" showIcon />}
 
-        <Form layout="vertical" onFinish={onFinish} autoComplete="off">
+        <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off" {...formProps}>
           <Form.Item name="nombreOrganizacion" label="Nombre de la organización" rules={[{ required: true, min: 3, message: 'Mínimo 3 caracteres' }]}>
             <Input placeholder="Mi Empresa S.A." size="large" />
           </Form.Item>
@@ -94,7 +97,7 @@ export default function RegistroPage() {
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0 }}>
-            <Button type="primary" htmlType="submit" block size="large" loading={loading}>
+            <Button type="primary" htmlType="submit" block size="large" loading={loading} disabled={hasErrors || loading}>
               Registrar Organización
             </Button>
           </Form.Item>

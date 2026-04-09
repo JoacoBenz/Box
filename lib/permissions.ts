@@ -34,6 +34,9 @@ export function verificarSegregacion(
       }
       break;
     case 'comprar':
+      if (solicitud.solicitante_id === usuarioId) {
+        return { permitido: false, motivo: 'No podés registrar la compra de tu propia solicitud' };
+      }
       if (solicitud.aprobado_por_id != null && solicitud.aprobado_por_id === usuarioId) {
         return { permitido: false, motivo: 'No podés registrar la compra de una solicitud que vos aprobaste' };
       }
@@ -53,6 +56,11 @@ export async function verificarResponsableDeArea(
   return !!area;
 }
 
-export function apiError(code: string, message: string, status: number, details?: { field: string; message: string }[]) {
-  return Response.json({ error: { code, message, details } }, { status });
+/** True when the caller is responsable_area but NOT admin or director */
+export function isOnlyResponsable(roles: string[]): boolean {
+  return roles.includes('responsable_area') && !roles.includes('admin') && !roles.includes('director');
+}
+
+export function apiError(code: string, message: string | undefined, status: number, details?: { field: string; message: string }[]) {
+  return Response.json({ error: { code, message: message ?? 'Error', details } }, { status });
 }

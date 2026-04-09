@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
-const PUBLIC_ROUTES = ['/login', '/registro', '/api/auth', '/api/registro'];
+const PUBLIC_ROUTES = ['/login', '/registro', '/recuperar', '/restablecer', '/verificar-email', '/unirse', '/api/auth', '/api/registro', '/api/unirse'];
 
 const ROLE_ROUTES: Record<string, string[]> = {
-  '/validaciones': ['responsable_area'],
-  '/aprobaciones': ['director'],
-  '/compras':      ['tesoreria'],
-  '/admin':        ['admin'],
+  '/validaciones': ['responsable_area', 'super_admin'],
+  '/aprobaciones': ['director', 'super_admin'],
+  '/compras':      ['tesoreria', 'super_admin'],
+  '/admin':        ['admin', 'super_admin'],
 };
 
 export async function proxy(request: NextRequest) {
@@ -34,7 +34,19 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+
+  // Security headers
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+
+  return response;
 }
 
 export const config = {

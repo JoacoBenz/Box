@@ -7,6 +7,8 @@ import Link from 'next/link'
 import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types'
 import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types'
 import dayjs from 'dayjs'
+import { useFormValid } from '@/hooks/useFormValid'
+import { useTheme } from '@/components/ThemeProvider'
 
 const { Title, Text } = Typography
 const { TextArea } = Input
@@ -18,29 +20,32 @@ interface Solicitud {
   urgencia: string
   estado: string
   tipo: string
-  monto_estimado_total: number | null
   prioridad_compra: string | null
   dia_pago_programado: string | null
   area: { nombre: string } | null
   solicitante: { nombre: string }
 }
 
+const ALL_ESTADOS = Object.entries(ESTADOS_SOLICITUD).map(([value, { label }]) => ({ value, label }))
+
 export default function GestionComprasPage() {
+  const { tokens } = useTheme()
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([])
   const [loading, setLoading] = useState(true)
+  const [estadoFilter, setEstadoFilter] = useState<string>('en_compras')
 
-  const [procesarOpen, setProcesarOpen] = useState(false)
   const [programarOpen, setProgramarOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
 
-  const [procesarForm] = Form.useForm()
   const [programarForm] = Form.useForm()
+  const { hasErrors, formProps } = useFormValid(programarForm)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/solicitudes?estado=aprobada,en_compras,pago_programado&limit=100')
+      const params = estadoFilter ? `estado=${estadoFilter}` : ''
+      const res = await fetch(`/api/solicitudes?${params}&limit=100`)
       if (res.ok) {
         const data = await res.json()
         setSolicitudes(data.data ?? [])
@@ -48,7 +53,7 @@ export default function GestionComprasPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [estadoFilter])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -58,36 +63,18 @@ export default function GestionComprasPage() {
     return () => window.removeEventListener('admin-tenant-change', handler)
   }, [fetchData])
 
-  async function handleProcesar(values: { prioridad_compra: string; observaciones?: string }) {
+  async function handleProgramarPago(values: { prioridad_compra: string; dia_pago_programado: any; observaciones?: string }) {
     if (!selectedId) return
     setActionLoading(true)
     try {
       const res = await fetch(`/api/solicitudes/${selectedId}/procesar-compras`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        Modal.error({ title: 'Error', content: data?.error?.message ?? `Error ${res.status}` })
-      } else {
-        setProcesarOpen(false)
-        procesarForm.resetFields()
-        fetchData()
-      }
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
-  async function handleProgramar(values: { dia_pago_programado: any }) {
-    if (!selectedId) return
-    setActionLoading(true)
-    try {
-      const res = await fetch(`/api/solicitudes/${selectedId}/programar-pago`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dia_pago_programado: values.dia_pago_programado.toISOString() }),
+        body: JSON.stringify({
+          prioridad_compra: values.prioridad_compra,
+          dia_pago_programado: values.dia_pago_programado.toISOString(),
+          observaciones: values.observaciones || null,
+        }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
@@ -158,42 +145,20 @@ export default function GestionComprasPage() {
         val ? new Date(val).toLocaleDateString('es-AR') : <Text type="secondary">—</Text>,
     },
     {
-      title: 'Monto',
-      dataIndex: 'monto_estimado_total',
-      width: 110,
-      render: (val: number | null) =>
-        val != null ? `$${Number(val).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` : <Text type="secondary">—</Text>,
-    },
-    {
       title: 'Acciones',
       key: 'acciones',
-      width: 210,
+      width: 180,
       render: (_, row) => (
         <Space size="small" wrap>
-          {['aprobada', 'en_compras'].includes(row.estado) && (
-            <Button
-              size="small"
-              type="primary"
-              onClick={() => { setSelectedId(row.id); setProcesarOpen(true) }}
-            >
-              Procesar
-            </Button>
-          )}
           {row.estado === 'en_compras' && (
             <Button
               size="small"
-              style={{ background: '#7c3aed', borderColor: '#7c3aed', color: '#fff' }}
+              type="primary"
+              style={{ background: tokens.colorPrimary, borderColor: tokens.colorPrimary }}
               onClick={() => { setSelectedId(row.id); setProgramarOpen(true) }}
             >
               Programar Pago
             </Button>
-          )}
-          {row.estado === 'pago_programado' && (
-            <Link href={`/compras/${row.id}`}>
-              <Button size="small" type="primary" style={{ background: '#059669', borderColor: '#059669' }}>
-                Registrar Compra
-              </Button>
-            </Link>
           )}
         </Space>
       ),
@@ -203,8 +168,22 @@ export default function GestionComprasPage() {
   return (
     <div className="page-content">
       <div style={{ marginBottom: 24 }}>
-        <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>Gestión de Compras</Title>
-        <Text type="secondary" style={{ marginTop: 4, display: 'block' }}>Pipeline de solicitudes aprobadas para procesar y pagar</Text>
+        <Title level={3} style={{ margin: 0, fontWeight: 700, color: tokens.textPrimary }}>Gestión de Compras</Title>
+        <Text type="secondary" style={{ marginTop: 4, display: 'block' }}>Pipeline de solicitudes para programar pagos</Text>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <Space>
+          <Text strong>Estado:</Text>
+          <Select
+            value={estadoFilter}
+            onChange={setEstadoFilter}
+            style={{ width: 220 }}
+            allowClear
+            placeholder="Todos los estados"
+            options={[{ value: '', label: 'Todos los estados' }, ...ALL_ESTADOS]}
+          />
+        </Space>
       </div>
 
       <Table
@@ -214,7 +193,7 @@ export default function GestionComprasPage() {
         loading={loading}
         pagination={{ pageSize: 20, showSizeChanger: false }}
         size="middle"
-        locale={{ emptyText: 'No hay solicitudes pendientes en Compras' }}
+        locale={{ emptyText: 'No hay solicitudes para mostrar' }}
         rowClassName={(record: any) =>
           record.urgencia === 'critica' ? 'urgencia-row-critica' :
           record.urgencia === 'urgente' ? 'urgencia-row-urgente' :
@@ -222,17 +201,17 @@ export default function GestionComprasPage() {
         }
       />
 
-      {/* Modal: Procesar */}
+      {/* Modal: Programar Pago */}
       <Modal
-        title="Procesar Solicitud"
-        open={procesarOpen}
-        onCancel={() => { setProcesarOpen(false); procesarForm.resetFields() }}
-        onOk={() => procesarForm.submit()}
-        okText="Procesar"
-        okButtonProps={{ loading: actionLoading }}
+        title="Programar Pago"
+        open={programarOpen}
+        onCancel={() => { setProgramarOpen(false); programarForm.resetFields() }}
+        onOk={() => programarForm.submit()}
+        okText="Programar Pago"
+        okButtonProps={{ loading: actionLoading, disabled: hasErrors }}
         cancelText="Cancelar"
       >
-        <Form form={procesarForm} layout="vertical" onFinish={handleProcesar}>
+        <Form form={programarForm} layout="vertical" onFinish={handleProgramarPago} {...formProps}>
           <Form.Item name="prioridad_compra" label="Prioridad" rules={[{ required: true, message: 'Seleccioná la prioridad' }]}>
             <Select placeholder="Seleccionar prioridad" options={[
               { value: 'urgente', label: 'Urgente' },
@@ -240,23 +219,6 @@ export default function GestionComprasPage() {
               { value: 'programado', label: 'Programado' },
             ]} />
           </Form.Item>
-          <Form.Item name="observaciones" label="Observaciones">
-            <TextArea rows={3} placeholder="Notas internas de Compras..." maxLength={500} showCount />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Modal: Programar Pago */}
-      <Modal
-        title="Programar Pago"
-        open={programarOpen}
-        onCancel={() => { setProgramarOpen(false); programarForm.resetFields() }}
-        onOk={() => programarForm.submit()}
-        okText="Programar"
-        okButtonProps={{ loading: actionLoading }}
-        cancelText="Cancelar"
-      >
-        <Form form={programarForm} layout="vertical" onFinish={handleProgramar}>
           <Form.Item
             name="dia_pago_programado"
             label="Fecha de pago"
@@ -268,6 +230,9 @@ export default function GestionComprasPage() {
               disabledDate={(d) => d && d < dayjs().startOf('day')}
               placeholder="Seleccionar fecha"
             />
+          </Form.Item>
+          <Form.Item name="observaciones" label="Observaciones">
+            <TextArea rows={3} placeholder="Notas internas de Compras..." maxLength={500} showCount />
           </Form.Item>
         </Form>
       </Modal>

@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
-import { tenantPrisma, prisma } from '@/lib/prisma';
+import { withAdminOverride, withAuth } from '@/lib/api-handler';
+import { tenantPrisma } from '@/lib/prisma';
 import { verificarRol, apiError } from '@/lib/permissions';
-import { registrarAuditoria, getClientIp } from '@/lib/audit';
+import { registrarAuditoria } from '@/lib/audit';
+import { invalidateCache } from '@/lib/cache';
 
-export async function GET(request: Request) {
-  const { session, effectiveTenantId } = await (await import('@/lib/tenant-override')).getEffectiveTenantId(request);
-  const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma;
+export const GET = withAdminOverride({}, async (_request, { session, db }) => {
 
   // Admin sees all, others see their own delegations
   const where = verificarRol(session.roles, ['admin'])
@@ -23,14 +22,9 @@ export async function GET(request: Request) {
   });
 
   return NextResponse.json(delegaciones);
-}
+});
 
-export async function POST(request: Request) {
-  const session = await getServerSession();
-  if (!verificarRol(session.roles, ['admin', 'director', 'responsable_area'])) {
-    return apiError('FORBIDDEN', 'No tenés permisos para delegar', 403);
-  }
-
+export const POST = withAuth({ roles: ['admin', 'director', 'responsable_area'] }, async (request, { session, ip }) => {
   const body = await request.json();
   const { delegado_id, rol_delegado, fecha_inicio, fecha_fin, motivo } = body;
 
@@ -74,8 +68,11 @@ export async function POST(request: Request) {
     entidad: 'delegaciones',
     entidadId: delegacion.id,
     datosNuevos: { delegado_id, rol_delegado, fecha_inicio, fecha_fin },
-    ipAddress: getClientIp(request),
+    ipAddress: ip,
   });
 
+  // Invalidate cached roles for the delegado so new roles take effect immediately
+  invalidateCache(`t:${session.tenantId}:roles:${delegado_id}`);
+
   return NextResponse.json(delegacion, { status: 201 });
-}
+});

@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { Select, Button, Divider } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import ProveedorCreateModal from './ProveedorCreateModal'
+import { useTheme } from '@/components/ThemeProvider'
 
 interface Proveedor {
   id: number
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export default function ProveedorSelect({ value, onChange, disabled, placeholder = 'Buscar proveedor...' }: Props) {
+  const { tokens } = useTheme()
   const [options, setOptions] = useState<Proveedor[]>([])
   const [loading, setLoading] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
@@ -87,7 +89,7 @@ export default function ProveedorSelect({ value, onChange, disabled, placeholder
               type="text"
               icon={<PlusOutlined />}
               onClick={() => setModalOpen(true)}
-              style={{ width: '100%', textAlign: 'left', color: '#1677ff' }}
+              style={{ width: '100%', textAlign: 'left', color: tokens.colorPrimary }}
             >
               Crear nuevo proveedor
             </Button>

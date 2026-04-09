@@ -1,7 +1,8 @@
 'use client'
 
-import { Card, Descriptions, Typography } from 'antd'
-import { ShopOutlined, LinkOutlined } from '@ant-design/icons'
+import { Card, Descriptions, Typography, Button } from 'antd'
+import { ShopOutlined, LinkOutlined, EditOutlined } from '@ant-design/icons'
+import { useTheme } from '@/components/ThemeProvider'
 
 interface Proveedor {
   id: number
@@ -17,19 +18,22 @@ interface Proveedor {
 interface Props {
   proveedor: Proveedor
   style?: React.CSSProperties
+  editable?: boolean
+  onEditBancarios?: () => void
 }
 
-export default function ProveedorInfoCard({ proveedor, style }: Props) {
+export default function ProveedorInfoCard({ proveedor, style, editable, onEditBancarios }: Props) {
+  const { tokens } = useTheme()
   return (
     <Card
       size="small"
       title={
         <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <ShopOutlined style={{ color: '#1677ff' }} />
+          <ShopOutlined style={{ color: tokens.colorPrimary }} />
           <span style={{ fontWeight: 600 }}>Proveedor: {proveedor.nombre}</span>
         </span>
       }
-      style={{ borderRadius: 10, background: '#f8fafc', ...style }}
+      style={{ borderRadius: 10, background: tokens.bgInput, ...style }}
     >
       <Descriptions column={1} size="small" colon={false}>
         {proveedor.cuit && (
@@ -44,11 +48,21 @@ export default function ProveedorInfoCard({ proveedor, style }: Props) {
         {proveedor.direccion && (
           <Descriptions.Item label="Dirección">{proveedor.direccion}</Descriptions.Item>
         )}
-        {proveedor.datos_bancarios && (
-          <Descriptions.Item label="Datos Bancarios">
-            <Typography.Text style={{ whiteSpace: 'pre-line' }}>{proveedor.datos_bancarios}</Typography.Text>
-          </Descriptions.Item>
-        )}
+        <Descriptions.Item label={
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            Datos Bancarios
+            {editable && (
+              <Button type="link" size="small" icon={<EditOutlined />} onClick={onEditBancarios} style={{ padding: 0, height: 'auto', fontSize: 12 }}>
+                Editar
+              </Button>
+            )}
+          </span>
+        }>
+          {proveedor.datos_bancarios
+            ? <Typography.Text style={{ whiteSpace: 'pre-line' }}>{proveedor.datos_bancarios}</Typography.Text>
+            : <span style={{ color: tokens.textMuted }}>Sin datos bancarios</span>
+          }
+        </Descriptions.Item>
         {proveedor.link_pagina && (
           <Descriptions.Item label="Web">
             <a href={proveedor.link_pagina} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>

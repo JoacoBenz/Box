@@ -591,7 +591,7 @@ describe('proveedorSchema', () => {
 
 // ─── centroCostoSchema ───────────────────────────────────────────────────────
 describe('centroCostoSchema', () => {
-  const valid = { nombre: 'Administración', codigo: 'ADM-001' };
+  const valid = { nombre: 'Administración', codigo: 'ADM-001', area_id: 1 };
 
   it('accepts valid centro de costo', () => {
     expect(centroCostoSchema.safeParse(valid).success).toBe(true);
@@ -640,22 +640,25 @@ describe('centroCostoSchema', () => {
 
 // ─── procesarComprasSchema ───────────────────────────────────────────────────
 describe('procesarComprasSchema', () => {
+  const base = { prioridad_compra: 'normal', dia_pago_programado: '2026-04-15' };
+
   it('accepts valid procesarCompras', () => {
-    expect(procesarComprasSchema.safeParse({ prioridad_compra: 'normal' }).success).toBe(true);
+    expect(procesarComprasSchema.safeParse(base).success).toBe(true);
   });
 
   it('accepts all priority values', () => {
     for (const p of ['urgente', 'normal', 'programado']) {
-      expect(procesarComprasSchema.safeParse({ prioridad_compra: p }).success).toBe(true);
+      expect(procesarComprasSchema.safeParse({ ...base, prioridad_compra: p }).success).toBe(true);
     }
   });
 
   it('rejects invalid priority', () => {
-    expect(procesarComprasSchema.safeParse({ prioridad_compra: 'baja' }).success).toBe(false);
+    expect(procesarComprasSchema.safeParse({ ...base, prioridad_compra: 'baja' }).success).toBe(false);
   });
 
   it('accepts with optional observaciones', () => {
     expect(procesarComprasSchema.safeParse({
+      ...base,
       prioridad_compra: 'urgente',
       observaciones: 'Priorizar esta compra',
     }).success).toBe(true);
@@ -679,19 +682,31 @@ describe('procesarComprasSchema', () => {
 // ─── devolucionSchema ────────────────────────────────────────────────────────
 describe('devolucionSchema', () => {
   it('accepts valid reason (>= 10 chars)', () => {
-    expect(devolucionSchema.safeParse({ observaciones: 'Falta justificación del pedido' }).success).toBe(true);
+    expect(devolucionSchema.safeParse({ observaciones: 'Falta justificación del pedido', origen: 'responsable' }).success).toBe(true);
+  });
+
+  it('accepts director origen', () => {
+    expect(devolucionSchema.safeParse({ observaciones: 'Falta justificación del pedido', origen: 'director' }).success).toBe(true);
+  });
+
+  it('rejects invalid origen', () => {
+    expect(devolucionSchema.safeParse({ observaciones: 'Falta justificación del pedido', origen: 'invalid' }).success).toBe(false);
+  });
+
+  it('rejects missing origen', () => {
+    expect(devolucionSchema.safeParse({ observaciones: 'Falta justificación del pedido' }).success).toBe(false);
   });
 
   it('rejects too short reason (< 10 chars)', () => {
-    expect(devolucionSchema.safeParse({ observaciones: 'No' }).success).toBe(false);
+    expect(devolucionSchema.safeParse({ observaciones: 'No', origen: 'responsable' }).success).toBe(false);
   });
 
   it('rejects whitespace-only reason', () => {
-    expect(devolucionSchema.safeParse({ observaciones: '          ' }).success).toBe(false);
+    expect(devolucionSchema.safeParse({ observaciones: '          ', origen: 'responsable' }).success).toBe(false);
   });
 
   it('rejects missing observaciones', () => {
-    expect(devolucionSchema.safeParse({}).success).toBe(false);
+    expect(devolucionSchema.safeParse({ origen: 'responsable' }).success).toBe(false);
   });
 });
 

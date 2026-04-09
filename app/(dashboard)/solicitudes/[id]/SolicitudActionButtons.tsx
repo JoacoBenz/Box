@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, Space, Modal, Form, Input, Popconfirm, Radio, Select, Typography, Tag, DatePicker, Upload } from 'antd'
-import { UploadOutlined } from '@ant-design/icons'
+import { UploadOutlined, CopyOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
@@ -50,11 +50,8 @@ export default function SolicitudActionButtons({
   const [recepcionOpen, setRecepcionOpen] = useState(false)
   const [recepcionForm] = Form.useForm<{ conforme: 'si' | 'no'; tipo_problema?: string; observaciones?: string }>()
 
-  const [procesarOpen, setProcesarOpen] = useState(false)
-  const [procesarForm] = Form.useForm<{ prioridad_compra: string; observaciones?: string }>()
-
   const [programarOpen, setProgramarOpen] = useState(false)
-  const [programarForm] = Form.useForm<{ dia_pago_programado: any }>()
+  const [programarForm] = Form.useForm<{ prioridad_compra: string; dia_pago_programado: any; observaciones?: string }>()
 
   const roles = sessionRoles
   const isOwner = solicitanteId === sessionUserId
@@ -73,17 +70,17 @@ export default function SolicitudActionButtons({
   const canDevolver = (isResponsable && isAreaResponsable && estado === 'enviada') || (isDirector && estado === 'validada')
   const canAprobar = isDirector && (estado === 'validada' || (skipValidacion && estado === 'enviada'))
   const canRechazar = isDirector && (estado === 'validada' || (skipValidacion && estado === 'enviada'))
-  const canProcesarCompras = isCompras && ['aprobada', 'en_compras'].includes(estado)
   const canProgramarPago = isCompras && estado === 'en_compras'
-  const canRegistrarCompra = (isTesoreria || isCompras) && ['aprobada', 'pago_programado', 'en_compras'].includes(estado)
-  const canConfirmarRecepcion = ((isSolicitante && isOwner) || (isResponsable && isAreaResponsable)) && estado === 'comprada'
+  const canRegistrarCompra = isTesoreria && estado === 'pago_programado'
+  const canConfirmarRecepcion = ((isSolicitante && isOwner) || (isResponsable && isAreaResponsable)) && estado === 'abonada'
   const canCerrar = (isTesoreria || isAdmin) && estado === 'recibida_con_obs'
   const canAnular = ['enviada', 'validada', 'aprobada', 'en_compras', 'pago_programado'].includes(estado) && (isOwner || isDirector || isAdmin)
   const isCerrada = estado === 'cerrada'
+  const canReusar = estado === 'cerrada'
 
   const hasAnyAction =
     canEditar || canEnviar || canValidar || canDevolver || canAprobar ||
-    canRechazar || canProcesarCompras || canProgramarPago || canRegistrarCompra || canConfirmarRecepcion || canCerrar || canAnular || isCerrada
+    canRechazar || canProgramarPago || canRegistrarCompra || canConfirmarRecepcion || canCerrar || canAnular || isCerrada || canReusar
 
   async function postAction(path: string, body?: Record<string, unknown>) {
     setLoading(true)
@@ -132,14 +129,13 @@ export default function SolicitudActionButtons({
     rechazarForm.resetFields()
   }
 
-  async function handleProcesarCompras(values: { prioridad_compra: string; observaciones?: string }) {
-    await postAction(`/api/solicitudes/${solicitudId}/procesar-compras`, { ...values, updated_at: updatedAt })
-    setProcesarOpen(false)
-    procesarForm.resetFields()
-  }
-
-  async function handleProgramarPago(values: { dia_pago_programado: any }) {
-    await postAction(`/api/solicitudes/${solicitudId}/programar-pago`, { dia_pago_programado: values.dia_pago_programado.toISOString(), updated_at: updatedAt })
+  async function handleProgramarPago(values: { prioridad_compra: string; dia_pago_programado: any; observaciones?: string }) {
+    await postAction(`/api/solicitudes/${solicitudId}/procesar-compras`, {
+      prioridad_compra: values.prioridad_compra,
+      dia_pago_programado: values.dia_pago_programado.toISOString(),
+      observaciones: values.observaciones || null,
+      updated_at: updatedAt,
+    })
     setProgramarOpen(false)
     programarForm.resetFields()
   }
@@ -199,6 +195,12 @@ export default function SolicitudActionButtons({
       {!hasAnyAction ? null : <Space wrap>
         {isCerrada && <Tag color="default">Cerrada</Tag>}
 
+        {canReusar && (
+          <Link href={`/solicitudes/nueva?desde=${solicitudId}`}>
+            <Button icon={<CopyOutlined />}>Reusar como plantilla</Button>
+          </Link>
+        )}
+
         {canEditar && (
           <Link href={`/solicitudes/${solicitudId}/editar`}>
             <Button>Editar</Button>
@@ -232,12 +234,6 @@ export default function SolicitudActionButtons({
         {canRechazar && (
           <Button danger onClick={() => setRechazarOpen(true)}>
             Rechazar
-          </Button>
-        )}
-
-        {canProcesarCompras && (
-          <Button type="primary" onClick={() => setProcesarOpen(true)}>
-            Procesar
           </Button>
         )}
 
@@ -332,18 +328,18 @@ export default function SolicitudActionButtons({
         </Form>
       </Modal>
 
-      {/* Modal: Procesar Compras */}
+      {/* Modal: Programar Pago */}
       <Modal
-        title="Procesar Solicitud"
-        open={procesarOpen}
-        onCancel={() => { setProcesarOpen(false); procesarForm.resetFields() }}
-        onOk={() => procesarForm.submit()}
-        okText="Procesar"
+        title="Programar Pago"
+        open={programarOpen}
+        onCancel={() => { setProgramarOpen(false); programarForm.resetFields() }}
+        onOk={() => programarForm.submit()}
+        okText="Programar Pago"
         okButtonProps={{ loading }}
         cancelText="Cancelar"
         destroyOnHidden={false}
       >
-        <Form form={procesarForm} layout="vertical" onFinish={handleProcesarCompras}>
+        <Form form={programarForm} layout="vertical" onFinish={handleProgramarPago}>
           <Form.Item name="prioridad_compra" label="Prioridad" rules={[{ required: true, message: 'Seleccioná la prioridad' }]}>
             <Select placeholder="Seleccionar prioridad" options={[
               { value: 'urgente', label: 'Urgente' },
@@ -351,24 +347,6 @@ export default function SolicitudActionButtons({
               { value: 'programado', label: 'Programado' },
             ]} />
           </Form.Item>
-          <Form.Item name="observaciones" label="Observaciones">
-            <TextArea rows={3} maxLength={500} showCount />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Modal: Programar Pago */}
-      <Modal
-        title="Programar Pago"
-        open={programarOpen}
-        onCancel={() => { setProgramarOpen(false); programarForm.resetFields() }}
-        onOk={() => programarForm.submit()}
-        okText="Programar"
-        okButtonProps={{ loading }}
-        cancelText="Cancelar"
-        destroyOnHidden={false}
-      >
-        <Form form={programarForm} layout="vertical" onFinish={handleProgramarPago}>
           <Form.Item
             name="dia_pago_programado"
             label="Fecha de pago"
@@ -379,6 +357,9 @@ export default function SolicitudActionButtons({
               format="DD/MM/YYYY"
               disabledDate={(d) => d && d < dayjs().startOf('day')}
             />
+          </Form.Item>
+          <Form.Item name="observaciones" label="Observaciones">
+            <TextArea rows={3} placeholder="Notas internas de Compras..." maxLength={500} showCount />
           </Form.Item>
         </Form>
       </Modal>

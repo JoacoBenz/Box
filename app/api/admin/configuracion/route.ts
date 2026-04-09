@@ -3,11 +3,12 @@ import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { verificarRol, apiError } from '@/lib/permissions';
 import { getEffectiveTenantId } from '@/lib/tenant-override';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 
 export async function GET(request: NextRequest) {
   try {
     const { session, effectiveTenantId } = await getEffectiveTenantId(request);
-    if (!verificarRol(session.roles, ['admin', 'director'])) {
+    if (!verificarRol(session.roles, ['admin', 'super_admin'])) {
       return apiError('FORBIDDEN', 'Sin permisos', 403);
     }
 
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const { session, effectiveTenantId } = await getEffectiveTenantId(request);
-    if (!verificarRol(session.roles, ['admin', 'director'])) {
+    if (!verificarRol(session.roles, ['admin', 'super_admin'])) {
       return apiError('FORBIDDEN', 'Sin permisos', 403);
     }
 
@@ -57,6 +58,13 @@ export async function PUT(request: NextRequest) {
       where: { tenant_id_clave: { tenant_id: tid, clave } },
       update: { valor: String(valor ?? '') },
       create: { tenant_id: tid, clave, valor: String(valor ?? '') },
+    });
+
+    await registrarAuditoria({
+      tenantId: tid, usuarioId: session.userId,
+      accion: 'actualizar_configuracion', entidad: 'configuracion',
+      datosNuevos: { clave, valor: String(valor ?? '') },
+      ipAddress: getClientIp(request),
     });
 
     return Response.json({ ok: true });
