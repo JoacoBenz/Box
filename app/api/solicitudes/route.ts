@@ -101,6 +101,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
         solicitante: { select: { id: true, nombre: true } },
         area: { select: { id: true, nombre: true } },
         centro_costo: { select: { id: true, nombre: true, codigo: true } },
+        items_solicitud: { select: { precio_estimado: true, cantidad: true } },
       },
     }),
     db.solicitudes.count({ where }),
