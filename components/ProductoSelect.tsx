@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { AutoComplete, Typography } from 'antd'
 
 const { Text } = Typography
@@ -18,14 +18,13 @@ interface Props {
   onSelect?: (producto: Producto) => void
   placeholder?: string
   disabled?: boolean
-  /** Current text value for the input (controlled) */
+  /** Controlled by Form.Item */
   value?: string
   onChange?: (value: string) => void
 }
 
 export default function ProductoSelect({ onSelect, placeholder = 'Buscar producto o escribir descripción...', disabled, value, onChange }: Props) {
   const [options, setOptions] = useState<Producto[]>([])
-  const [loading, setLoading] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const fetchProductos = useCallback(async (search: string) => {
@@ -33,35 +32,34 @@ export default function ProductoSelect({ onSelect, placeholder = 'Buscar product
       setOptions([])
       return
     }
-    setLoading(true)
     try {
       const res = await fetch(`/api/productos?q=${encodeURIComponent(search)}&limit=10`)
       if (res.ok) {
-        const data = await res.json()
-        setOptions(data)
+        setOptions(await res.json())
       }
-    } finally {
-      setLoading(false)
+    } catch {
+      // ignore
     }
   }, [])
 
   const handleSearch = useCallback((val: string) => {
-    onChange?.(val)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => fetchProductos(val), 300)
-  }, [fetchProductos, onChange])
+  }, [fetchProductos])
 
   const handleSelect = useCallback((_val: string, option: any) => {
     const producto = options.find(p => p.id === option.key)
     if (producto) {
-      onChange?.(producto.nombre)
       onSelect?.(producto)
     }
-  }, [options, onSelect, onChange])
+    // Clear dropdown options after selection to prevent label overlap
+    setOptions([])
+  }, [options, onSelect])
 
   return (
     <AutoComplete
       value={value}
+      onChange={onChange}
       onSearch={handleSearch}
       onSelect={handleSelect}
       placeholder={placeholder}

@@ -190,7 +190,7 @@ export default function NuevaSolicitudPage() {
         <Alert
           type="info"
           showIcon
-          message={`Creando solicitud a partir de: "${templateTitulo}"`}
+          title={`Creando solicitud a partir de: "${templateTitulo}"`}
           description="Los campos fueron pre-cargados. Podés modificarlos antes de guardar."
           style={{ borderRadius: 10, marginBottom: 20 }}
           closable

@@ -112,7 +112,7 @@ export default function ReportesPage() {
                   value={totalGasto}
                   prefix="$"
                   precision={2}
-                  valueStyle={{ color: tokens.colorPrimary, fontWeight: 700 }}
+                  styles={{ content: { color: tokens.colorPrimary, fontWeight: 700 } }}
                 />
               </Card>
             </Col>
@@ -122,7 +122,7 @@ export default function ReportesPage() {
                   title="Total Compras"
                   value={totalCompras}
                   prefix={<ShoppingOutlined />}
-                  valueStyle={{ fontWeight: 700 }}
+                  styles={{ content: { fontWeight: 700 } }}
                 />
               </Card>
             </Col>
@@ -132,7 +132,7 @@ export default function ReportesPage() {
                   title="Productos Diferentes"
                   value={totalProductos}
                   prefix={<RiseOutlined />}
-                  valueStyle={{ fontWeight: 700 }}
+                  styles={{ content: { fontWeight: 700 } }}
                 />
               </Card>
             </Col>
