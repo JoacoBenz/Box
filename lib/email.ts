@@ -16,7 +16,7 @@ function getTransporter(): nodemailer.Transporter {
   return transporter;
 }
 
-const EMAIL_FROM = process.env.EMAIL_FROM ?? `Box <${process.env.GMAIL_USER ?? 'noreply@boxzenj.com'}>`;
+const EMAIL_FROM = process.env.EMAIL_FROM ?? `Box <${process.env.GMAIL_USER ?? 'noreply@box.com'}>`;
 
 export async function sendEmail({
   to,
