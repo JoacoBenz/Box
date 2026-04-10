@@ -282,8 +282,8 @@ export async function POST(request: NextRequest) {
               })
             : hasUrgent;
 
-          // Skip if digest disabled AND no urgent solicitudes
-          if (!user.email_digest && !userHasUrgent) {
+          // Skip if digest disabled (urgent override temporarily disabled)
+          if (!user.email_digest) {
             skipped++;
             continue;
           }
