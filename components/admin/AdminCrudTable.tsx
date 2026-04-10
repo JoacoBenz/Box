@@ -8,9 +8,11 @@ import {
   Modal,
   Form,
   Space,
+  Skeleton,
   Popconfirm,
   Typography,
 } from 'antd'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import type { ColumnsType } from 'antd/es/table'
 import type { FormInstance } from 'antd/es/form'
 import { useAdminTenant } from '@/components/admin/TenantSelector'
@@ -52,6 +54,8 @@ export interface AdminCrudTableProps<T extends { id: number }> {
   entityName?: string
   /** Use form.submit() instead of manual validate (for onFinish pattern) */
   useFormSubmit?: boolean
+  /** Render a mobile card for each item (shown instead of Table on small screens) */
+  renderMobileCard?: (item: T, helpers: { openEdit: (item: T) => void; handleDeactivate: (item: T) => void }) => ReactNode
 }
 
 export default function AdminCrudTable<T extends { id: number }>({
@@ -71,7 +75,9 @@ export default function AdminCrudTable<T extends { id: number }>({
   createLabel,
   entityName = 'registro',
   useFormSubmit,
+  renderMobileCard,
 }: AdminCrudTableProps<T>) {
+  const isMobile = useIsMobile()
   const { tokens } = useTheme()
   const { message } = App.useApp()
   const [items, setItems] = useState<T[]>([])
@@ -211,14 +217,36 @@ export default function AdminCrudTable<T extends { id: number }>({
         )}
       </div>
 
-      <Table
-        rowKey="id"
-        columns={resolvedColumns}
-        dataSource={items}
-        loading={loading}
-        pagination={{ pageSize: 20, showSizeChanger: false }}
-        size="middle"
-      />
+      {isMobile && renderMobileCard ? (
+        loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 12,
+              padding: 14,
+              marginBottom: 10,
+            }}>
+              <Skeleton active paragraph={{ rows: 3 }} />
+            </div>
+          ))
+        ) : (
+          items.map((item) => (
+            <div key={item.id}>
+              {renderMobileCard(item, { openEdit, handleDeactivate })}
+            </div>
+          ))
+        )
+      ) : (
+        <Table
+          rowKey="id"
+          columns={resolvedColumns}
+          dataSource={items}
+          loading={loading}
+          pagination={{ pageSize: 20, showSizeChanger: false }}
+          size="middle"
+        />
+      )}
 
       <Modal
         title={editing ? `Editar ${entityName}` : `Nuevo ${entityName}`}

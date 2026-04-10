@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useTheme } from '@/components/ThemeProvider'
-import { Table, Tag, Select, Space, Button, Input, Card, Typography, DatePicker } from 'antd'
+import { Table, Tag, Select, Space, Button, Input, Card, Typography, DatePicker, Skeleton } from 'antd'
 import { SearchOutlined, DownloadOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useRouter } from 'next/navigation'
 import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types'
@@ -10,8 +10,14 @@ import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types'
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
 import Link from 'next/link'
 import dayjs from 'dayjs'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 const { Text } = Typography
+
+interface SolicitudItem {
+  precio_estimado: number | null
+  cantidad: number
+}
 
 interface Solicitud {
   id: number
@@ -23,6 +29,16 @@ interface Solicitud {
   created_at: string
   area: { id: number; nombre: string } | null
   solicitante: { id: number; nombre: string }
+  items_solicitud?: SolicitudItem[]
+}
+
+function calcMonto(items?: SolicitudItem[]): number {
+  if (!items?.length) return 0
+  return items.reduce((acc, item) => acc + (item.precio_estimado != null ? item.precio_estimado * item.cantidad : 0), 0)
+}
+
+function formatMonto(value: number): string {
+  return value > 0 ? `$${value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'
 }
 
 interface Props {
@@ -33,6 +49,7 @@ interface Props {
 export default function SolicitudesTable({ roles, areas }: Props) {
   const { tokens } = useTheme()
   const router = useRouter()
+  const isMobile = useIsMobile()
   const canExport = ['director', 'tesoreria', 'compras', 'admin'].some(r => roles.includes(r))
   const isSolicitante = roles.includes('solicitante')
 
@@ -191,9 +208,9 @@ export default function SolicitudesTable({ roles, areas }: Props) {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'center', gap: isMobile ? 10 : 0, marginBottom: 20 }}>
         <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: tokens.textPrimary }}>Solicitudes de Compra</h3>
-        <Space>
+        <Space style={isMobile ? { justifyContent: 'flex-end' } : undefined}>
           {canExport && (
             <Button
               icon={<DownloadOutlined />}
@@ -223,19 +240,19 @@ export default function SolicitudesTable({ roles, areas }: Props) {
 
       {/* Filters */}
       <Card size="small" style={{ borderRadius: 12, marginBottom: 16, border: `1px solid ${tokens.borderColor}` }} styles={{ body: { padding: '12px 16px' } }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: isMobile ? 'stretch' : 'center', flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row' }}>
           <Input
             prefix={<SearchOutlined style={{ color: tokens.textMuted }} />}
             placeholder="Buscar..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             allowClear
-            style={{ borderRadius: 8, flex: '1 1 180px', minWidth: 120 }}
+            style={{ borderRadius: 8, flex: isMobile ? undefined : '1 1 180px', minWidth: isMobile ? undefined : 120, width: isMobile ? '100%' : undefined }}
           />
           <Select
             allowClear
             placeholder="Solicitante"
-            style={{ flex: '0 0 160px' }}
+            style={{ flex: isMobile ? undefined : '0 0 160px', width: isMobile ? '100%' : undefined }}
             value={solicitanteId}
             onChange={(v) => { setSolicitanteId(v); setPage(1) }}
             options={solicitantes.map(s => ({ value: s.id, label: s.nombre }))}
@@ -245,7 +262,7 @@ export default function SolicitudesTable({ roles, areas }: Props) {
           <Select
             allowClear
             placeholder="Área"
-            style={{ flex: '0 0 140px' }}
+            style={{ flex: isMobile ? undefined : '0 0 140px', width: isMobile ? '100%' : undefined }}
             value={areaId}
             onChange={(v) => { setAreaId(v); setPage(1) }}
             options={areas.map(a => ({ value: a.id, label: a.nombre }))}
@@ -255,26 +272,28 @@ export default function SolicitudesTable({ roles, areas }: Props) {
           <Select
             allowClear
             placeholder="Estado"
-            style={{ flex: '0 0 130px' }}
+            style={{ flex: isMobile ? undefined : '0 0 130px', width: isMobile ? '100%' : undefined }}
             value={estado}
             onChange={(v) => { setEstado(v); setPage(1) }}
             options={Object.entries(ESTADOS_SOLICITUD).map(([k, v]) => ({ value: k, label: v.label }))}
           />
-          <DatePicker
-            placeholder="Desde"
-            style={{ flex: '0 0 130px' }}
-            format="DD/MM/YYYY"
-            value={fechaDesde ? dayjs(fechaDesde) : null}
-            onChange={(d: any) => { setFechaDesde(d ? d.format('YYYY-MM-DD') : undefined); setPage(1) }}
-          />
-          <DatePicker
-            placeholder="Hasta"
-            style={{ flex: '0 0 130px' }}
-            format="DD/MM/YYYY"
-            value={fechaHasta ? dayjs(fechaHasta) : null}
-            onChange={(d: any) => { setFechaHasta(d ? d.format('YYYY-MM-DD') : undefined); setPage(1) }}
-          />
-          <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <DatePicker
+              placeholder="Desde"
+              style={{ flex: isMobile ? 1 : '0 0 130px' }}
+              format="DD/MM/YYYY"
+              value={fechaDesde ? dayjs(fechaDesde) : null}
+              onChange={(d: any) => { setFechaDesde(d ? d.format('YYYY-MM-DD') : undefined); setPage(1) }}
+            />
+            <DatePicker
+              placeholder="Hasta"
+              style={{ flex: isMobile ? 1 : '0 0 130px' }}
+              format="DD/MM/YYYY"
+              value={fechaHasta ? dayjs(fechaHasta) : null}
+              onChange={(d: any) => { setFechaHasta(d ? d.format('YYYY-MM-DD') : undefined); setPage(1) }}
+            />
+          </div>
+          <div style={{ marginLeft: isMobile ? 0 : 'auto', flexShrink: 0, display: 'flex', justifyContent: isMobile ? 'space-between' : undefined, alignItems: 'center' }}>
             <Space>
               <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{total} resultado{total !== 1 ? 's' : ''}</Text>
               <Button icon={<ReloadOutlined />} onClick={clearFilters} size="small" type="text" style={{ color: tokens.textSecondary }} />
@@ -283,39 +302,109 @@ export default function SolicitudesTable({ roles, areas }: Props) {
         </div>
       </Card>
 
-      {/* Table */}
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={data}
-        loading={loading}
-        pagination={{
-          current: page,
-          pageSize,
-          total,
-          showSizeChanger: true,
-          pageSizeOptions: ['10', '20', '50'],
-          showTotal: (t, range) => `${range[0]}-${range[1]} de ${t}`,
-          size: 'small',
-        }}
-        onChange={handleTableChange}
-        size="middle"
-        locale={{ emptyText: 'No hay solicitudes para mostrar' }}
-        style={{ borderRadius: 12, overflow: 'hidden' }}
-        rowClassName={(record: Solicitud) =>
-          record.urgencia === 'critica' ? 'urgencia-row-critica' :
-          record.urgencia === 'urgente' ? 'urgencia-row-urgente' :
-          'urgencia-row-normal'
-        }
-        onRow={(record) => ({
-          style: { cursor: 'pointer' },
-          onClick: (e) => {
-            // Don't navigate if clicking on the number link
-            if ((e.target as HTMLElement).tagName === 'A') return
-            router.push(`/solicitudes/${record.id}`)
-          },
-        })}
-      />
+      {/* Table / Mobile Cards */}
+      {isMobile ? (
+        <div>
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} style={{ background: 'var(--bg-card)', borderRadius: 12, padding: 14, marginBottom: 10, border: '1px solid var(--border-color)' }}>
+                <Skeleton active paragraph={{ rows: 2 }} />
+              </div>
+            ))
+          ) : data.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No hay solicitudes para mostrar</div>
+          ) : (
+            <>
+              {data.map((record) => {
+                const estadoInfo = ESTADOS_SOLICITUD[record.estado as EstadoSolicitud]
+                const urgenciaInfo = URGENCIAS[record.urgencia as UrgenciaSolicitud]
+                const monto = calcMonto(record.items_solicitud)
+                return (
+                  <div
+                    key={record.id}
+                    onClick={() => router.push(`/solicitudes/${record.id}`)}
+                    style={{
+                      background: 'var(--bg-card)',
+                      borderRadius: 12,
+                      padding: 14,
+                      marginBottom: 10,
+                      border: '1px solid var(--border-color)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                      <a
+                        onClick={(e) => { e.stopPropagation(); router.push(`/solicitudes/${record.id}`) }}
+                        style={{ fontWeight: 700, color: 'var(--color-primary)', fontSize: 14 }}
+                      >
+                        {record.numero}
+                      </a>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        {urgenciaInfo ? <Tag color={urgenciaInfo.color} style={{ margin: 0 }}>{urgenciaInfo.label}</Tag> : <Tag style={{ margin: 0 }}>{record.urgencia}</Tag>}
+                        {estadoInfo ? <Tag color={estadoInfo.color} style={{ margin: 0 }}>{estadoInfo.label}</Tag> : <Tag style={{ margin: 0 }}>{record.estado}</Tag>}
+                      </div>
+                    </div>
+                    <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 500, marginBottom: 6, lineHeight: 1.3 }}>
+                      {record.titulo}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
+                        {record.solicitante?.nombre ?? '—'}{record.area ? ` · ${record.area.nombre}` : ''}
+                      </div>
+                      <div style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}>
+                        {formatMonto(monto)}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+              {/* Mobile pagination */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0' }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {Math.min((page - 1) * pageSize + 1, total)}-{Math.min(page * pageSize, total)} de {total}
+                </Text>
+                <Space>
+                  <Button size="small" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Ant.</Button>
+                  <Button size="small" disabled={page * pageSize >= total} onClick={() => setPage(p => p + 1)}>Sig.</Button>
+                </Space>
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={data}
+          loading={loading}
+          pagination={{
+            current: page,
+            pageSize,
+            total,
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50'],
+            showTotal: (t, range) => `${range[0]}-${range[1]} de ${t}`,
+            size: 'small',
+          }}
+          onChange={handleTableChange}
+          size="middle"
+          locale={{ emptyText: 'No hay solicitudes para mostrar' }}
+          style={{ borderRadius: 12, overflow: 'hidden' }}
+          rowClassName={(record: Solicitud) =>
+            record.urgencia === 'critica' ? 'urgencia-row-critica' :
+            record.urgencia === 'urgente' ? 'urgencia-row-urgente' :
+            'urgencia-row-normal'
+          }
+          onRow={(record) => ({
+            style: { cursor: 'pointer' },
+            onClick: (e) => {
+              // Don't navigate if clicking on the number link
+              if ((e.target as HTMLElement).tagName === 'A') return
+              router.push(`/solicitudes/${record.id}`)
+            },
+          })}
+        />
+      )}
     </div>
   )
 }

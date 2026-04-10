@@ -71,6 +71,7 @@ export function DashboardShell({ tenantNombre, userName, areaNombre, roles, chil
             rolPrincipal={rolPrincipal}
             roles={roles}
             collapsed={collapsed}
+            isMobile={isMobile}
             onToggle={handleToggle}
           />
           <Content style={{ margin: isMobile ? '12px 12px 16px' : '20px 24px 24px', minHeight: 280 }}>

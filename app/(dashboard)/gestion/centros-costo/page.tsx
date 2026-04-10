@@ -4,6 +4,9 @@ import { Form, Input, InputNumber, Select, Tag, Button, Space, Popconfirm } from
 import type { ColumnsType } from 'antd/es/table'
 import AdminCrudTable from '@/components/admin/AdminCrudTable'
 
+const formatCurrency = (val: number | null) =>
+  `$${Number(val ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
+
 interface CentroCosto {
   id: number
   nombre: string
@@ -38,6 +41,58 @@ export default function CentrosCostoPage() {
         area_id: item.area?.id ?? null,
       })}
       patchUrl={(item) => `/api/centros-costo/${item.id}`}
+      renderMobileCard={(item, { openEdit, handleDeactivate }) => (
+        <div
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 12,
+            padding: 14,
+            marginBottom: 10,
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+            <span style={{ color: 'var(--color-primary)', fontWeight: 600, fontSize: 15 }}>
+              {item.nombre}
+            </span>
+            <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+              <Tag>{item.codigo}</Tag>
+              <Tag color={item.activo ? 'green' : 'default'}>{item.activo ? 'Activo' : 'Inactivo'}</Tag>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8 }}>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
+              Área: {item.area?.nombre ?? '—'}
+            </span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
+              Presup. Anual: {formatCurrency(item.presupuesto_anual)}
+            </span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
+              Presup. Mensual: {formatCurrency(item.presupuesto_mensual)}
+            </span>
+            {item.tenant && (
+              <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                Org: {item.tenant.nombre}
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button size="small" onClick={() => openEdit(item)}>Editar</Button>
+            {item.activo && (
+              <Popconfirm
+                title="¿Desactivar este centro de costo?"
+                onConfirm={() => handleDeactivate(item)}
+                okText="Sí"
+                cancelText="No"
+              >
+                <Button size="small" danger>Desactivar</Button>
+              </Popconfirm>
+            )}
+          </div>
+        </div>
+      )}
       columns={(selectedTenant, { openEdit, handleDeactivate }) => [
         ...(!selectedTenant ? [{
           title: 'Organización',
@@ -57,13 +112,13 @@ export default function CentrosCostoPage() {
           title: 'Presupuesto Anual',
           dataIndex: 'presupuesto_anual',
           width: 160,
-          render: (val: number | null) => `$${Number(val ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`,
+          render: (val: number | null) => formatCurrency(val),
         },
         {
           title: 'Presupuesto Mensual',
           dataIndex: 'presupuesto_mensual',
           width: 160,
-          render: (val: number | null) => `$${Number(val ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`,
+          render: (val: number | null) => formatCurrency(val),
         },
         {
           title: 'Estado',

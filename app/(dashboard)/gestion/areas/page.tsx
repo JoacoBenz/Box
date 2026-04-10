@@ -4,6 +4,9 @@ import { Form, Input, InputNumber, Select, Tag, Button, Space, Popconfirm } from
 import type { ColumnsType } from 'antd/es/table'
 import AdminCrudTable from '@/components/admin/AdminCrudTable'
 
+const fmt = (v: number | null) =>
+  v && Number(v) > 0 ? `$${Number(v).toLocaleString('es-AR', { minimumFractionDigits: 0 })}` : null
+
 interface Area {
   id: number
   nombre: string
@@ -87,6 +90,41 @@ export default function AdminAreasPage() {
           ),
         }] : []),
       ]}
+      renderMobileCard={(area, { openEdit, handleDeactivate }) => (
+        <div style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 12,
+          padding: 14,
+          marginBottom: 10,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-primary)' }}>{area.nombre}</span>
+            <Tag color={area.activo ? 'green' : 'default'}>{area.activo ? 'Activa' : 'Inactiva'}</Tag>
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
+            Responsable: {area.responsable?.nombre ?? <span style={{ color: 'var(--text-muted)' }}>Sin asignar</span>}
+          </div>
+          {(fmt(area.presupuesto_anual) || fmt(area.presupuesto_mensual)) && (
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
+              {fmt(area.presupuesto_anual) && <span>Anual: {fmt(area.presupuesto_anual)}</span>}
+              {fmt(area.presupuesto_anual) && fmt(area.presupuesto_mensual) && <span> &middot; </span>}
+              {fmt(area.presupuesto_mensual) && <span>Mensual: {fmt(area.presupuesto_mensual)}</span>}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button size="small" onClick={() => openEdit(area)}>Editar</Button>
+            <Popconfirm
+              title={area.activo ? '¿Desactivar esta área?' : '¿Activar esta área?'}
+              onConfirm={() => handleDeactivate(area)}
+              okText="Sí"
+              cancelText="No"
+            >
+              <Button size="small" danger={area.activo}>{area.activo ? 'Desactivar' : 'Activar'}</Button>
+            </Popconfirm>
+          </div>
+        </div>
+      )}
       renderForm={(_form, _editing, usuarios: Usuario[]) => (
         <>
           <Form.Item

@@ -240,6 +240,58 @@ export default function AdminUsuariosPage() {
       renderForm={(form, editing, areas: Area[]) => (
         <UsuarioFormFields form={form} editing={editing as Usuario | null} areas={areas} />
       )}
+      renderMobileCard={(u, { openEdit, handleDeactivate }) => (
+        <div style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 12,
+          padding: 14,
+          marginBottom: 10,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-primary)' }}>{u.nombre}</div>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>{u.email}</div>
+            </div>
+            <Tag color={u.activo ? 'green' : 'default'} style={{ marginLeft: 8, flexShrink: 0 }}>
+              {u.activo ? 'Activo' : 'Inactivo'}
+            </Tag>
+          </div>
+
+          {u.area && (
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6 }}>
+              {u.area.nombre}
+            </div>
+          )}
+          {!u.area && u.area_sugerida && (
+            <div style={{ marginBottom: 6 }}>
+              <Tag color="orange" style={{ fontSize: 12 }}>Sugerida: {u.area_sugerida}</Tag>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10 }}>
+            {u.usuarios_roles?.filter(rr => rr.rol?.nombre !== 'super_admin').length > 0
+              ? u.usuarios_roles.filter(rr => rr.rol?.nombre !== 'super_admin').map(rr => {
+                  const rol = rr.rol?.nombre as RolNombre
+                  return <Tag key={rol} color={ROL_COLORS[rol] ?? 'default'} style={{ fontSize: 12 }}>{ROL_LABELS[rol] ?? rol}</Tag>
+                })
+              : <Tag color="default" style={{ fontSize: 12 }}>Sin roles</Tag>
+            }
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button size="small" onClick={() => openEdit(u)}>Editar</Button>
+            <Popconfirm
+              title={u.activo ? '¿Desactivar este usuario?' : '¿Activar este usuario?'}
+              onConfirm={() => handleDeactivate(u)}
+              okText="Sí"
+              cancelText="No"
+            >
+              <Button size="small" danger={u.activo}>{u.activo ? 'Desactivar' : 'Activar'}</Button>
+            </Popconfirm>
+          </div>
+        </div>
+      )}
     />
   )
 }

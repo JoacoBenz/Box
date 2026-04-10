@@ -197,7 +197,7 @@ export function Sidebar({ roles, pendientes = {}, collapsed, isMobile, drawerOpe
           placement="left"
           open={drawerOpen}
           onClose={onDrawerClose}
-          width={260}
+          size="default"
           styles={{ body: { padding: 0, background: tokens.sidebarBg }, header: { display: 'none' } }}
           style={{ zIndex: 1001 }}
         >

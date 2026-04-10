@@ -19,6 +19,7 @@ interface HeaderProps {
   rolPrincipal: string;
   roles: string[];
   collapsed: boolean;
+  isMobile?: boolean;
   onToggle: () => void;
 }
 
@@ -37,7 +38,7 @@ interface SearchResult {
   proveedores: { id: number; nombre: string; cuit: string }[];
 }
 
-export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, roles, collapsed, onToggle }: HeaderProps) {
+export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, roles, collapsed, isMobile, onToggle }: HeaderProps) {
   const { tokens, mode, toggleTheme } = useTheme();
   const router = useRouter()
 
@@ -137,95 +138,141 @@ export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, ro
       <AntHeader style={{
         background: tokens.headerBg,
         borderBottom: `1px solid ${tokens.headerBorder}`,
-        padding: '0 24px',
+        padding: isMobile ? '0 12px' : '0 24px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        height: 64,
+        height: 56,
         position: 'sticky',
         top: 0,
         zIndex: 100,
         boxShadow: tokens.headerShadow,
+        gap: 8,
       }}>
-        <Space>
+        {/* Left side: hamburger + tenant name */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, flex: isMobile ? 1 : undefined }}>
           <Button
             type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            icon={isMobile ? <MenuUnfoldOutlined /> : (collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />)}
             onClick={onToggle}
-            style={{ fontSize: 16, width: 38, height: 38, borderRadius: 10, color: tokens.textMuted }}
+            style={{ fontSize: 18, width: 40, height: 40, borderRadius: 10, color: tokens.textMuted, flexShrink: 0 }}
           />
-          <Text strong style={{ fontSize: 15, color: tokens.textPrimary }}>{tenantNombre}</Text>
-        </Space>
+          <Text strong style={{
+            fontSize: isMobile ? 14 : 15,
+            color: tokens.textPrimary,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>{tenantNombre}</Text>
+        </div>
 
-        <Space size="middle">
-          {/* Search bar */}
+        {/* Right side: search, theme, notifications, user */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 4 : 12, flexShrink: 0 }}>
+          {/* Search — icon-only on mobile, expandable bar on desktop */}
           <div ref={containerRef} style={{ position: 'relative' }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                border: '1px solid',
-                borderColor: searchOpen ? tokens.colorPrimary : tokens.borderColor,
-                borderRadius: 10,
-                height: 36,
-                width: searchOpen ? 'min(320px, calc(100vw - 200px))' : 160,
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                background: searchOpen ? tokens.searchBgActive : tokens.searchBgInactive,
-                boxShadow: searchOpen ? tokens.searchShadow : 'none',
-                overflow: 'hidden',
-                cursor: searchOpen ? 'text' : 'pointer',
-              }}
-              onClick={() => { if (!searchOpen) setSearchOpen(true) }}
-            >
-              <SearchOutlined style={{ color: searchOpen ? tokens.colorPrimary : tokens.textMuted, fontSize: 14, marginLeft: 10, flexShrink: 0 }} />
-              {searchOpen ? (
-                <input
-                  ref={inputRef}
-                  value={query}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  placeholder="Buscar solicitudes, proveedores..."
-                  aria-label="Buscar solicitudes y proveedores"
-                  role="searchbox"
-                  style={{
-                    border: 'none',
-                    outline: 'none',
-                    background: 'transparent',
-                    flex: 1,
-                    fontSize: 13,
-                    padding: '0 8px',
-                    color: tokens.textPrimary,
-                    height: '100%',
-                  }}
-                  onKeyDown={(e) => { if (e.key === 'Escape') closeSearch() }}
-                />
-              ) : (
-                <span style={{ fontSize: 13, color: tokens.textMuted, fontWeight: 400, padding: '0 8px', flex: 1 }}>Buscar...</span>
-              )}
-              {searchOpen && query ? (
-                <Button
-                  type="text"
-                  size="small"
-                  icon={searching ? <LoadingOutlined spin /> : <CloseOutlined />}
-                  onClick={(e) => { e.stopPropagation(); if (!searching) { setQuery(''); setResults(null); inputRef.current?.focus() } }}
-                  style={{ color: tokens.textMuted, marginRight: 4, width: 24, height: 24, minWidth: 24 }}
-                />
-              ) : null}
-            </div>
+            {isMobile && !searchOpen ? (
+              <Button
+                type="text"
+                icon={<SearchOutlined />}
+                onClick={() => setSearchOpen(true)}
+                style={{ fontSize: 16, width: 36, height: 36, borderRadius: 10, color: tokens.textMuted }}
+              />
+            ) : (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  border: '1px solid',
+                  borderColor: searchOpen ? tokens.colorPrimary : tokens.borderColor,
+                  borderRadius: 10,
+                  height: 36,
+                  width: isMobile
+                    ? (searchOpen ? 'calc(100vw - 80px)' : 36)
+                    : (searchOpen ? 'min(320px, calc(100vw - 400px))' : 160),
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  background: searchOpen ? tokens.searchBgActive : tokens.searchBgInactive,
+                  boxShadow: searchOpen ? tokens.searchShadow : 'none',
+                  overflow: 'hidden',
+                  cursor: searchOpen ? 'text' : 'pointer',
+                  ...(isMobile && searchOpen ? {
+                    position: 'fixed',
+                    top: 10,
+                    left: 12,
+                    right: 12,
+                    width: 'auto',
+                    zIndex: 1002,
+                    height: 40,
+                  } : {}),
+                }}
+                onClick={() => { if (!searchOpen) setSearchOpen(true) }}
+              >
+                <SearchOutlined style={{ color: searchOpen ? tokens.colorPrimary : tokens.textMuted, fontSize: 14, marginLeft: 10, flexShrink: 0 }} />
+                {searchOpen ? (
+                  <input
+                    ref={inputRef}
+                    value={query}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    placeholder="Buscar solicitudes, proveedores..."
+                    aria-label="Buscar solicitudes y proveedores"
+                    role="searchbox"
+                    style={{
+                      border: 'none',
+                      outline: 'none',
+                      background: 'transparent',
+                      flex: 1,
+                      fontSize: 13,
+                      padding: '0 8px',
+                      color: tokens.textPrimary,
+                      height: '100%',
+                    }}
+                    onKeyDown={(e) => { if (e.key === 'Escape') closeSearch() }}
+                  />
+                ) : (
+                  <span style={{ fontSize: 13, color: tokens.textMuted, fontWeight: 400, padding: '0 8px', flex: 1 }}>Buscar...</span>
+                )}
+                {searchOpen && (
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={searching ? <LoadingOutlined spin /> : <CloseOutlined />}
+                    onClick={(e) => { e.stopPropagation(); if (!searching) { if (query) { setQuery(''); setResults(null); inputRef.current?.focus() } else { closeSearch() } } }}
+                    style={{ color: tokens.textMuted, marginRight: 4, width: 28, height: 28, minWidth: 28 }}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Search overlay backdrop on mobile */}
+            {isMobile && searchOpen && (
+              <div
+                onClick={closeSearch}
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(0,0,0,0.4)',
+                  zIndex: 1001,
+                }}
+              />
+            )}
 
             {/* Results dropdown */}
             {searchOpen && (hasResults || noResults) && (
               <div style={{
-                position: 'absolute',
-                top: 42,
-                right: 0,
-                width: 'min(400px, calc(100vw - 32px))',
-                maxHeight: 420,
+                position: isMobile ? 'fixed' : 'absolute',
+                top: isMobile ? 56 : 42,
+                right: isMobile ? 12 : 0,
+                left: isMobile ? 12 : undefined,
+                width: isMobile ? 'auto' : 'min(400px, calc(100vw - 32px))',
+                maxHeight: isMobile ? 'calc(100vh - 80px)' : 420,
                 overflowY: 'auto',
                 background: tokens.bgInput,
                 borderRadius: 10,
                 border: `1px solid ${tokens.headerBorder}`,
                 boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)',
-                zIndex: 1001,
+                zIndex: 1003,
                 animation: 'searchDropIn 0.15s ease-out',
               }}>
                 {noResults && (
@@ -303,26 +350,28 @@ export function AppHeader({ tenantNombre, userName, areaNombre, rolPrincipal, ro
             type="text"
             icon={mode === 'dark' ? <SunOutlined /> : <MoonOutlined />}
             onClick={toggleTheme}
-            style={{ fontSize: 16, width: 38, height: 38, borderRadius: 10, color: tokens.textMuted }}
+            style={{ fontSize: 16, width: 36, height: 36, borderRadius: 10, color: tokens.textMuted }}
             title={mode === 'dark' ? 'Modo claro' : 'Modo oscuro'}
           />
           <NotificationBell />
           <Dropdown menu={{ items: menuItems }} placement="bottomRight">
-            <Space style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: 12, transition: 'background 0.2s' }}>
+            <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: '4px 4px 4px 4px', borderRadius: 12 }}>
               <Avatar
                 icon={<UserOutlined />}
                 style={{ background: tokens.avatarGradient }}
-                size={34}
+                size={32}
               />
-              <Space orientation="vertical" size={0} style={{ lineHeight: 1.2 }}>
-                <Text strong style={{ fontSize: 13, color: tokens.textPrimary }}>{userName}</Text>
-                <Text type="secondary" style={{ fontSize: 11 }}>
-                  {areaNombre ? `${areaNombre} · ` : ''}{ROL_LABELS[rolPrincipal] ?? rolPrincipal}
-                </Text>
-              </Space>
-            </Space>
+              {!isMobile && (
+                <div style={{ lineHeight: 1.2 }}>
+                  <Text strong style={{ fontSize: 13, color: tokens.textPrimary, display: 'block' }}>{userName}</Text>
+                  <Text type="secondary" style={{ fontSize: 11 }}>
+                    {areaNombre ? `${areaNombre} · ` : ''}{ROL_LABELS[rolPrincipal] ?? rolPrincipal}
+                  </Text>
+                </div>
+              )}
+            </div>
           </Dropdown>
-        </Space>
+        </div>
       </AntHeader>
 
       <style>{`

@@ -412,13 +412,17 @@ body {
     padding: 0 !important;
   }
 
-  /* Tables: horizontal scroll */
+  /* Tables: horizontal scroll with proper containment */
   .ant-table-wrapper {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    margin: 0 -4px;
+  }
+  .ant-table {
+    min-width: 560px;
   }
 
-  /* Cards: full width */
+  /* Cards: full width, no overflow */
   .ant-card {
     border-radius: 12px !important;
   }
@@ -431,6 +435,10 @@ body {
     display: flex;
     flex-direction: column;
   }
+  .ant-descriptions-item-label,
+  .ant-descriptions-item-content {
+    padding: 8px 12px !important;
+  }
 
   /* Forms: full width inputs */
   .ant-select, .ant-picker, .ant-input-number {
@@ -438,33 +446,81 @@ body {
     min-width: 0 !important;
   }
 
-  /* Space: vertical on mobile */
+  /* Space: wrap on mobile */
   .ant-space-horizontal {
     flex-wrap: wrap;
   }
 
-  /* Header search results */
-  .search-results-dropdown {
-    width: calc(100vw - 32px) !important;
-    max-width: 400px;
-  }
-
-  /* Stat cards */
+  /* Stat cards in grid */
   .ant-statistic-title {
     font-size: 12px !important;
   }
   .ant-statistic-content-value {
     font-size: 20px !important;
   }
+
+  /* Title sizes */
+  h3.ant-typography {
+    font-size: 18px !important;
+  }
+
+  /* Buttons row: wrap */
+  .ant-space-horizontal > .ant-space-item {
+    margin-right: 0 !important;
+  }
+
+  /* Modal: full width on mobile */
+  .ant-modal {
+    max-width: calc(100vw - 24px) !important;
+    margin: 12px auto !important;
+  }
+  .ant-modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  /* Drawer: ensure proper z-index */
+  .ant-drawer {
+    z-index: 1001 !important;
+  }
+
+  /* Pagination: compact */
+  .ant-pagination {
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+  }
+  .ant-pagination-options {
+    display: none !important;
+  }
+
+  /* Tags: smaller */
+  .ant-tag {
+    font-size: 11px !important;
+    padding: 0 6px !important;
+    line-height: 20px !important;
+  }
+
+  /* Timeline / steps: vertical */
+  .ant-steps-horizontal {
+    flex-direction: column !important;
+  }
 }
 
 @media (max-width: 480px) {
   /* Extra small: tighter spacing */
   .ant-card-body {
-    padding: 16px !important;
+    padding: 12px !important;
   }
   .ant-form-item {
-    margin-bottom: 16px !important;
+    margin-bottom: 12px !important;
+  }
+  .ant-modal {
+    max-width: calc(100vw - 16px) !important;
+    margin: 8px auto !important;
+  }
+  h3.ant-typography {
+    font-size: 16px !important;
   }
 }
 
