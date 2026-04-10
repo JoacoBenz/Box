@@ -5,7 +5,7 @@ import type { ColumnsType } from 'antd/es/table'
 import AdminCrudTable from '@/components/admin/AdminCrudTable'
 
 const fmt = (v: number | null) =>
-  v && Number(v) > 0 ? `$${Number(v).toLocaleString('es-AR', { minimumFractionDigits: 0 })}` : null
+  v && Number(v) > 0 ? `$${Number(v).toLocaleString('es-AR', { minimumFractionDigits: 0 })}` : '$0'
 
 interface Area {
   id: number
@@ -54,7 +54,7 @@ export default function AdminAreasPage() {
           width: 140,
           render: (_: unknown, r: Area) => r.presupuesto_anual && Number(r.presupuesto_anual) > 0
             ? `$${Number(r.presupuesto_anual).toLocaleString('es-AR', { minimumFractionDigits: 0 })}`
-            : <span style={{ color: 'var(--text-muted)' }}>—</span>,
+            : <span style={{ color: 'var(--text-muted)' }}>$0</span>,
         },
         {
           title: 'Presup. Mensual',
@@ -62,7 +62,7 @@ export default function AdminAreasPage() {
           width: 140,
           render: (_: unknown, r: Area) => r.presupuesto_mensual && Number(r.presupuesto_mensual) > 0
             ? `$${Number(r.presupuesto_mensual).toLocaleString('es-AR', { minimumFractionDigits: 0 })}`
-            : <span style={{ color: 'var(--text-muted)' }}>—</span>,
+            : <span style={{ color: 'var(--text-muted)' }}>$0</span>,
         },
         {
           title: 'Estado',

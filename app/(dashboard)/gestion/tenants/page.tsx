@@ -105,8 +105,8 @@ export default function AdminTenantsPage() {
       msg.success(editing ? 'Organización actualizada' : 'Organización creada')
       setModalOpen(false)
       fetchData()
-    } catch {
-      // validation error
+    } catch (err: any) {
+      if (!err?.errorFields) msg.error(err?.message || 'Error al guardar')
     } finally {
       setSaving(false)
     }

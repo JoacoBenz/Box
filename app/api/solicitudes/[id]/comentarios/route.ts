@@ -64,7 +64,7 @@ export const POST = withTenant(async (request, { session, db }, params) => {
     include: { usuario: { select: { id: true, nombre: true } } },
   });
 
-  // ── Notificaciones en cascada por comentario ──
+  // ── Notificaciones: notificar a todos los involucrados en el flujo ──
   const userName = comentario.usuario.nombre;
   const solNumero = solicitud.numero;
   const titulo = `Nuevo comentario en ${solNumero}`;
@@ -73,50 +73,31 @@ export const POST = withTenant(async (request, { session, db }, params) => {
 
   const destinatarios = new Set<number>();
 
-  // Determine commenter's highest role level
-  const isDirector = roles.includes('director');
-  const isHighLevel = roles.includes('compras') || roles.includes('tesoreria') || roles.includes('admin');
-
-  let commenterLevel = 1;
-  if (isHighLevel) commenterLevel = 4;
-  else if (isDirector) commenterLevel = 3;
-  else if (roles.includes('responsable_area')) commenterLevel = 2;
-
   // 1. Always notify the solicitante (unless they are the commenter)
   if (solicitud.solicitante_id !== userId) {
     destinatarios.add(solicitud.solicitante_id);
   }
 
-  // 2. Batch-fetch responsables and directors in a single query to avoid N+1
-  const needResponsables = commenterLevel > 2 || commenterLevel === 1;
-  const needDirectors = commenterLevel > 3;
+  // 2. Notify all roles involved in the flow: responsable_area, director, compras, tesoreria
+  const usersWithRoles = await prisma.usuarios.findMany({
+    where: {
+      tenant_id: session.tenantId,
+      activo: true,
+      usuarios_roles: { some: { rol: { nombre: { in: ['responsable_area', 'director', 'compras', 'tesoreria'] } } } },
+    },
+    select: { id: true, area_id: true, usuarios_roles: { select: { rol: { select: { nombre: true } } } } },
+  });
 
-  const roleNames: string[] = [];
-  if (needResponsables) roleNames.push('responsable_area');
-  if (needDirectors) roleNames.push('director');
-
-  if (roleNames.length > 0) {
-    const usersWithRoles = await prisma.usuarios.findMany({
-      where: {
-        tenant_id: session.tenantId,
-        activo: true,
-        usuarios_roles: { some: { rol: { nombre: { in: roleNames } } } },
-        ...(needResponsables && !needDirectors ? { area_id: solicitud.area_id } : {}),
-      },
-      select: { id: true, area_id: true, usuarios_roles: { select: { rol: { select: { nombre: true } } } } },
-    });
-
-    for (const u of usersWithRoles) {
-      if (u.id === userId) continue;
-      const uRoles = u.usuarios_roles.map(ur => ur.rol.nombre);
-      // Add responsables of the solicitud's area
-      if (uRoles.includes('responsable_area') && u.area_id === solicitud.area_id) {
-        destinatarios.add(u.id);
-      }
-      // Add directors if commenter is level 4
-      if (needDirectors && uRoles.includes('director')) {
-        destinatarios.add(u.id);
-      }
+  for (const u of usersWithRoles) {
+    if (u.id === userId) continue; // Don't notify the commenter
+    const uRoles = u.usuarios_roles.map(ur => ur.rol.nombre);
+    // Responsable: only if they belong to the solicitud's area
+    if (uRoles.includes('responsable_area') && u.area_id === solicitud.area_id) {
+      destinatarios.add(u.id);
+    }
+    // Director, compras, tesoreria: always
+    if (uRoles.includes('director') || uRoles.includes('compras') || uRoles.includes('tesoreria')) {
+      destinatarios.add(u.id);
     }
   }
 

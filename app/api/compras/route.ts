@@ -6,6 +6,7 @@ import { crearNotificacion } from '@/lib/notifications';
 import { compraSchema } from '@/lib/validators';
 import { uploadFile } from '@/lib/supabase';
 import { logApiError } from '@/lib/logger';
+import { verificarPresupuestoArea } from '@/lib/budget-control';
 
 export const POST = withAuth({ roles: ['tesoreria', 'compras', 'solicitante'] }, async (request, { session, db, ip }) => {
   const formData = await request.formData();
@@ -71,6 +72,12 @@ export const POST = withAuth({ roles: ['tesoreria', 'compras', 'solicitante'] },
   }
   if (archivo.size > 10 * 1024 * 1024) {
     return Response.json({ error: { code: 'BAD_REQUEST', message: 'El archivo no puede superar los 10MB' } }, { status: 400 });
+  }
+
+  // Budget check — block if area budget would be exceeded
+  const budgetCheck = await verificarPresupuestoArea(session.tenantId, solicitud.area_id, parsed.data.monto_total);
+  if (!budgetCheck.permitido) {
+    return Response.json({ error: { code: 'BUDGET_EXCEEDED', message: budgetCheck.mensaje } }, { status: 422 });
   }
 
   const compra = await prisma.$transaction(async (tx) => {
