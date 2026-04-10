@@ -37,8 +37,9 @@ export const PATCH = withAdminOverride({ roles: ['admin', 'director', 'responsab
     area_id = session.areaId;
   }
 
-  // Directors cannot assign or remove the admin role
-  const isAdmin = session.roles.includes('admin');
+  // Directors cannot assign or remove the admin role — super_admin can do everything
+  const isSuperAdmin = session.roles.includes('super_admin');
+  const isAdmin = isSuperAdmin || session.roles.includes('admin');
   const targetHasAdmin = usuario.usuarios_roles.some(ur => ur.rol.nombre === 'admin');
   if (!isAdmin) {
     if (roleNames.includes('admin')) {
@@ -61,7 +62,7 @@ export const PATCH = withAdminOverride({ roles: ['admin', 'director', 'responsab
   const currentRoles = usuario.usuarios_roles.map(ur => ur.rol.nombre);
   if (currentRoles.includes('admin') && !roleNames.includes('admin')) {
     const adminCount = await prisma.usuarios.count({
-      where: { tenant_id: session.tenantId, activo: true, usuarios_roles: { some: { rol: { nombre: 'admin' } } } },
+      where: { tenant_id: effectiveTenantId ?? session.tenantId, activo: true, usuarios_roles: { some: { rol: { nombre: 'admin' } } } },
     });
     if (adminCount <= 1) {
       return Response.json({ error: { code: 'CONFLICT', message: 'No podés quitar el rol admin al único administrador' } }, { status: 409 });

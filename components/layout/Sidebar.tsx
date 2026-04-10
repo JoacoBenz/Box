@@ -214,6 +214,21 @@ export function Sidebar({ roles, pendientes = {}, collapsed, isMobile, drawerOpe
             <span style={{ fontSize: 24 }}>📦</span>
             <span style={{ fontWeight: 700, fontSize: 15, color: tokens.textPrimary, letterSpacing: '-0.3px' }}>Box</span>
           </div>
+          {isAdmin && (
+            <div style={{ padding: '12px 12px 0' }}>
+              <Select
+                value={selectedTenant}
+                onChange={(val: number | null) => { setSelectedTenant(val); if (val === undefined || val === null) router.push('/'); }}
+                placeholder="Seleccionar organización..."
+                allowClear
+                showSearch
+                optionFilterProp="label"
+                size="small"
+                style={{ width: '100%' }}
+                options={tenants.map(t => ({ value: t.id, label: t.nombre }))}
+              />
+            </div>
+          )}
           <Menu
             className="sidebar-menu"
             mode="inline"

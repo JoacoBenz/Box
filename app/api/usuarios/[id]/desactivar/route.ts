@@ -26,7 +26,7 @@ export const PATCH = withAdminOverride({ roles: ['admin', 'director', 'responsab
 
   // Directors cannot deactivate/activate admin users
   const targetIsAdmin = usuario.usuarios_roles.some(ur => ur.rol.nombre === 'admin');
-  if (targetIsAdmin && !session.roles.includes('admin')) {
+  if (targetIsAdmin && !session.roles.includes('admin') && !session.roles.includes('super_admin')) {
     return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo un administrador de plataforma puede modificar usuarios admin' } }, { status: 403 });
   }
 
@@ -34,7 +34,7 @@ export const PATCH = withAdminOverride({ roles: ['admin', 'director', 'responsab
   if (!nuevoActivo) {
     if (targetIsAdmin) {
       const adminCount = await prisma.usuarios.count({
-        where: { tenant_id: session.tenantId, activo: true, usuarios_roles: { some: { rol: { nombre: 'admin' } } } },
+        where: { tenant_id: effectiveTenantId ?? session.tenantId, activo: true, usuarios_roles: { some: { rol: { nombre: 'admin' } } } },
       });
       if (adminCount <= 1) {
         return Response.json({ error: { code: 'CONFLICT', message: 'No podés desactivar al único administrador' } }, { status: 409 });

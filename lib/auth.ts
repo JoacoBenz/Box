@@ -63,7 +63,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const email = credentials.email as string;
+        const email = (credentials.email as string).toLowerCase().trim();
 
         // Check account lockout
         const lockout = isAccountLocked(email);
@@ -79,8 +79,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
-        // Find all matching users across tenants (email can exist in multiple orgs)
-        const usuarios = await loadUsuarios({ email: credentials.email as string });
+        // Find all matching users across tenants (case-insensitive)
+        const usuarios = await loadUsuarios({ email: { equals: email, mode: 'insensitive' } });
 
         if (usuarios.length === 0) {
           const attempt = recordFailedLogin(email);
@@ -158,15 +158,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       const provider = account.provider; // 'google' | 'microsoft-entra-id'
       const sub = account.providerAccountId;
-      const email = user.email;
+      const email = user.email.toLowerCase().trim();
       const domain = email.split('@')[1];
 
       // First try to find by oauth_provider + oauth_sub
       let usuario = await loadUsuario({ oauth_provider: provider, oauth_sub: sub });
 
       if (!usuario) {
-        // Try to find by email and link the OAuth account
-        usuario = await loadUsuario({ email });
+        // Try to find by email and link the OAuth account (case-insensitive)
+        usuario = await loadUsuario({ email: { equals: email, mode: 'insensitive' } });
         if (usuario) {
           // Verify tenant has this SSO provider enabled
           const providerKey = provider === 'google' ? 'sso_google_habilitado' : 'sso_microsoft_habilitado';

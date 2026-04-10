@@ -43,7 +43,7 @@ export const POST = withAuth({ roles: ['admin', 'director', 'responsable_area'] 
   }
 
   // Can only delegate roles you have
-  if (!session.roles.includes(rol_delegado as any) && !session.roles.includes('admin')) {
+  if (!session.roles.includes(rol_delegado as any) && !session.roles.includes('admin') && !session.roles.includes('super_admin')) {
     return apiError('FORBIDDEN', 'Solo podés delegar roles que vos tenés', 403);
   }
 

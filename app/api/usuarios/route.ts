@@ -60,7 +60,7 @@ export const POST = withAdminOverride({ roles: ['admin', 'director', 'responsabl
   }
 
   // Directors cannot assign the admin role
-  if (roleNames.includes('admin') && !session.roles.includes('admin')) {
+  if (roleNames.includes('admin') && !session.roles.includes('admin') && !session.roles.includes('super_admin')) {
     return Response.json({ error: { code: 'FORBIDDEN', message: 'Solo un administrador de plataforma puede asignar el rol admin' } }, { status: 403 });
   }
 
