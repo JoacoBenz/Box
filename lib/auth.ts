@@ -86,14 +86,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const attempt = recordFailedLogin(email);
           logLoginFailed(email, 'unknown', attempt.attemptsRemaining);
           if (attempt.locked) logAccountLocked(email, 'unknown', 15 * 60 * 1000);
-          // We may not have tenantId for failed logins, use 0
-          registrarAuditoria({
-            tenantId: 0,
-            usuarioId: 0,
-            accion: 'login_fallido',
-            entidad: 'sesion',
-            datosNuevos: { email: credentials.email, metodo: 'credentials' },
-          }).catch(() => {});
+          // Use platform tenant + super_admin user for failed logins with unknown email
+          const platformUser = await prisma.usuarios.findFirst({
+            where: { tenant: { slug: '__platform__' }, usuarios_roles: { some: { rol: { nombre: 'super_admin' } } } },
+            select: { id: true, tenant_id: true },
+          });
+          if (platformUser) {
+            registrarAuditoria({
+              tenantId: platformUser.tenant_id,
+              usuarioId: platformUser.id,
+              accion: 'login_fallido',
+              entidad: 'sesion',
+              datosNuevos: { email: credentials.email, metodo: 'credentials' },
+            }).catch(() => {});
+          }
           return null;
         }
 
@@ -112,10 +118,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const attempt = recordFailedLogin(email);
           logLoginFailed(email, 'unknown', attempt.attemptsRemaining);
           if (attempt.locked) logAccountLocked(email, 'unknown', 15 * 60 * 1000);
-          // We may not have tenantId for failed logins, use 0
+          // Use first matched user's tenant for failed password attempts
           registrarAuditoria({
-            tenantId: 0,
-            usuarioId: 0,
+            tenantId: usuarios[0].tenant_id,
+            usuarioId: usuarios[0].id,
             accion: 'login_fallido',
             entidad: 'sesion',
             datosNuevos: { email: credentials.email, metodo: 'credentials' },
