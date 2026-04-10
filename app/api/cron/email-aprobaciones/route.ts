@@ -41,13 +41,65 @@ interface SolicitudRow {
   titulo: string;
   urgencia: string;
   fecha_validacion: Date | null;
+  updated_at: Date;
   area: { nombre: string } | null;
   solicitante: { nombre: string };
   items_solicitud: { precio_estimado: any; cantidad: any }[];
 }
 
-function buildEmailHtml(directorName: string, solicitudes: SolicitudRow[], tenantNombre: string): string {
+/** Configuration per role for the digest */
+interface RoleDigestConfig {
+  roleName: string;
+  estado: string;
+  heading: string;        // e.g. "para validar"
+  ctaPath: string;        // e.g. "/validaciones"
+  ctaLabel: string;       // e.g. "Ir a Validaciones"
+  filterByArea: boolean;  // responsable_area only sees their area
+}
+
+const ROLE_CONFIGS: RoleDigestConfig[] = [
+  {
+    roleName: 'responsable_area',
+    estado: 'pendiente_validacion',
+    heading: 'para validar',
+    ctaPath: '/solicitudes',
+    ctaLabel: 'Ir a Solicitudes',
+    filterByArea: true,
+  },
+  {
+    roleName: 'director',
+    estado: 'validada',
+    heading: 'para aprobar',
+    ctaPath: '/aprobaciones',
+    ctaLabel: 'Ir a Aprobaciones',
+    filterByArea: false,
+  },
+  {
+    roleName: 'compras',
+    estado: 'aprobada',
+    heading: 'para procesar',
+    ctaPath: '/compras',
+    ctaLabel: 'Ir a Compras',
+    filterByArea: false,
+  },
+  {
+    roleName: 'tesoreria',
+    estado: 'pago_programado',
+    heading: 'para ejecutar pago',
+    ctaPath: '/tesoreria',
+    ctaLabel: 'Ir a Tesorería',
+    filterByArea: false,
+  },
+];
+
+function buildEmailHtml(
+  recipientName: string,
+  solicitudes: SolicitudRow[],
+  tenantNombre: string,
+  config: RoleDigestConfig,
+): string {
   let montoTotal = 0;
+  const now = new Date();
 
   const rows = solicitudes.map((sol) => {
     const monto = sol.items_solicitud.reduce(
@@ -57,7 +109,8 @@ function buildEmailHtml(directorName: string, solicitudes: SolicitudRow[], tenan
     montoTotal += monto;
 
     const urg = URGENCIA_COLORS[sol.urgencia] ?? URGENCIA_COLORS.normal;
-    const diasHabiles = sol.fecha_validacion ? businessDaysBetween(sol.fecha_validacion, new Date()) : 0;
+    const dateRef = sol.fecha_validacion ?? sol.updated_at;
+    const diasHabiles = businessDaysBetween(dateRef, now);
     const urgente = diasHabiles >= 3;
 
     return `
@@ -84,6 +137,9 @@ function buildEmailHtml(directorName: string, solicitudes: SolicitudRow[], tenan
     `;
   }).join('');
 
+  const count = solicitudes.length;
+  const plural = count !== 1;
+
   return `
     <!DOCTYPE html>
     <html lang="es">
@@ -98,7 +154,7 @@ function buildEmailHtml(directorName: string, solicitudes: SolicitudRow[], tenan
             <span style="color: white; font-weight: 800; font-size: 16px; margin-left: 4px;">Box</span>
           </div>
           <h1 style="color: white; font-size: 20px; font-weight: 700; margin: 0;">
-            Tenés ${solicitudes.length} solicitud${solicitudes.length !== 1 ? 'es' : ''} para aprobar
+            Tenés ${count} solicitud${plural ? 'es' : ''} ${config.heading}
           </h1>
           <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 8px 0 0;">
             ${tenantNombre}
@@ -109,7 +165,7 @@ function buildEmailHtml(directorName: string, solicitudes: SolicitudRow[], tenan
         <div style="background: white; padding: 24px; border-radius: 0 0 16px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
 
           <p style="color: #374151; font-size: 15px; margin: 0 0 20px;">
-            Hola <strong>${directorName}</strong>, estas solicitudes ya fueron validadas por los responsables de área y esperan tu aprobación:
+            Hola <strong>${recipientName}</strong>, estas solicitudes esperan tu acción:
           </p>
 
           <!-- Table -->
@@ -141,9 +197,9 @@ function buildEmailHtml(directorName: string, solicitudes: SolicitudRow[], tenan
 
           <!-- CTA Button -->
           <div style="text-align: center; margin-top: 28px;">
-            <a href="${APP_URL}/aprobaciones"
+            <a href="${APP_URL}${config.ctaPath}"
                style="display: inline-block; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; padding: 14px 40px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 15px; box-shadow: 0 4px 12px rgba(79,70,229,0.3);">
-              Ir a Aprobaciones →
+              ${config.ctaLabel} →
             </a>
           </div>
 
@@ -174,56 +230,74 @@ export async function POST(request: NextRequest) {
   let skipped = 0;
 
   try {
-    // Get all active tenants (exclude platform)
     const tenants = await prisma.tenants.findMany({
       where: { estado: 'activo', desactivado: false, slug: { not: '__platform__' } },
       select: { id: true, nombre: true },
     });
 
     for (const tenant of tenants) {
-      // Get all solicitudes in estado 'validada' for this tenant
-      const solicitudes = await prisma.solicitudes.findMany({
-        where: { tenant_id: tenant.id, estado: 'validada' },
-        include: {
-          area: { select: { nombre: true } },
-          solicitante: { select: { nombre: true } },
-          items_solicitud: { select: { precio_estimado: true, cantidad: true } },
-        },
-        orderBy: { fecha_validacion: 'asc' },
-      });
+      for (const config of ROLE_CONFIGS) {
+        // Get solicitudes in the relevant state for this role
+        const solicitudes = await prisma.solicitudes.findMany({
+          where: { tenant_id: tenant.id, estado: config.estado },
+          include: {
+            area: { select: { id: true, nombre: true } },
+            solicitante: { select: { nombre: true } },
+            items_solicitud: { select: { precio_estimado: true, cantidad: true } },
+          },
+          orderBy: { updated_at: 'asc' },
+        });
 
-      if (solicitudes.length === 0) continue;
+        if (solicitudes.length === 0) continue;
 
-      // Check if any solicitud has been waiting >= 3 business days
-      const hasUrgent = solicitudes.some((sol) => {
-        const from = sol.fecha_validacion ?? sol.updated_at;
-        return businessDaysBetween(from, now) >= 3;
-      });
+        // Check if any solicitud has been waiting >= 3 business days
+        const hasUrgent = solicitudes.some((sol) => {
+          const from = sol.fecha_validacion ?? sol.updated_at;
+          return businessDaysBetween(from, now) >= 3;
+        });
 
-      // Get all directors for this tenant
-      const directors = await prisma.usuarios.findMany({
-        where: {
-          tenant_id: tenant.id,
-          activo: true,
-          usuarios_roles: { some: { rol: { nombre: 'director' } } },
-        },
-        select: { id: true, nombre: true, email: true, email_digest: true },
-      });
+        // Get users with this role for this tenant
+        const users = await prisma.usuarios.findMany({
+          where: {
+            tenant_id: tenant.id,
+            activo: true,
+            usuarios_roles: { some: { rol: { nombre: config.roleName } } },
+          },
+          select: { id: true, nombre: true, email: true, email_digest: true, area_id: true },
+        });
 
-      for (const director of directors) {
-        // Skip if digest disabled AND no urgent solicitudes
-        if (!director.email_digest && !hasUrgent) {
-          skipped++;
-          continue;
+        for (const user of users) {
+          // Filter solicitudes by area if needed (responsable_area only sees their area)
+          const userSolicitudes = config.filterByArea
+            ? solicitudes.filter((sol) => sol.area?.id === user.area_id)
+            : solicitudes;
+
+          if (userSolicitudes.length === 0) continue;
+
+          // Check urgency for this user's filtered solicitudes
+          const userHasUrgent = config.filterByArea
+            ? userSolicitudes.some((sol) => {
+                const from = sol.fecha_validacion ?? sol.updated_at;
+                return businessDaysBetween(from, now) >= 3;
+              })
+            : hasUrgent;
+
+          // Skip if digest disabled AND no urgent solicitudes
+          if (!user.email_digest && !userHasUrgent) {
+            skipped++;
+            continue;
+          }
+
+          const html = buildEmailHtml(user.nombre, userSolicitudes, tenant.nombre, config);
+          const count = userSolicitudes.length;
+          const plural = count !== 1;
+          const subject = userHasUrgent
+            ? `Box — ⚠️ ${count} solicitud${plural ? 'es' : ''} pendiente${plural ? 's' : ''} ${config.heading}`
+            : `Box — 📋 ${count} solicitud${plural ? 'es' : ''} ${config.heading}`;
+
+          await sendEmail({ to: user.email, subject, html });
+          emailsSent++;
         }
-
-        const html = buildEmailHtml(director.nombre, solicitudes, tenant.nombre);
-        const subject = hasUrgent
-          ? `Box — ⚠️ ${solicitudes.length} solicitud${solicitudes.length !== 1 ? 'es' : ''} pendiente${solicitudes.length !== 1 ? 's' : ''} de aprobación`
-          : `Box — 📋 ${solicitudes.length} solicitud${solicitudes.length !== 1 ? 'es' : ''} para aprobar`;
-
-        await sendEmail({ to: director.email, subject, html });
-        emailsSent++;
       }
     }
 
