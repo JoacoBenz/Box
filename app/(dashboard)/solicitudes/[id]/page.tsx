@@ -124,24 +124,19 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
       <div style={{
         background: STATUS_BG[estado] ?? 'var(--status-bg-borrador)',
         borderRadius: 16,
-        padding: '24px 28px',
-        marginBottom: 24,
+        padding: '16px 16px',
+        marginBottom: 16,
         border: '1px solid var(--hero-border)',
       }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          gap: 16,
-        }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
             <div style={{ fontSize: 13, marginBottom: 8 }}>
               <Link href="/solicitudes" style={{ color: 'var(--color-primary)', fontWeight: 500, textDecoration: 'none' }}>
                 ← Volver a Solicitudes
               </Link>
             </div>
-            <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>{solicitud.titulo}</h3>
-            <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', wordBreak: 'break-word' }}>{solicitud.titulo}</h3>
+            <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600 }}>{solicitud.numero}</span>
               {estadoInfo && <Tag color={estadoInfo.color}>{estadoInfo.label}</Tag>}
               {urgenciaInfo && <Tag color={urgenciaInfo.color}>{urgenciaInfo.label}</Tag>}
@@ -166,11 +161,11 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
 
       {/* Main info */}
       <Card title={<span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Detalle de la Solicitud</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
-        <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+        <Descriptions column={1} bordered size="small">
           <Descriptions.Item label="Solicitante">{solicitud.solicitante.nombre}</Descriptions.Item>
           <Descriptions.Item label="Área">{solicitud.area?.nombre ?? '—'}</Descriptions.Item>
           {solicitud.centro_costo && (
-            <Descriptions.Item label="Centro de Costo" span={2}>
+            <Descriptions.Item label="Centro de Costo">
               <Tag color="blue">{solicitud.centro_costo.codigo}</Tag> {solicitud.centro_costo.nombre}
             </Descriptions.Item>
           )}
@@ -183,28 +178,28 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
               : '—'}
           </Descriptions.Item>
           {!solicitud.proveedor && solicitud.proveedor_sugerido && (
-            <Descriptions.Item label="Proveedor Sugerido" span={2}>
+            <Descriptions.Item label="Proveedor Sugerido">
               {solicitud.proveedor_sugerido}
             </Descriptions.Item>
           )}
-          <Descriptions.Item label="Descripción" span={2}>
+          <Descriptions.Item label="Descripción">
             {solicitud.descripcion}
           </Descriptions.Item>
-          <Descriptions.Item label="Justificación" span={2}>
+          <Descriptions.Item label="Justificación">
             {solicitud.justificacion}
           </Descriptions.Item>
           {solicitud.observaciones_responsable && (
-            <Descriptions.Item label="Obs. Responsable" span={2}>
+            <Descriptions.Item label="Obs. Responsable">
               <span style={{ color: 'var(--color-observation)' }}>{solicitud.observaciones_responsable}</span>
             </Descriptions.Item>
           )}
           {solicitud.observaciones_director && (
-            <Descriptions.Item label="Obs. Dirección" span={2}>
+            <Descriptions.Item label="Obs. Dirección">
               <span style={{ color: 'var(--color-observation)' }}>{solicitud.observaciones_director}</span>
             </Descriptions.Item>
           )}
           {solicitud.motivo_rechazo && (
-            <Descriptions.Item label="Motivo Rechazo" span={2}>
+            <Descriptions.Item label="Motivo Rechazo">
               <span style={{ color: 'var(--color-rejection)' }}>{solicitud.motivo_rechazo}</span>
             </Descriptions.Item>
           )}
@@ -217,7 +212,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
           title={<span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Proveedor</span>}
           style={{ marginBottom: 24, borderRadius: 16 }}
         >
-          <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+          <Descriptions column={1} bordered size="small">
             <Descriptions.Item label="Nombre">{solicitud.proveedor.nombre}</Descriptions.Item>
             {solicitud.proveedor.cuit && (
               <Descriptions.Item label="CUIT">{solicitud.proveedor.cuit}</Descriptions.Item>
@@ -229,16 +224,16 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
               <Descriptions.Item label="Email">{solicitud.proveedor.email}</Descriptions.Item>
             )}
             {solicitud.proveedor.direccion && (
-              <Descriptions.Item label="Dirección" span={2}>{solicitud.proveedor.direccion}</Descriptions.Item>
+              <Descriptions.Item label="Dirección">{solicitud.proveedor.direccion}</Descriptions.Item>
             )}
             {solicitud.proveedor.datos_bancarios && (
-              <Descriptions.Item label="Datos Bancarios" span={2}>
+              <Descriptions.Item label="Datos Bancarios">
                 <span style={{ whiteSpace: 'pre-line' }}>{solicitud.proveedor.datos_bancarios}</span>
               </Descriptions.Item>
             )}
             {solicitud.proveedor.link_pagina && (
-              <Descriptions.Item label="Web" span={2}>
-                <a href={solicitud.proveedor.link_pagina} target="_blank" rel="noopener noreferrer">
+              <Descriptions.Item label="Web">
+                <a href={solicitud.proveedor.link_pagina} target="_blank" rel="noopener noreferrer" style={{ wordBreak: 'break-all' }}>
                   {solicitud.proveedor.link_pagina}
                 </a>
               </Descriptions.Item>
@@ -303,7 +298,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
       {solicitud.compras.length > 0 && (
         <Card title={<span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Información de Compra</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
           {solicitud.compras.map((compra) => (
-            <Descriptions key={compra.id} column={2} bordered size="small">
+            <Descriptions key={compra.id} column={{ xs: 1, sm: 2 }} bordered size="small">
               <Descriptions.Item label="Proveedor">{compra.proveedor_nombre}</Descriptions.Item>
               <Descriptions.Item label="Fecha Compra">
                 {compra.fecha_compra
@@ -318,14 +313,10 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
                 <Descriptions.Item label="N° Factura">{compra.numero_factura}</Descriptions.Item>
               )}
               {compra.referencia_bancaria && (
-                <Descriptions.Item label="Referencia Bancaria">
-                  {compra.referencia_bancaria}
-                </Descriptions.Item>
+                <Descriptions.Item label="Ref. Bancaria">{compra.referencia_bancaria}</Descriptions.Item>
               )}
               {compra.observaciones && (
-                <Descriptions.Item label="Observaciones" span={2}>
-                  {compra.observaciones}
-                </Descriptions.Item>
+                <Descriptions.Item label="Observaciones">{compra.observaciones}</Descriptions.Item>
               )}
               <Descriptions.Item label="Registrado por">
                 {compra.ejecutado_por?.nombre ?? '—'}
@@ -339,7 +330,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
       {solicitud.recepciones.length > 0 && (
         <Card title={<span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Recepciones</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
           {solicitud.recepciones.map((rec) => (
-            <Descriptions key={rec.id} column={2} bordered size="small">
+            <Descriptions key={rec.id} column={{ xs: 1, sm: 2 }} bordered size="small">
               <Descriptions.Item label="Confirmado por">
                 {rec.receptor?.nombre ?? '—'}
               </Descriptions.Item>
@@ -347,12 +338,10 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
                 {new Date(rec.created_at).toLocaleDateString('es-AR')}
               </Descriptions.Item>
               {rec.observaciones && (
-                <Descriptions.Item label="Observaciones" span={2}>
-                  {rec.observaciones}
-                </Descriptions.Item>
+                <Descriptions.Item label="Observaciones">{rec.observaciones}</Descriptions.Item>
               )}
               {!rec.conforme && (
-                <Descriptions.Item label="Problemas" span={2}>
+                <Descriptions.Item label="Problemas">
                   <Tag color="orange">Recibida con observaciones</Tag>
                 </Descriptions.Item>
               )}

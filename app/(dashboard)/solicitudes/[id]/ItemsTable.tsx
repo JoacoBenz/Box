@@ -1,6 +1,7 @@
 'use client'
 
 import { Table } from 'antd'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 export interface ItemRow {
   id: number
@@ -41,6 +42,46 @@ const columns = [
   },
 ]
 
+function ItemCard({ item }: { item: ItemRow }) {
+  const subtotal = item.precio_estimado != null ? item.precio_estimado * item.cantidad : null
+  return (
+    <div style={{
+      background: 'var(--bg-card)',
+      borderRadius: 10,
+      border: '1px solid var(--border-color)',
+      padding: 12,
+    }}>
+      <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', marginBottom: 6 }}>
+        {item.descripcion}
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', fontSize: 13, color: 'var(--text-secondary)', marginBottom: subtotal != null ? 8 : 0 }}>
+        <span>{item.cantidad} {item.unidad}</span>
+        {item.precio_estimado != null && <span>× ${item.precio_estimado.toFixed(2)}</span>}
+        {item.link_producto && (
+          <a href={item.link_producto} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', fontWeight: 500 }}>
+            Ver producto ↗
+          </a>
+        )}
+      </div>
+      {subtotal != null && (
+        <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>
+          ${subtotal.toFixed(2)}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function ItemsTable({ items }: { items: ItemRow[] }) {
+  const isMobile = useIsMobile()
+
+  if (isMobile) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {items.map(item => <ItemCard key={item.id} item={item} />)}
+      </div>
+    )
+  }
+
   return <Table rowKey="id" columns={columns} dataSource={items} pagination={false} size="small" />
 }

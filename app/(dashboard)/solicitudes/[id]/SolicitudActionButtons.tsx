@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button, Space, Modal, Form, Input, Popconfirm, Radio, Select, Typography, Tag, DatePicker, Upload } from 'antd'
-import { UploadOutlined, CopyOutlined } from '@ant-design/icons'
+import { Button, Space, Modal, Form, Input, Popconfirm, Radio, Select, Typography, Tag, DatePicker, Upload, Dropdown } from 'antd'
+import type { MenuProps } from 'antd'
+import { UploadOutlined, CopyOutlined, MoreOutlined } from '@ant-design/icons'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
@@ -36,6 +38,7 @@ export default function SolicitudActionButtons({
   updatedAt,
 }: Props) {
   const router = useRouter()
+  const isMobile = useIsMobile()
   const [loading, setLoading] = useState(false)
 
   const [devolverOpen, setDevolverOpen] = useState(false)
@@ -190,9 +193,53 @@ export default function SolicitudActionButtons({
     recepcionForm.resetFields()
   }
 
+  // Build action items for mobile dropdown
+  const mobileActions: MenuProps['items'] = []
+  if (canReusar) mobileActions.push({ key: 'reusar', label: '📋 Reusar como plantilla' })
+  if (canEditar) mobileActions.push({ key: 'editar', label: '✏️ Editar' })
+  if (canEnviar) mobileActions.push({ key: 'enviar', label: '📤 Enviar' })
+  if (canValidar) mobileActions.push({ key: 'validar', label: '✅ Validar' })
+  if (canDevolver) mobileActions.push({ key: 'devolver', label: '↩️ Devolver', danger: true })
+  if (canAprobar) mobileActions.push({ key: 'aprobar', label: '✅ Aprobar' })
+  if (canRechazar) mobileActions.push({ key: 'rechazar', label: '❌ Rechazar', danger: true })
+  if (canProgramarPago) mobileActions.push({ key: 'programar', label: '📅 Programar Pago' })
+  if (canRegistrarCompra) mobileActions.push({ key: 'registrar', label: '💳 Registrar Compra' })
+  if (canConfirmarRecepcion) mobileActions.push({ key: 'recepcion', label: '📦 Confirmar Recepción' })
+  if (canAnular) mobileActions.push({ type: 'divider' }, { key: 'anular', label: '🚫 Anular', danger: true })
+
+  const handleMobileAction: MenuProps['onClick'] = ({ key }) => {
+    switch (key) {
+      case 'reusar': router.push(`/solicitudes/nueva?desde=${solicitudId}`); break
+      case 'editar': router.push(`/solicitudes/${solicitudId}/editar`); break
+      case 'enviar': handleEnviar(); break
+      case 'validar': handleValidar(); break
+      case 'devolver': setDevolverOpen(true); break
+      case 'aprobar': handleAprobar(); break
+      case 'rechazar': setRechazarOpen(true); break
+      case 'programar': setProgramarOpen(true); break
+      case 'registrar': router.push(`/compras/${solicitudId}`); break
+      case 'recepcion': setRecepcionOpen(true); break
+      case 'anular': setAnularOpen(true); break
+    }
+  }
+
   return (
     <>
-      {!hasAnyAction ? null : <Space wrap>
+      {!hasAnyAction ? null : isMobile ? (
+        /* ── Mobile: dropdown button ── */
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          {isCerrada && <Tag color="default">Cerrada</Tag>}
+          {mobileActions.length > 0 && (
+            <Dropdown menu={{ items: mobileActions, onClick: handleMobileAction }} trigger={['click']} placement="bottomRight">
+              <Button type="primary" loading={loading} icon={<MoreOutlined />} style={{ borderRadius: 10, fontWeight: 600 }}>
+                Acciones
+              </Button>
+            </Dropdown>
+          )}
+        </div>
+      ) : (
+        /* ── Desktop: inline buttons ── */
+        <Space wrap>
         {isCerrada && <Tag color="default">Cerrada</Tag>}
 
         {canReusar && (
@@ -276,7 +323,8 @@ export default function SolicitudActionButtons({
             </Button>
           </Popconfirm>
         )}
-      </Space>}
+      </Space>
+      )}
 
       {/* Modal: Devolver */}
       <Modal
