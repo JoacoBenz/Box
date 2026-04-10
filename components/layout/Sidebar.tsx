@@ -86,6 +86,7 @@ export function Sidebar({ roles, pendientes = {}, collapsed, isMobile, drawerOpe
     // Admin: platform items always visible
     items.push({ key: '/gestion/tenants', icon: <GlobalOutlined />, label: 'Organizaciones', visible: true });
     items.push({ key: '/gestion/aprobaciones-org', icon: <AuditOutlined />, label: 'Aprobaciones Org', visible: true });
+    items.push({ key: '/auditoria', icon: <AuditOutlined />, label: 'Auditoría', visible: true });
 
     // Org-scoped items only when an org is selected (super_admin sees everything like a director)
     if (hasOrgSelected) {
@@ -146,6 +147,7 @@ export function Sidebar({ roles, pendientes = {}, collapsed, isMobile, drawerOpe
     });
     items.push({ key: '/proveedores', icon: <ShopOutlined />, label: 'Proveedores', visible: true });
     items.push({ key: '/reportes', icon: <BarChartOutlined />, label: 'Reportes', visible: roles.includes('director') || roles.includes('compras') || roles.includes('tesoreria') || roles.includes('admin') });
+    items.push({ key: '/auditoria', icon: <AuditOutlined />, label: 'Auditoría', visible: roles.includes('admin') });
     items.push({ key: '/mi-area/usuarios', icon: <TeamOutlined />, label: 'Usuarios de mi Área', visible: roles.includes('responsable_area') && !roles.includes('admin') && !roles.includes('director') });
 
     if (roles.includes('director') || isOrgAdmin) {

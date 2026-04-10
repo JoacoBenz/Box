@@ -11,6 +11,7 @@ import { getRolesEfectivos } from './delegaciones';
 import { isAccountLocked, recordFailedLogin, clearFailedAttempts } from './account-lockout';
 import { cached } from './cache';
 import { logLoginFailed, logAccountLocked, logRateLimited, logLoginSuccess } from './logger';
+import { registrarAuditoria } from './audit';
 
 /** Load a DB user with roles, tenant, area — shared by credentials & OAuth flows */
 async function loadUsuario(where: Record<string, unknown>) {
@@ -85,6 +86,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const attempt = recordFailedLogin(email);
           logLoginFailed(email, 'unknown', attempt.attemptsRemaining);
           if (attempt.locked) logAccountLocked(email, 'unknown', 15 * 60 * 1000);
+          // We may not have tenantId for failed logins, use 0
+          registrarAuditoria({
+            tenantId: 0,
+            usuarioId: 0,
+            accion: 'login_fallido',
+            entidad: 'sesion',
+            datosNuevos: { email: credentials.email, metodo: 'credentials' },
+          }).catch(() => {});
           return null;
         }
 
@@ -103,11 +112,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const attempt = recordFailedLogin(email);
           logLoginFailed(email, 'unknown', attempt.attemptsRemaining);
           if (attempt.locked) logAccountLocked(email, 'unknown', 15 * 60 * 1000);
+          // We may not have tenantId for failed logins, use 0
+          registrarAuditoria({
+            tenantId: 0,
+            usuarioId: 0,
+            accion: 'login_fallido',
+            entidad: 'sesion',
+            datosNuevos: { email: credentials.email, metodo: 'credentials' },
+          }).catch(() => {});
           return null;
         }
 
         clearFailedAttempts(email);
         logLoginSuccess(email, 'unknown', usuario.id);
+        registrarAuditoria({
+          tenantId: usuario.tenant_id,
+          usuarioId: usuario.id,
+          accion: 'login_exitoso',
+          entidad: 'sesion',
+          datosNuevos: { metodo: 'credentials' },
+        }).catch(() => {});
 
         return userPayload(usuario);
       },
@@ -159,6 +183,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             data: { oauth_provider: provider, oauth_sub: sub },
           });
         }
+      }
+
+      if (usuario) {
+        registrarAuditoria({
+          tenantId: usuario.tenant_id,
+          usuarioId: usuario.id,
+          accion: 'login_exitoso',
+          entidad: 'sesion',
+          datosNuevos: { metodo: provider },
+        }).catch(() => {});
       }
 
       if (!usuario) {
