@@ -1,4 +1,4 @@
-import { withAuth } from '@/lib/api-handler';
+import { withAdminOverride } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
 import { checkRateLimitDb } from '@/lib/rate-limit';
 import { getClientIp } from '@/lib/audit';
@@ -12,7 +12,7 @@ function styleHeader(row: ExcelJS.Row) {
   });
 }
 
-export const GET = withAuth({ roles: ['director', 'compras', 'tesoreria', 'admin'] }, async (request, { session }) => {
+export const GET = withAdminOverride({ roles: ['director', 'compras', 'tesoreria', 'admin'] }, async (request, { session, effectiveTenantId }) => {
   const ip = getClientIp(request);
   const rl = await checkRateLimitDb(`export-reportes:${ip}`, 5, 60_000);
   if (!rl.allowed) {
@@ -23,7 +23,7 @@ export const GET = withAuth({ roles: ['director', 'compras', 'tesoreria', 'admin
   const desde = searchParams.get('desde') || '';
   const hasta = searchParams.get('hasta') || '';
   const areaId = searchParams.get('area_id') ? parseInt(searchParams.get('area_id')!) : null;
-  const tenantId = session.tenantId;
+  const tenantId = effectiveTenantId ?? session.tenantId;
 
   const desdeDate = desde ? new Date(desde) : null;
   const hastaDate = hasta ? new Date(hasta + 'T23:59:59') : null;

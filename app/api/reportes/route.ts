@@ -1,13 +1,13 @@
-import { withAuth } from '@/lib/api-handler';
+import { withAdminOverride } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
 
-export const GET = withAuth({ roles: ['director', 'compras', 'tesoreria', 'admin'] }, async (request, { session, db }) => {
+export const GET = withAdminOverride({ roles: ['director', 'compras', 'tesoreria', 'admin'] }, async (request, { session, db, effectiveTenantId }) => {
   const { searchParams } = new URL(request.url);
   const desde = searchParams.get('desde') || '';
   const hasta = searchParams.get('hasta') || '';
   const areaId = searchParams.get('area_id') ? parseInt(searchParams.get('area_id')!) : null;
 
-  const tenantId = session.tenantId;
+  const tenantId = effectiveTenantId ?? session.tenantId;
 
   const desdeDate = desde ? new Date(desde) : null;
   const hastaDate = hasta ? new Date(hasta + 'T23:59:59') : null;
