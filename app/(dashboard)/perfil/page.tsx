@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card, Form, Input, Button, Typography, Tag, Descriptions, message, Divider, Switch } from 'antd'
-import { UserOutlined, LockOutlined, SaveOutlined, MailOutlined } from '@ant-design/icons'
+import { Card, Form, Input, Button, Typography, Tag, Descriptions, message, Divider } from 'antd'
+import { UserOutlined, LockOutlined, SaveOutlined } from '@ant-design/icons'
 import { useFormValid } from '@/hooks/useFormValid'
 
 const { Title } = Typography
@@ -14,7 +14,6 @@ interface Profile {
   organizacion: string | null
   roles: string[]
   tienePassword: boolean
-  emailDigest: boolean
 }
 
 const ROL_LABELS: Record<string, string> = {
@@ -127,36 +126,6 @@ export default function PerfilPage() {
             </Button>
           </Form.Item>
         </Form>
-      </Card>
-
-      <Card title="Notificaciones por email" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-              <MailOutlined style={{ marginRight: 8 }} />
-              Resumen diario de solicitudes pendientes
-            </div>
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
-              Recibí un email con las solicitudes que esperan tu acción. Las urgentes (más de 3 días hábiles) se envían siempre.
-            </div>
-          </div>
-          <Switch
-            checked={profile.emailDigest}
-            onChange={async (checked) => {
-              const res = await fetch('/api/auth/profile', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ emailDigest: checked }),
-              })
-              if (res.ok) {
-                setProfile(prev => prev ? { ...prev, emailDigest: checked } : prev)
-                message.success(checked ? 'Emails activados' : 'Emails desactivados')
-              } else {
-                message.error('Error al guardar preferencia')
-              }
-            }}
-          />
-        </div>
       </Card>
 
       {(profile.tienePassword || profile.roles.includes('admin')) && (
