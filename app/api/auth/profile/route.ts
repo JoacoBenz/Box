@@ -16,6 +16,7 @@ export async function GET() {
         nombre: true,
         email: true,
         password_hash: true,
+        email_digest: true,
         area: { select: { nombre: true } },
         tenant: { select: { nombre: true } },
         usuarios_roles: {
@@ -33,6 +34,7 @@ export async function GET() {
       organizacion: usuario.tenant?.nombre ?? null,
       roles: usuario.usuarios_roles.map(ur => ur.rol.nombre),
       tienePassword: !!usuario.password_hash,
+      emailDigest: usuario.email_digest,
     });
   } catch (error: any) {
     if (error.message === 'No autenticado') return apiError('UNAUTHORIZED', 'No autenticado', 401);
@@ -44,12 +46,16 @@ export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession();
     const body = await request.json();
-    const { nombre, passwordActual, passwordNuevo } = body;
+    const { nombre, passwordActual, passwordNuevo, emailDigest } = body;
 
     const updateData: Record<string, any> = {};
 
     if (nombre && typeof nombre === 'string' && nombre.trim()) {
       updateData.nombre = nombre.trim();
+    }
+
+    if (typeof emailDigest === 'boolean') {
+      updateData.email_digest = emailDigest;
     }
 
     if (passwordNuevo) {
