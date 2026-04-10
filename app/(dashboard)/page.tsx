@@ -196,15 +196,15 @@ function DashboardSkeleton() {
 }
 
 // ── Bar chart row helper ──
-function BarChartRow({ label, value, maxValue, color, subtext, index }: {
-  label: string; value: number; maxValue: number; color: string; subtext: string; index: number
+function BarChartRow({ label, value, maxValue, color, subtext, index, formatValue }: {
+  label: string; value: number; maxValue: number; color: string; subtext: string; index: number; formatValue?: (v: number) => string
 }) {
   const { tokens } = useTheme()
   return (
     <div style={{ padding: '12px 0', borderBottom: 'none', animation: `staggerIn 0.3s ease-out ${index * 80}ms both` }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
         <Text style={{ fontWeight: 500 }}>{label}</Text>
-        <Text strong style={{ color: tokens.textPrimary }}>{formatMoney(value)}</Text>
+        <Text strong style={{ color: tokens.textPrimary }}>{formatValue ? formatValue(value) : formatMoney(value)}</Text>
       </div>
       <Progress
         percent={maxValue > 0 ? Math.round((value / maxValue) * 100) : 0}
@@ -546,6 +546,7 @@ export default function DashboardPage() {
                       color={tokens.chartPrimaryGradient}
                       subtext={`${item.cantidad} org${item.cantidad !== 1 ? 's' : ''}`}
                       index={i}
+                      formatValue={(v) => String(v)}
                     />
                   ))}
                 </Card>
@@ -561,6 +562,7 @@ export default function DashboardPage() {
                       color={tokens.chartSecondaryGradient}
                       subtext={`${item.cantidad} usuario${item.cantidad !== 1 ? 's' : ''}`}
                       index={i}
+                      formatValue={(v) => String(v)}
                     />
                   ))}
                 </Card>
