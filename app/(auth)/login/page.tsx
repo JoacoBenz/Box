@@ -178,11 +178,11 @@ export default function LoginPage() {
             block
             size="large"
             icon={<WindowsOutlined />}
-            loading={false}
-            disabled={true}
-            style={{ height: 44, fontWeight: 600, borderRadius: 10, opacity: 0.5 }}
+            loading={oauthLoading === 'microsoft'}
+            onClick={() => { setOauthLoading('microsoft'); signIn('microsoft-entra-id', { callbackUrl: '/' }); }}
+            style={{ height: 44, fontWeight: 600, borderRadius: 10 }}
           >
-            Microsoft (próximamente)
+            Microsoft
           </Button>
         </div>
 
