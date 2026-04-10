@@ -148,8 +148,30 @@ export const POST = withAuth({ roles: ['solicitante', 'responsable_area'] }, asy
 
   if (conforme) {
     await notificarPorRol(session.tenantId, 'tesoreria', 'Recepción confirmada', `${session.nombre} confirmó recepción de "${solicitud.titulo}"`, solicitud_id);
+    // Notificar cierre a todos los involucrados
+    if (nuevoEstado === 'cerrada') {
+      if (solicitud.solicitante_id !== session.userId) {
+        await crearNotificacion({ tenantId: session.tenantId, destinatarioId: solicitud.solicitante_id, tipo: 'solicitud_cerrada', titulo: 'Tu solicitud fue cerrada exitosamente', mensaje: `"${solicitud.titulo}" fue recibida y cerrada.`, solicitudId: solicitud_id });
+      }
+      const areaRec = await db.areas.findFirst({ where: { id: solicitud.area_id }, select: { responsable_id: true } });
+      if (areaRec?.responsable_id && areaRec.responsable_id !== session.userId && areaRec.responsable_id !== solicitud.solicitante_id) {
+        await crearNotificacion({ tenantId: session.tenantId, destinatarioId: areaRec.responsable_id, tipo: 'solicitud_cerrada', titulo: 'Solicitud completada', mensaje: `"${solicitud.titulo}" fue recibida conforme y cerrada.`, solicitudId: solicitud_id });
+      }
+      await notificarPorRol(session.tenantId, 'director', 'Solicitud completada', `"${solicitud.titulo}" fue recibida conforme y cerrada.`, solicitud_id);
+      await notificarPorRol(session.tenantId, 'compras', 'Solicitud completada', `"${solicitud.titulo}" fue recibida conforme y cerrada.`, solicitud_id);
+    }
   } else {
     await notificarPorRol(session.tenantId, 'tesoreria', 'Recepción con problemas', `${session.nombre} reportó problema (${tipo_problema}) con "${solicitud.titulo}": ${observaciones}`, solicitud_id);
+    // Notificar problema a todos los involucrados
+    if (solicitud.solicitante_id !== session.userId) {
+      await crearNotificacion({ tenantId: session.tenantId, destinatarioId: solicitud.solicitante_id, tipo: 'recepcion_problema', titulo: 'Problema en la recepción', mensaje: `Se reportó un problema (${tipo_problema}) con "${solicitud.titulo}": ${observaciones}`, solicitudId: solicitud_id });
+    }
+    const areaRec = await db.areas.findFirst({ where: { id: solicitud.area_id }, select: { responsable_id: true } });
+    if (areaRec?.responsable_id && areaRec.responsable_id !== session.userId && areaRec.responsable_id !== solicitud.solicitante_id) {
+      await crearNotificacion({ tenantId: session.tenantId, destinatarioId: areaRec.responsable_id, tipo: 'recepcion_problema', titulo: 'Problema en recepción', mensaje: `${session.nombre} reportó problema (${tipo_problema}) con "${solicitud.titulo}": ${observaciones}`, solicitudId: solicitud_id });
+    }
+    await notificarPorRol(session.tenantId, 'director', 'Problema en recepción', `${session.nombre} reportó problema (${tipo_problema}) con "${solicitud.titulo}": ${observaciones}`, solicitud_id);
+    await notificarPorRol(session.tenantId, 'compras', 'Problema en recepción', `${session.nombre} reportó problema (${tipo_problema}) con "${solicitud.titulo}": ${observaciones}`, solicitud_id);
   }
 
   // 3-way matching check

@@ -3,6 +3,7 @@ import { withAuth } from '@/lib/api-handler';
 import { verificarRol, apiError } from '@/lib/permissions';
 import { registrarAuditoria } from '@/lib/audit';
 import { crearNotificacion } from '@/lib/notifications';
+import { prisma } from '@/lib/prisma';
 
 // States that can be cancelled
 const ESTADOS_ANULABLES = ['enviada', 'validada', 'aprobada', 'en_compras', 'pago_programado'];
@@ -65,6 +66,21 @@ export const POST = withAuth({}, async (request, { session, db, ip }, params) =>
       mensaje: `Tu solicitud "${solicitud.titulo}" fue anulada por ${session.nombre}. Motivo: ${motivo}`,
       solicitudId,
     });
+  }
+
+  // Notify responsable if solicitud was already validated/approved
+  if (['validada', 'aprobada', 'en_compras', 'pago_programado'].includes(estadoAnterior)) {
+    const area = await prisma.areas.findFirst({ where: { id: solicitud.area_id, tenant_id: session.tenantId }, select: { responsable_id: true } });
+    if (area?.responsable_id && area.responsable_id !== session.userId && area.responsable_id !== solicitud.solicitante_id) {
+      await crearNotificacion({
+        tenantId: session.tenantId,
+        destinatarioId: area.responsable_id,
+        tipo: 'solicitud_anulada',
+        titulo: `Solicitud ${solicitud.numero} anulada`,
+        mensaje: `"${solicitud.titulo}" fue anulada por ${session.nombre}. Motivo: ${motivo}`,
+        solicitudId,
+      });
+    }
   }
 
   await registrarAuditoria({

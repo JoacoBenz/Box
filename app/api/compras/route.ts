@@ -2,7 +2,7 @@ import { withAuth, validateBody } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
 import { verificarSegregacion } from '@/lib/permissions';
 import { registrarAuditoria } from '@/lib/audit';
-import { crearNotificacion } from '@/lib/notifications';
+import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { compraSchema } from '@/lib/validators';
 import { uploadFile } from '@/lib/supabase';
 import { logApiError } from '@/lib/logger';
@@ -129,6 +129,10 @@ export const POST = withAuth({ roles: ['tesoreria', 'compras', 'solicitante'] },
   if (area?.responsable_id && area.responsable_id !== solicitud.solicitante_id) {
     await crearNotificacion({ tenantId: session.tenantId, destinatarioId: area.responsable_id, tipo: 'compra_registrada', titulo: 'Compra ejecutada', mensaje: `"${solicitud.titulo}" fue comprado. Pendiente de recepción.`, solicitudId: solicitud.id });
   }
+
+  // Notificar a Director y Compras de que se ejecutó el pago
+  await notificarPorRol(session.tenantId, 'director', 'Compra ejecutada', `Tesorería abonó "${solicitud.titulo}" a ${parsed.data.proveedor_nombre} por $${parsed.data.monto_total}`, solicitud.id);
+  await notificarPorRol(session.tenantId, 'compras', 'Compra ejecutada', `Se abonó "${solicitud.titulo}" a ${parsed.data.proveedor_nombre} por $${parsed.data.monto_total}`, solicitud.id);
 
   await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'registrar_compra', entidad: 'compra', entidadId: compra.id, ipAddress: ip });
   return Response.json({ ...compra, warning: uploadWarning }, { status: 201 });
