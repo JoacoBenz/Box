@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Table, Tag, Typography, Button, Modal, App } from 'antd'
+import { Table, Tag, Typography, Button, App } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useRouter } from 'next/navigation'
 import { CheckOutlined, CheckCircleOutlined } from '@ant-design/icons'
@@ -80,14 +80,14 @@ export default function AprobacionesPage() {
         setSelectedRowKeys(prev => prev.filter(k => k !== solicitud.id))
       } else {
         const err = await res.json().catch(() => null)
-        Modal.error({ title: 'Error al aprobar', content: err?.error?.message || 'Error desconocido' })
+        modal.error({ title: 'Error al aprobar', content: err?.error?.message || 'Error desconocido' })
       }
     } catch {
-      Modal.error({ title: 'Error', content: 'No se pudo conectar con el servidor' })
+      modal.error({ title: 'Error', content: 'No se pudo conectar con el servidor' })
     } finally {
       setApprovingId(null)
     }
-  }, [message])
+  }, [message, modal])
 
   const handleBulkApprove = useCallback(() => {
     const count = selectedRowKeys.length
@@ -113,7 +113,7 @@ export default function AprobacionesPage() {
               message.success(`${result.aprobadas} solicitud${result.aprobadas > 1 ? 'es' : ''} aprobada${result.aprobadas > 1 ? 's' : ''}`)
             }
             if (result.errores?.length > 0) {
-              Modal.warning({
+              modal.warning({
                 title: `${result.errores.length} solicitud${result.errores.length > 1 ? 'es' : ''} no se pudieron aprobar`,
                 content: result.errores.map((e: any) => `#${e.id}: ${e.error}`).join('\n'),
               })
@@ -122,10 +122,10 @@ export default function AprobacionesPage() {
             fetchData()
           } else {
             const err = await res.json().catch(() => null)
-            Modal.error({ title: 'Error', content: err?.error?.message || 'Error desconocido' })
+            modal.error({ title: 'Error', content: err?.error?.message || 'Error desconocido' })
           }
         } catch {
-          Modal.error({ title: 'Error', content: 'No se pudo conectar con el servidor' })
+          modal.error({ title: 'Error', content: 'No se pudo conectar con el servidor' })
         } finally {
           setBulkApproving(false)
         }
@@ -174,7 +174,8 @@ export default function AprobacionesPage() {
     {
       title: '',
       key: 'acciones',
-      width: 100,
+      width: 120,
+      align: 'center' as const,
       render: (_, r) => (
         <Button
           type="primary"

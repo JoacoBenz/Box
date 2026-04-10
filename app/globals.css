@@ -406,6 +406,68 @@ body {
   50% { border-left-color: var(--urgencia-border-critica-pulse) !important; }
 }
 
+/* ── Mobile responsive ── */
+@media (max-width: 768px) {
+  .page-content {
+    padding: 0 !important;
+  }
+
+  /* Tables: horizontal scroll */
+  .ant-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Cards: full width */
+  .ant-card {
+    border-radius: 12px !important;
+  }
+
+  /* Descriptions: single column */
+  .ant-descriptions-view table {
+    display: block;
+  }
+  .ant-descriptions-view tr {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Forms: full width inputs */
+  .ant-select, .ant-picker, .ant-input-number {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Space: vertical on mobile */
+  .ant-space-horizontal {
+    flex-wrap: wrap;
+  }
+
+  /* Header search results */
+  .search-results-dropdown {
+    width: calc(100vw - 32px) !important;
+    max-width: 400px;
+  }
+
+  /* Stat cards */
+  .ant-statistic-title {
+    font-size: 12px !important;
+  }
+  .ant-statistic-content-value {
+    font-size: 20px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Extra small: tighter spacing */
+  .ant-card-body {
+    padding: 16px !important;
+  }
+  .ant-form-item {
+    margin-bottom: 16px !important;
+  }
+}
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

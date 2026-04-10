@@ -44,7 +44,7 @@ export default function VerificarEmailPage() {
 
   return (
     <Card
-      style={{ width: 480, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: 'none', borderRadius: 20 }}
+      style={{ width: 'min(480px, calc(100vw - 32px))', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: 'none', borderRadius: 20 }}
       styles={{ body: { padding: '40px 36px' } }}
     >
       {status === 'loading' && (

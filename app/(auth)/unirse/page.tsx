@@ -118,7 +118,7 @@ export default function UnirsePage() {
 
   if (registrado) {
     return (
-      <Card style={{ width: 480, boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+      <Card style={{ width: 'min(480px, calc(100vw - 32px))', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
         <Result
           status="success"
           title="Cuenta creada"
@@ -130,7 +130,7 @@ export default function UnirsePage() {
   }
 
   return (
-    <Card style={{ width: 480, boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+    <Card style={{ width: 'min(480px, calc(100vw - 32px))', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
         <Title level={3} style={{ marginBottom: 4 }}>Unirse a una Organización</Title>
         <Text type="secondary">Ingresá con tu email institucional o código de invitación</Text>

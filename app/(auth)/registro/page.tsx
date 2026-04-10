@@ -47,7 +47,7 @@ export default function RegistroPage() {
 
   if (registrado) {
     return (
-      <Card style={{ width: 480, boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+      <Card style={{ width: 'min(480px, calc(100vw - 32px))', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
         <Result
           status="success"
           title="Verificá tu email"
@@ -59,7 +59,7 @@ export default function RegistroPage() {
   }
 
   return (
-    <Card style={{ width: 480, boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+    <Card style={{ width: 'min(480px, calc(100vw - 32px))', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
       <Space orientation="vertical" size="large" style={{ width: '100%' }}>
         <div style={{ textAlign: 'center' }}>
           <Title level={3} style={{ marginBottom: 4 }}>Registrar Organización</Title>

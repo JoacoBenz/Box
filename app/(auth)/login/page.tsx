@@ -93,7 +93,7 @@ export default function LoginPage() {
       <Card
         className="login-card"
         style={{
-          width: 420,
+          width: 'min(420px, calc(100vw - 32px))',
           boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
           border: 'none',
           borderRadius: 20,

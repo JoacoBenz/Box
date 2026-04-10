@@ -166,7 +166,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
 
       {/* Main info */}
       <Card title={<span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Detalle de la Solicitud</span>} style={{ marginBottom: 24, borderRadius: 16 }}>
-        <Descriptions column={2} bordered size="small">
+        <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
           <Descriptions.Item label="Solicitante">{solicitud.solicitante.nombre}</Descriptions.Item>
           <Descriptions.Item label="Área">{solicitud.area?.nombre ?? '—'}</Descriptions.Item>
           {solicitud.centro_costo && (
@@ -217,7 +217,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
           title={<span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Proveedor</span>}
           style={{ marginBottom: 24, borderRadius: 16 }}
         >
-          <Descriptions column={2} bordered size="small">
+          <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
             <Descriptions.Item label="Nombre">{solicitud.proveedor.nombre}</Descriptions.Item>
             {solicitud.proveedor.cuit && (
               <Descriptions.Item label="CUIT">{solicitud.proveedor.cuit}</Descriptions.Item>

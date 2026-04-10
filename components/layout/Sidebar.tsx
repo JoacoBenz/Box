@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Layout, Menu, Select, Tag } from 'antd';
+import { Layout, Menu, Select, Tag, Drawer } from 'antd';
 import {
   DashboardOutlined,
   PlusCircleOutlined,
@@ -38,6 +38,9 @@ interface SidebarProps {
     recepciones?: number;
   };
   collapsed: boolean;
+  isMobile?: boolean;
+  drawerOpen?: boolean;
+  onDrawerClose?: () => void;
 }
 
 interface TenantOption {
@@ -45,7 +48,7 @@ interface TenantOption {
   nombre: string;
 }
 
-export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
+export function Sidebar({ roles, pendientes = {}, collapsed, isMobile, drawerOpen, onDrawerClose }: SidebarProps) {
   const { tokens } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
@@ -189,6 +192,36 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
           border-left: 3px solid ${tokens.colorPrimary};
         }
       `}</style>
+      {isMobile ? (
+        <Drawer
+          placement="left"
+          open={drawerOpen}
+          onClose={onDrawerClose}
+          width={260}
+          styles={{ body: { padding: 0, background: tokens.sidebarBg }, header: { display: 'none' } }}
+          style={{ zIndex: 1001 }}
+        >
+          <div style={{
+            height: 64,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+            borderBottom: `1px solid ${tokens.sidebarBorder}`,
+          }}>
+            <span style={{ fontSize: 24 }}>📦</span>
+            <span style={{ fontWeight: 700, fontSize: 15, color: tokens.textPrimary, letterSpacing: '-0.3px' }}>Box</span>
+          </div>
+          <Menu
+            className="sidebar-menu"
+            mode="inline"
+            selectedKeys={selectedKey ? [selectedKey] : []}
+            style={{ border: 'none', padding: '12px 4px', background: 'transparent' }}
+            items={filteredItems}
+            onClick={({ key }) => { router.push(key); onDrawerClose?.(); }}
+          />
+        </Drawer>
+      ) : (
       <Sider
         collapsible
         collapsed={collapsed}
@@ -261,6 +294,7 @@ export function Sidebar({ roles, pendientes = {}, collapsed }: SidebarProps) {
           onClick={({ key }) => router.push(key)}
         />
       </Sider>
+      )}
     </>
   );
 }
