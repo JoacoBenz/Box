@@ -222,7 +222,7 @@ export default function MiAreaUsuariosPage() {
               { type: 'email', message: 'Ingresá un email válido' },
             ]}
           >
-            <Input placeholder="usuario@empresa.com" />
+            <Input placeholder="usuario@empresa.com" disabled={!!editing} />
           </Form.Item>
 
           {!editing && (

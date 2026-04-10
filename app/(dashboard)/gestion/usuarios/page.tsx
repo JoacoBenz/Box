@@ -82,7 +82,7 @@ function UsuarioFormFields({ form, editing, areas }: { form: FormInstance; editi
           { type: 'email', message: 'Ingrese un email válido' },
         ]}
       >
-        <Input placeholder="usuario@empresa.com" />
+        <Input placeholder="usuario@empresa.com" disabled={!!editing} />
       </Form.Item>
 
       {!editing && (

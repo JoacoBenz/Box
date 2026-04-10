@@ -50,10 +50,8 @@ export const PATCH = withAdminOverride({ roles: ['admin', 'director', 'responsab
     }
   }
 
-  if (email !== usuario.email) {
-    const existing = await db.usuarios.findFirst({ where: { email } });
-    if (existing) return Response.json({ error: { code: 'CONFLICT', message: 'Email ya en uso' } }, { status: 409 });
-  }
+  // Email cannot be changed after creation
+  email = usuario.email;
 
   const area = await db.areas.findFirst({ where: { id: area_id, activo: true } });
   if (!area) return Response.json({ error: { code: 'NOT_FOUND', message: 'Área no encontrada' } }, { status: 404 });
@@ -71,7 +69,7 @@ export const PATCH = withAdminOverride({ roles: ['admin', 'director', 'responsab
 
   const rolesData = await prisma.roles.findMany({ where: { nombre: { in: roleNames } } });
 
-  const updateData: { nombre: string; email: string; area_id: number; centro_costo_id: number | null; password_hash?: string } = { nombre, email, area_id, centro_costo_id: centro_costo_id ?? null };
+  const updateData: { nombre: string; area_id: number; centro_costo_id: number | null; password_hash?: string } = { nombre, area_id, centro_costo_id: centro_costo_id ?? null };
   if (password) updateData.password_hash = await bcrypt.hash(password, 12);
 
   await prisma.$transaction(async (tx) => {
