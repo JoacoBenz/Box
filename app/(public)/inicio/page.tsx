@@ -263,18 +263,18 @@ function AppShowcase() {
         </div>
         {/* App header inside frame */}
         <div className="lp-app-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="lp-app-logo">
             <span style={{ fontSize: 18 }}>📦</span>
             <span style={{ fontWeight: 800, fontSize: 15, color: '#00C2CB' }}>Box</span>
           </div>
-          <div style={{ display: 'flex', gap: 16 }}>
+          <div className="lp-app-tabs">
             {SCREENS.map((s, i) => (
               <button key={i} onClick={() => goTo(i)} className={`lp-app-tab ${active === i ? 'active' : ''}`}>
                 {s.title}
               </button>
             ))}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="lp-app-avatar">
             <span style={{ fontSize: 14 }}>🔔</span>
             <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 11 }}>JB</div>
           </div>
@@ -518,6 +518,9 @@ export default function LandingPage() {
           display: flex; align-items: center; justify-content: space-between;
           padding: 10px 24px; background: #fff; border-bottom: 1px solid #f0f0f0;
         }
+        .lp-app-logo { display: flex; align-items: center; gap: 8px; }
+        .lp-app-tabs { display: flex; gap: 16px; }
+        .lp-app-avatar { display: flex; align-items: center; gap: 8px; }
         .lp-app-tab {
           background: none; border: none; cursor: pointer;
           font-size: 12px; font-weight: 600; color: #888;
@@ -657,8 +660,11 @@ export default function LandingPage() {
           .lp-browser-frame { border-radius: 10px; }
           .lp-browser-bar { padding: 6px 10px; }
           .lp-browser-url { font-size: 10px; padding: 4px 10px; max-width: 200px; }
-          .lp-app-header { padding: 6px 10px; }
-          .lp-app-tab { font-size: 9px; padding: 4px 5px; }
+          .lp-app-header { padding: 6px 8px; justify-content: center; }
+          .lp-app-logo { display: none !important; }
+          .lp-app-avatar { display: none !important; }
+          .lp-app-tabs { gap: 4px; }
+          .lp-app-tab { font-size: 10px; padding: 4px 8px; }
           .lp-screen-content { min-height: auto; }
           .lp-showcase-caption { font-size: 13px; }
           /* Screen content mobile */
@@ -667,11 +673,16 @@ export default function LandingPage() {
           .sc-stat-card { padding: 8px 6px; }
           .sc-stat-label { font-size: 9px; }
           .sc-stat-value { font-size: 15px; }
-          .sc-charts-grid { grid-template-columns: 1fr; gap: 8px; }
-          .sc-card { padding: 10px; }
-          .sc-bar-chart { height: 50px; gap: 4px; }
+          .sc-charts-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+          .sc-card { padding: 8px; }
+          .sc-card-title { font-size: 10px; margin-bottom: 6px; white-space: nowrap; }
+          .sc-bar-chart { height: 45px; gap: 3px; }
+          .sc-bar { border-radius: 3px; }
           .sc-bar-label { font-size: 7px; }
-          .sc-progress-header { font-size: 9px; }
+          .sc-progress-row { margin-bottom: 5px; }
+          .sc-progress-header { font-size: 8px; }
+          .sc-progress-bg { height: 4px; }
+          .sc-progress-fill { height: 4px; }
           .sc-totals-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
           .sc-total-card { padding: 6px; }
           .sc-total-value { font-size: 12px; }
