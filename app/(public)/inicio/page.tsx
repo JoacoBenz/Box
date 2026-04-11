@@ -587,15 +587,15 @@ export default function LandingPage() {
         .lp-wpp-fab {
           position: fixed; bottom: 24px; right: 24px; z-index: 999;
           width: 56px; height: 56px; border-radius: 50%;
-          background: #25d366; color: #fff;
+          background: linear-gradient(135deg, #00C2CB, #0891b2); color: #fff;
           display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 4px 20px rgba(37,211,102,0.4);
+          box-shadow: 0 4px 20px rgba(0,194,203,0.4);
           transition: transform 0.25s, box-shadow 0.25s;
           text-decoration: none;
         }
         .lp-wpp-fab:hover {
           transform: scale(1.1);
-          box-shadow: 0 6px 28px rgba(37,211,102,0.55);
+          box-shadow: 0 6px 28px rgba(0,194,203,0.55);
         }
 
         /* ---- RESPONSIVE ---- */
