@@ -673,16 +673,11 @@ export default function LandingPage() {
           .sc-stat-card { padding: 8px 6px; }
           .sc-stat-label { font-size: 9px; }
           .sc-stat-value { font-size: 15px; }
-          .sc-charts-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
-          .sc-card { padding: 8px; }
-          .sc-card-title { font-size: 10px; margin-bottom: 6px; white-space: nowrap; }
-          .sc-bar-chart { height: 45px; gap: 3px; }
-          .sc-bar { border-radius: 3px; }
-          .sc-bar-label { font-size: 7px; }
-          .sc-progress-row { margin-bottom: 5px; }
-          .sc-progress-header { font-size: 8px; }
-          .sc-progress-bg { height: 4px; }
-          .sc-progress-fill { height: 4px; }
+          .sc-charts-grid { grid-template-columns: 1fr; gap: 6px; }
+          .sc-card { padding: 10px; }
+          .sc-card-title { font-size: 11px; margin-bottom: 8px; }
+          .sc-bar-chart { height: 55px; }
+          .sc-progress-header { font-size: 9px; }
           .sc-totals-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
           .sc-total-card { padding: 6px; }
           .sc-total-value { font-size: 12px; }
