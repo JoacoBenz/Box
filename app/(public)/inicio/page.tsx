@@ -36,174 +36,177 @@ const FEATURES = [
   },
 ];
 
-const SCREENS = [
-  {
-    title: 'Dashboard',
-    caption: 'Métricas en tiempo real de tu organización',
-    content: (
-      <div style={{ padding: '20px 24px' }}>
-        {/* Top stats row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-          {[
-            { label: 'Solicitudes', value: '24', color: '#4f46e5', icon: '📋' },
-            { label: 'Aprobadas', value: '18', color: '#16a34a', icon: '✅' },
-            { label: 'En proceso', value: '4', color: '#f59e0b', icon: '⏳' },
-            { label: 'Gasto mensual', value: '$1.2M', color: '#0891b2', icon: '💰' },
-          ].map((s, i) => (
-            <div key={i} style={{ background: '#fff', borderRadius: 12, padding: '14px 12px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', borderLeft: `3px solid ${s.color}` }}>
-              <div style={{ fontSize: 11, color: '#888', fontWeight: 500 }}>{s.icon} {s.label}</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: s.color, marginTop: 4 }}>{s.value}</div>
-            </div>
-          ))}
-        </div>
-        {/* Chart area */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 14 }}>
-          <div style={{ background: '#fff', borderRadius: 12, padding: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: '#333' }}>Gastos por mes</div>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 80 }}>
-              {[40, 65, 50, 80, 70, 95, 60].map((h, i) => (
-                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                  <div style={{ width: '100%', height: h, borderRadius: 6, background: `linear-gradient(180deg, #00C2CB, #0891b2)`, opacity: 0.7 + i * 0.04 }} />
-                  <span style={{ fontSize: 9, color: '#aaa' }}>{['E', 'F', 'M', 'A', 'M', 'J', 'J'][i]}</span>
-                </div>
-              ))}
-            </div>
+const SCREEN_DATA = {
+  dashboard: {
+    stats: [
+      { label: 'Solicitudes', value: '24', color: '#4f46e5', icon: '📋' },
+      { label: 'Aprobadas', value: '18', color: '#16a34a', icon: '✅' },
+      { label: 'En proceso', value: '4', color: '#f59e0b', icon: '⏳' },
+      { label: 'Gasto mensual', value: '$1.2M', color: '#0891b2', icon: '💰' },
+    ],
+    bars: [40, 65, 50, 80, 70, 95, 60],
+    barLabels: ['E', 'F', 'M', 'A', 'M', 'J', 'J'],
+    areas: [
+      { name: 'Administración', pct: 35, color: '#4f46e5' },
+      { name: 'Dirección', pct: 25, color: '#0891b2' },
+      { name: 'Mantenimiento', pct: 22, color: '#f59e0b' },
+      { name: 'Sistemas', pct: 18, color: '#16a34a' },
+    ],
+  },
+  solicitudes: [
+    { n: 'SC-0024', t: 'Resmas A4 x 500', monto: '$15.000', estado: 'Aprobada', color: '#16a34a', bg: '#f0fdf4' },
+    { n: 'SC-0023', t: 'Toner HP LaserJet', monto: '$45.000', estado: 'Validada', color: '#2563eb', bg: '#eff6ff' },
+    { n: 'SC-0022', t: 'Sillas ergonómicas x5', monto: '$120.000', estado: 'En compras', color: '#f59e0b', bg: '#fefce8' },
+    { n: 'SC-0021', t: 'Proyector Epson', monto: '$350.000', estado: 'Pendiente', color: '#888', bg: '#f5f5f5' },
+    { n: 'SC-0020', t: 'Notebooks x3', monto: '$1.200.000', estado: 'Cerrada', color: '#059669', bg: '#ecfdf5' },
+  ],
+  aprobaciones: [
+    { n: 'SC-0024', t: 'Resmas A4 x 500 hojas', area: 'Administración', solicitante: 'María López', monto: '$15.000', urgencia: 'Media', urgColor: '#ca8a04', urgBg: '#fefce8' },
+    { n: 'SC-0023', t: 'Toner HP LaserJet Pro', area: 'Dirección', solicitante: 'Carlos García', monto: '$45.000', urgencia: 'Alta', urgColor: '#dc2626', urgBg: '#fef2f2' },
+    { n: 'SC-0022', t: 'Sillas ergonómicas x5', area: 'Contaduría', solicitante: 'Ana Pérez', monto: '$120.000', urgencia: 'Baja', urgColor: '#16a34a', urgBg: '#f0fdf4' },
+  ],
+  reportes: {
+    totals: [
+      { label: 'Total gastado', value: '$2.450.000', color: '#4f46e5' },
+      { label: 'Presupuesto', value: '$3.000.000', color: '#16a34a' },
+      { label: 'Disponible', value: '$550.000', color: '#f59e0b' },
+    ],
+    rows: [
+      { area: 'Administración', gastado: '$820K', pct: 82 },
+      { area: 'Dirección', gastado: '$650K', pct: 81 },
+      { area: 'Sistemas', gastado: '$530K', pct: 88 },
+      { area: 'Mantenimiento', gastado: '$450K', pct: 75 },
+    ],
+  },
+};
+
+function ScreenDashboard() {
+  const d = SCREEN_DATA.dashboard;
+  return (
+    <div className="sc-pad">
+      <div className="sc-stats-grid">
+        {d.stats.map((s, i) => (
+          <div key={i} className="sc-stat-card" style={{ borderLeft: `3px solid ${s.color}` }}>
+            <div className="sc-stat-label">{s.icon} {s.label}</div>
+            <div className="sc-stat-value" style={{ color: s.color }}>{s.value}</div>
           </div>
-          <div style={{ background: '#fff', borderRadius: 12, padding: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: '#333' }}>Por área</div>
-            {[
-              { name: 'Administración', pct: 35, color: '#4f46e5' },
-              { name: 'Dirección', pct: 25, color: '#0891b2' },
-              { name: 'Mantenimiento', pct: 22, color: '#f59e0b' },
-              { name: 'Sistemas', pct: 18, color: '#16a34a' },
-            ].map((a, i) => (
-              <div key={i} style={{ marginBottom: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#666', marginBottom: 3 }}>
-                  <span>{a.name}</span><span>{a.pct}%</span>
-                </div>
-                <div style={{ height: 6, borderRadius: 3, background: '#f0f0f0' }}>
-                  <div style={{ height: 6, borderRadius: 3, background: a.color, width: `${a.pct}%` }} />
-                </div>
+        ))}
+      </div>
+      <div className="sc-charts-grid">
+        <div className="sc-card">
+          <div className="sc-card-title">Gastos por mes</div>
+          <div className="sc-bar-chart">
+            {d.bars.map((h, i) => (
+              <div key={i} className="sc-bar-col">
+                <div className="sc-bar" style={{ height: h }} />
+                <span className="sc-bar-label">{d.barLabels[i]}</span>
               </div>
             ))}
           </div>
         </div>
-      </div>
-    ),
-  },
-  {
-    title: 'Solicitudes',
-    caption: 'Seguí el estado de cada pedido en tiempo real',
-    content: (
-      <div style={{ padding: '16px 24px' }}>
-        {/* Search bar */}
-        <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
-          <div style={{ flex: 1, background: '#fff', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#aaa', border: '1px solid #e5e7eb' }}>🔍 Buscar solicitudes...</div>
-          <div style={{ background: 'linear-gradient(135deg, #00C2CB, #0891b2)', color: '#fff', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600 }}>+ Nueva</div>
-        </div>
-        {/* Table */}
-        <div style={{ background: '#fff', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 90px 90px 80px', padding: '10px 14px', background: '#f9fafb', fontSize: 10, fontWeight: 600, color: '#888', textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>
-            <span>#</span><span>Solicitud</span><span>Área</span><span>Monto</span><span>Estado</span>
-          </div>
-          {[
-            { n: 'SC-0024', t: 'Resmas A4 x 500', area: 'Admin', monto: '$15.000', estado: 'Aprobada', color: '#16a34a', bg: '#f0fdf4' },
-            { n: 'SC-0023', t: 'Toner HP LaserJet', area: 'Dirección', monto: '$45.000', estado: 'Validada', color: '#2563eb', bg: '#eff6ff' },
-            { n: 'SC-0022', t: 'Sillas ergonómicas x5', area: 'Contaduría', monto: '$120.000', estado: 'En compras', color: '#f59e0b', bg: '#fefce8' },
-            { n: 'SC-0021', t: 'Proyector Epson', area: 'Reuniones', monto: '$350.000', estado: 'Pendiente', color: '#888', bg: '#f5f5f5' },
-            { n: 'SC-0020', t: 'Notebooks x3', area: 'Sistemas', monto: '$1.200.000', estado: 'Cerrada', color: '#059669', bg: '#ecfdf5' },
-          ].map((r, i) => (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 90px 90px 80px', padding: '12px 14px', borderTop: '1px solid #f0f0f0', fontSize: 12, alignItems: 'center' }}>
-              <span style={{ color: '#4f46e5', fontWeight: 600 }}>{r.n}</span>
-              <span style={{ fontWeight: 600, color: '#333' }}>{r.t}</span>
-              <span style={{ color: '#777' }}>{r.area}</span>
-              <span style={{ fontWeight: 700, color: '#333' }}>{r.monto}</span>
-              <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 600, background: r.bg, color: r.color }}>{r.estado}</span>
+        <div className="sc-card">
+          <div className="sc-card-title">Por área</div>
+          {d.areas.map((a, i) => (
+            <div key={i} className="sc-progress-row">
+              <div className="sc-progress-header"><span>{a.name}</span><span>{a.pct}%</span></div>
+              <div className="sc-progress-bg"><div className="sc-progress-fill" style={{ background: a.color, width: `${a.pct}%` }} /></div>
             </div>
           ))}
         </div>
       </div>
-    ),
-  },
-  {
-    title: 'Aprobaciones',
-    caption: 'Aprobá o rechazá solicitudes con un click',
-    content: (
-      <div style={{ padding: '16px 24px' }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#333', marginBottom: 14 }}>3 solicitudes pendientes de aprobación</div>
-        {[
-          { n: 'SC-0024', t: 'Resmas A4 x 500 hojas', area: 'Administración', solicitante: 'María López', monto: '$15.000', urgencia: 'Media', urgColor: '#ca8a04', urgBg: '#fefce8' },
-          { n: 'SC-0023', t: 'Toner HP LaserJet Pro', area: 'Dirección', solicitante: 'Carlos García', monto: '$45.000', urgencia: 'Alta', urgColor: '#dc2626', urgBg: '#fef2f2' },
-          { n: 'SC-0022', t: 'Sillas ergonómicas x5', area: 'Contaduría', solicitante: 'Ana Pérez', monto: '$120.000', urgencia: 'Baja', urgColor: '#16a34a', urgBg: '#f0fdf4' },
-        ].map((r, i) => (
-          <div key={i} style={{ background: '#fff', borderRadius: 12, padding: 16, marginBottom: 10, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid #f0f0f0' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ color: '#4f46e5', fontWeight: 700, fontSize: 13 }}>{r.n}</span>
-                  <span style={{ padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 600, background: r.urgBg, color: r.urgColor }}>{r.urgencia}</span>
-                </div>
-                <div style={{ fontWeight: 600, fontSize: 14, color: '#333', marginTop: 4 }}>{r.t}</div>
-                <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{r.area} · {r.solicitante}</div>
-              </div>
-              <div style={{ fontWeight: 800, fontSize: 16, color: '#1f2937' }}>{r.monto}</div>
+    </div>
+  );
+}
+
+function ScreenSolicitudes() {
+  return (
+    <div className="sc-pad">
+      <div className="sc-search-bar">
+        <div className="sc-search-input">🔍 Buscar solicitudes...</div>
+        <div className="sc-search-btn">+ Nueva</div>
+      </div>
+      <div className="sc-card sc-no-pad">
+        {SCREEN_DATA.solicitudes.map((r, i) => (
+          <div key={i} className="sc-sol-row">
+            <div className="sc-sol-left">
+              <span className="sc-sol-num">{r.n}</span>
+              <span className="sc-sol-title">{r.t}</span>
             </div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <div style={{ padding: '6px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, border: '1px solid #fca5a5', color: '#dc2626', cursor: 'pointer' }}>Rechazar</div>
-              <div style={{ padding: '6px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: '#16a34a', color: '#fff', cursor: 'pointer' }}>Aprobar ✓</div>
+            <div className="sc-sol-right">
+              <span className="sc-sol-monto">{r.monto}</span>
+              <span className="sc-badge" style={{ background: r.bg, color: r.color }}>{r.estado}</span>
             </div>
           </div>
         ))}
       </div>
-    ),
-  },
-  {
-    title: 'Reportes',
-    caption: 'Exportá reportes detallados a Excel en un click',
-    content: (
-      <div style={{ padding: '20px 24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#333' }}>Reporte de gastos — Julio 2026</div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <div style={{ padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, border: '1px solid #e5e7eb', color: '#555' }}>📅 Este mes</div>
-            <div style={{ padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, background: '#16a34a', color: '#fff' }}>📥 Excel</div>
+    </div>
+  );
+}
+
+function ScreenAprobaciones() {
+  return (
+    <div className="sc-pad">
+      <div className="sc-card-title" style={{ marginBottom: 12 }}>3 solicitudes pendientes</div>
+      {SCREEN_DATA.aprobaciones.map((r, i) => (
+        <div key={i} className="sc-aprob-card">
+          <div className="sc-aprob-header">
+            <div>
+              <div className="sc-aprob-meta">
+                <span className="sc-sol-num">{r.n}</span>
+                <span className="sc-badge" style={{ background: r.urgBg, color: r.urgColor }}>{r.urgencia}</span>
+              </div>
+              <div className="sc-aprob-title">{r.t}</div>
+              <div className="sc-aprob-sub">{r.area} · {r.solicitante}</div>
+            </div>
+            <div className="sc-aprob-monto">{r.monto}</div>
+          </div>
+          <div className="sc-aprob-actions">
+            <div className="sc-btn-reject">Rechazar</div>
+            <div className="sc-btn-approve">Aprobar ✓</div>
           </div>
         </div>
-        {/* Big numbers */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 18 }}>
-          {[
-            { label: 'Total gastado', value: '$2.450.000', color: '#4f46e5' },
-            { label: 'Presupuesto', value: '$3.000.000', color: '#16a34a' },
-            { label: 'Disponible', value: '$550.000', color: '#f59e0b' },
-          ].map((s, i) => (
-            <div key={i} style={{ background: '#fff', borderRadius: 12, padding: 14, textAlign: 'center' as const, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-              <div style={{ fontSize: 10, color: '#888', fontWeight: 500 }}>{s.label}</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: s.color, marginTop: 4 }}>{s.value}</div>
-            </div>
-          ))}
-        </div>
-        {/* Table */}
-        <div style={{ background: '#fff', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px 60px', padding: '10px 14px', background: '#f9fafb', fontSize: 10, fontWeight: 600, color: '#888', textTransform: 'uppercase' as const }}>
-            <span>Área</span><span>Gastado</span><span>Presupuesto</span><span>%</span>
-          </div>
-          {[
-            { area: 'Administración', gastado: '$820.000', presupuesto: '$1.000.000', pct: 82 },
-            { area: 'Dirección', gastado: '$650.000', presupuesto: '$800.000', pct: 81 },
-            { area: 'Sistemas', gastado: '$530.000', presupuesto: '$600.000', pct: 88 },
-            { area: 'Mantenimiento', gastado: '$450.000', presupuesto: '$600.000', pct: 75 },
-          ].map((r, i) => (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px 60px', padding: '11px 14px', borderTop: '1px solid #f0f0f0', fontSize: 12, alignItems: 'center' }}>
-              <span style={{ fontWeight: 600, color: '#333' }}>{r.area}</span>
-              <span style={{ fontWeight: 700, color: '#1f2937' }}>{r.gastado}</span>
-              <span style={{ color: '#888' }}>{r.presupuesto}</span>
-              <span style={{ fontWeight: 700, color: r.pct > 85 ? '#dc2626' : r.pct > 75 ? '#f59e0b' : '#16a34a' }}>{r.pct}%</span>
-            </div>
-          ))}
+      ))}
+    </div>
+  );
+}
+
+function ScreenReportes() {
+  const d = SCREEN_DATA.reportes;
+  return (
+    <div className="sc-pad">
+      <div className="sc-report-header">
+        <div className="sc-card-title">Gastos — Julio 2026</div>
+        <div className="sc-report-btns">
+          <div className="sc-btn-outline">📅 Mes</div>
+          <div className="sc-btn-green">📥 Excel</div>
         </div>
       </div>
-    ),
-  },
+      <div className="sc-totals-grid">
+        {d.totals.map((s, i) => (
+          <div key={i} className="sc-total-card">
+            <div className="sc-stat-label">{s.label}</div>
+            <div className="sc-total-value" style={{ color: s.color }}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+      <div className="sc-card sc-no-pad">
+        {d.rows.map((r, i) => (
+          <div key={i} className="sc-report-row">
+            <span className="sc-report-area">{r.area}</span>
+            <span className="sc-report-gastado">{r.gastado}</span>
+            <span className="sc-report-pct" style={{ color: r.pct > 85 ? '#dc2626' : r.pct > 75 ? '#f59e0b' : '#16a34a' }}>{r.pct}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const SCREENS = [
+  { title: 'Dashboard', caption: 'Métricas en tiempo real de tu organización', content: <ScreenDashboard /> },
+  { title: 'Solicitudes', caption: 'Seguí el estado de cada pedido en tiempo real', content: <ScreenSolicitudes /> },
+  { title: 'Aprobaciones', caption: 'Aprobá o rechazá solicitudes con un click', content: <ScreenAprobaciones /> },
+  { title: 'Reportes', caption: 'Exportá reportes detallados a Excel en un click', content: <ScreenReportes /> },
 ];
 
 const STEPS = [
@@ -442,6 +445,57 @@ export default function LandingPage() {
         .lp-float-card-num { font-size: 28px; font-weight: 800; color: #00C2CB; }
         .lp-float-card-label { font-size: 13px; color: #888; font-weight: 500; margin-top: 2px; }
 
+        /* ---- SCREEN MOCKUP CONTENT ---- */
+        .sc-pad { padding: 16px 20px; }
+        .sc-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+        .sc-stat-card { background: #fff; border-radius: 10px; padding: 12px 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .sc-stat-label { font-size: 10px; color: #888; font-weight: 500; }
+        .sc-stat-value { font-size: 20px; font-weight: 800; margin-top: 3px; }
+        .sc-charts-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px; }
+        .sc-card { background: #fff; border-radius: 10px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .sc-no-pad { padding: 0; overflow: hidden; }
+        .sc-card-title { font-size: 12px; font-weight: 700; color: #333; margin-bottom: 10px; }
+        .sc-bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 70px; }
+        .sc-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+        .sc-bar { width: 100%; border-radius: 4px; background: linear-gradient(180deg, #00C2CB, #0891b2); }
+        .sc-bar-label { font-size: 8px; color: #aaa; }
+        .sc-progress-row { margin-bottom: 7px; }
+        .sc-progress-header { display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-bottom: 2px; }
+        .sc-progress-bg { height: 5px; border-radius: 3px; background: #f0f0f0; }
+        .sc-progress-fill { height: 5px; border-radius: 3px; }
+        .sc-search-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+        .sc-search-input { flex: 1; background: #fff; border-radius: 8px; padding: 7px 10px; font-size: 11px; color: #aaa; border: 1px solid #e5e7eb; }
+        .sc-search-btn { background: linear-gradient(135deg, #00C2CB, #0891b2); color: #fff; border-radius: 8px; padding: 7px 14px; font-size: 11px; font-weight: 600; }
+        .sc-sol-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-top: 1px solid #f0f0f0; }
+        .sc-sol-row:first-child { border-top: none; }
+        .sc-sol-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .sc-sol-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .sc-sol-num { color: #4f46e5; font-weight: 600; font-size: 11px; white-space: nowrap; }
+        .sc-sol-title { font-weight: 600; font-size: 12px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sc-sol-monto { font-weight: 700; font-size: 12px; color: #333; white-space: nowrap; }
+        .sc-badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 9px; font-weight: 600; white-space: nowrap; }
+        .sc-aprob-card { background: #fff; border-radius: 10px; padding: 14px; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid #f0f0f0; }
+        .sc-aprob-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .sc-aprob-meta { display: flex; align-items: center; gap: 6px; }
+        .sc-aprob-title { font-weight: 600; font-size: 13px; color: #333; margin-top: 4px; }
+        .sc-aprob-sub { font-size: 10px; color: #888; margin-top: 2px; }
+        .sc-aprob-monto { font-weight: 800; font-size: 15px; color: #1f2937; }
+        .sc-aprob-actions { display: flex; gap: 6px; justify-content: flex-end; }
+        .sc-btn-reject { padding: 5px 12px; border-radius: 7px; font-size: 11px; font-weight: 600; border: 1px solid #fca5a5; color: #dc2626; }
+        .sc-btn-approve { padding: 5px 12px; border-radius: 7px; font-size: 11px; font-weight: 600; background: #16a34a; color: #fff; }
+        .sc-report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .sc-report-btns { display: flex; gap: 6px; }
+        .sc-btn-outline { padding: 5px 10px; border-radius: 7px; font-size: 10px; font-weight: 600; border: 1px solid #e5e7eb; color: #555; }
+        .sc-btn-green { padding: 5px 10px; border-radius: 7px; font-size: 10px; font-weight: 600; background: #16a34a; color: #fff; }
+        .sc-totals-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+        .sc-total-card { background: #fff; border-radius: 10px; padding: 10px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .sc-total-value { font-size: 16px; font-weight: 800; margin-top: 3px; }
+        .sc-report-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-top: 1px solid #f0f0f0; }
+        .sc-report-row:first-child { border-top: none; }
+        .sc-report-area { font-weight: 600; font-size: 12px; color: #333; }
+        .sc-report-gastado { font-weight: 700; font-size: 12px; color: #1f2937; }
+        .sc-report-pct { font-weight: 700; font-size: 12px; }
+
         /* ---- APP SHOWCASE ---- */
         .lp-showcase {
           padding: 0 48px 40px; max-width: 1000px; margin: -40px auto 0;
@@ -605,26 +659,29 @@ export default function LandingPage() {
           .lp-float-cards { flex-direction: column; align-items: center; }
           .lp-features-grid { grid-template-columns: 1fr; }
           .lp-steps-list::before { left: 30px; }
-          .lp-showcase { padding: 0 8px 40px; margin-top: -20px; }
-          .lp-browser-frame { border-radius: 12px; }
-          .lp-browser-bar { padding: 8px 12px; }
-          .lp-browser-url { font-size: 11px; padding: 4px 10px; }
-          .lp-app-header { padding: 8px 12px; }
-          .lp-app-header > div:first-child span:last-child { font-size: 13px !important; }
-          .lp-app-tab { font-size: 10px; padding: 4px 6px; }
+          .lp-showcase { padding: 0 8px 30px; margin-top: -20px; }
+          .lp-browser-frame { border-radius: 10px; }
+          .lp-browser-bar { padding: 6px 10px; }
+          .lp-browser-url { font-size: 10px; padding: 4px 10px; max-width: 200px; }
+          .lp-app-header { padding: 6px 10px; }
+          .lp-app-tab { font-size: 9px; padding: 4px 5px; }
           .lp-screen-content { min-height: auto; }
-          /* Mobile: simplify dashboard grid */
-          .lp-screen-content [style*="grid-template-columns: repeat(4"] { grid-template-columns: repeat(2, 1fr) !important; }
-          .lp-screen-content [style*="grid-template-columns: 1.5fr"] { grid-template-columns: 1fr !important; }
-          /* Mobile: make tables scrollable */
-          .lp-screen-content [style*="grid-template-columns: 80px"] { grid-template-columns: 60px 1fr 60px 70px 65px !important; font-size: 10px !important; }
-          .lp-screen-content [style*="grid-template-columns: 80px"] span { font-size: 10px !important; }
-          /* Mobile: approval cards */
-          .lp-screen-content [style*="justify-content: space-between"] > div:last-child { font-size: 14px !important; }
-          /* Mobile: reportes grid */
-          .lp-screen-content [style*="grid-template-columns: repeat(3"] { grid-template-columns: 1fr !important; }
-          .lp-screen-content [style*="grid-template-columns: 1fr 100px 100px 60px"] { grid-template-columns: 1fr 80px 80px 45px !important; font-size: 10px !important; }
-          .lp-showcase-caption { font-size: 14px; }
+          .lp-showcase-caption { font-size: 13px; }
+          /* Screen content mobile */
+          .sc-pad { padding: 12px; }
+          .sc-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px; }
+          .sc-stat-card { padding: 8px; }
+          .sc-stat-value { font-size: 16px; }
+          .sc-charts-grid { grid-template-columns: 1fr; gap: 8px; }
+          .sc-bar-chart { height: 50px; }
+          .sc-totals-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+          .sc-total-card { padding: 8px; }
+          .sc-total-value { font-size: 13px; }
+          .sc-sol-row { padding: 8px 10px; }
+          .sc-aprob-card { padding: 10px; }
+          .sc-aprob-title { font-size: 12px; }
+          .sc-aprob-monto { font-size: 13px; }
+          .sc-report-header { flex-direction: column; gap: 8px; align-items: flex-start; }
         }
       `}</style>
 
