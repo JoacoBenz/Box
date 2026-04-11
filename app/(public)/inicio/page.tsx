@@ -444,7 +444,7 @@ export default function LandingPage() {
 
         /* ---- APP SHOWCASE ---- */
         .lp-showcase {
-          padding: 0 48px 100px; max-width: 1000px; margin: -40px auto 0;
+          padding: 0 48px 40px; max-width: 1000px; margin: -40px auto 0;
           position: relative; z-index: 2;
         }
         .lp-browser-frame {
@@ -507,14 +507,14 @@ export default function LandingPage() {
 
         /* ---- FEATURES ---- */
         .lp-features {
-          padding: 100px 48px; max-width: 1200px; margin: 0 auto;
+          padding: 40px 48px 60px; max-width: 1200px; margin: 0 auto;
         }
         .lp-section-title {
           text-align: center; font-size: clamp(30px, 4vw, 44px); font-weight: 800;
           letter-spacing: -1px; margin-bottom: 16px;
         }
         .lp-section-sub {
-          text-align: center; font-size: 18px; color: #888; margin-bottom: 64px; max-width: 500px; margin-left: auto; margin-right: auto;
+          text-align: center; font-size: 18px; color: #888; margin-bottom: 40px; max-width: 500px; margin-left: auto; margin-right: auto;
         }
         .lp-features-grid {
           display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -536,7 +536,7 @@ export default function LandingPage() {
 
         /* ---- STEPS ---- */
         .lp-steps {
-          padding: 100px 48px;
+          padding: 60px 48px;
           background: linear-gradient(180deg, #f8fdff 0%, #f0f9ff 100%);
         }
         .lp-steps-inner { max-width: 900px; margin: 0 auto; }
