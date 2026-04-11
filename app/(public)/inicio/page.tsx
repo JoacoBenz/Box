@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 
 const FEATURES = [
   {
@@ -36,6 +36,176 @@ const FEATURES = [
   },
 ];
 
+const SCREENS = [
+  {
+    title: 'Dashboard',
+    caption: 'Métricas en tiempo real de tu organización',
+    content: (
+      <div style={{ padding: '20px 24px' }}>
+        {/* Top stats row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+          {[
+            { label: 'Solicitudes', value: '24', color: '#4f46e5', icon: '📋' },
+            { label: 'Aprobadas', value: '18', color: '#16a34a', icon: '✅' },
+            { label: 'En proceso', value: '4', color: '#f59e0b', icon: '⏳' },
+            { label: 'Gasto mensual', value: '$1.2M', color: '#0891b2', icon: '💰' },
+          ].map((s, i) => (
+            <div key={i} style={{ background: '#fff', borderRadius: 12, padding: '14px 12px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', borderLeft: `3px solid ${s.color}` }}>
+              <div style={{ fontSize: 11, color: '#888', fontWeight: 500 }}>{s.icon} {s.label}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: s.color, marginTop: 4 }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+        {/* Chart area */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 14 }}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: '#333' }}>Gastos por mes</div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 80 }}>
+              {[40, 65, 50, 80, 70, 95, 60].map((h, i) => (
+                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: '100%', height: h, borderRadius: 6, background: `linear-gradient(180deg, #00C2CB, #0891b2)`, opacity: 0.7 + i * 0.04 }} />
+                  <span style={{ fontSize: 9, color: '#aaa' }}>{['E', 'F', 'M', 'A', 'M', 'J', 'J'][i]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ background: '#fff', borderRadius: 12, padding: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: '#333' }}>Por área</div>
+            {[
+              { name: 'Administración', pct: 35, color: '#4f46e5' },
+              { name: 'Dirección', pct: 25, color: '#0891b2' },
+              { name: 'Mantenimiento', pct: 22, color: '#f59e0b' },
+              { name: 'Sistemas', pct: 18, color: '#16a34a' },
+            ].map((a, i) => (
+              <div key={i} style={{ marginBottom: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#666', marginBottom: 3 }}>
+                  <span>{a.name}</span><span>{a.pct}%</span>
+                </div>
+                <div style={{ height: 6, borderRadius: 3, background: '#f0f0f0' }}>
+                  <div style={{ height: 6, borderRadius: 3, background: a.color, width: `${a.pct}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    title: 'Solicitudes',
+    caption: 'Seguí el estado de cada pedido en tiempo real',
+    content: (
+      <div style={{ padding: '16px 24px' }}>
+        {/* Search bar */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+          <div style={{ flex: 1, background: '#fff', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#aaa', border: '1px solid #e5e7eb' }}>🔍 Buscar solicitudes...</div>
+          <div style={{ background: 'linear-gradient(135deg, #00C2CB, #0891b2)', color: '#fff', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600 }}>+ Nueva</div>
+        </div>
+        {/* Table */}
+        <div style={{ background: '#fff', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 90px 90px 80px', padding: '10px 14px', background: '#f9fafb', fontSize: 10, fontWeight: 600, color: '#888', textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>
+            <span>#</span><span>Solicitud</span><span>Área</span><span>Monto</span><span>Estado</span>
+          </div>
+          {[
+            { n: 'SC-0024', t: 'Resmas A4 x 500', area: 'Admin', monto: '$15.000', estado: 'Aprobada', color: '#16a34a', bg: '#f0fdf4' },
+            { n: 'SC-0023', t: 'Toner HP LaserJet', area: 'Dirección', monto: '$45.000', estado: 'Validada', color: '#2563eb', bg: '#eff6ff' },
+            { n: 'SC-0022', t: 'Sillas ergonómicas x5', area: 'Contaduría', monto: '$120.000', estado: 'En compras', color: '#f59e0b', bg: '#fefce8' },
+            { n: 'SC-0021', t: 'Proyector Epson', area: 'Reuniones', monto: '$350.000', estado: 'Pendiente', color: '#888', bg: '#f5f5f5' },
+            { n: 'SC-0020', t: 'Notebooks x3', area: 'Sistemas', monto: '$1.200.000', estado: 'Cerrada', color: '#059669', bg: '#ecfdf5' },
+          ].map((r, i) => (
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 90px 90px 80px', padding: '12px 14px', borderTop: '1px solid #f0f0f0', fontSize: 12, alignItems: 'center' }}>
+              <span style={{ color: '#4f46e5', fontWeight: 600 }}>{r.n}</span>
+              <span style={{ fontWeight: 600, color: '#333' }}>{r.t}</span>
+              <span style={{ color: '#777' }}>{r.area}</span>
+              <span style={{ fontWeight: 700, color: '#333' }}>{r.monto}</span>
+              <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 600, background: r.bg, color: r.color }}>{r.estado}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  {
+    title: 'Aprobaciones',
+    caption: 'Aprobá o rechazá solicitudes con un click',
+    content: (
+      <div style={{ padding: '16px 24px' }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#333', marginBottom: 14 }}>3 solicitudes pendientes de aprobación</div>
+        {[
+          { n: 'SC-0024', t: 'Resmas A4 x 500 hojas', area: 'Administración', solicitante: 'María López', monto: '$15.000', urgencia: 'Media', urgColor: '#ca8a04', urgBg: '#fefce8' },
+          { n: 'SC-0023', t: 'Toner HP LaserJet Pro', area: 'Dirección', solicitante: 'Carlos García', monto: '$45.000', urgencia: 'Alta', urgColor: '#dc2626', urgBg: '#fef2f2' },
+          { n: 'SC-0022', t: 'Sillas ergonómicas x5', area: 'Contaduría', solicitante: 'Ana Pérez', monto: '$120.000', urgencia: 'Baja', urgColor: '#16a34a', urgBg: '#f0fdf4' },
+        ].map((r, i) => (
+          <div key={i} style={{ background: '#fff', borderRadius: 12, padding: 16, marginBottom: 10, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid #f0f0f0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ color: '#4f46e5', fontWeight: 700, fontSize: 13 }}>{r.n}</span>
+                  <span style={{ padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 600, background: r.urgBg, color: r.urgColor }}>{r.urgencia}</span>
+                </div>
+                <div style={{ fontWeight: 600, fontSize: 14, color: '#333', marginTop: 4 }}>{r.t}</div>
+                <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{r.area} · {r.solicitante}</div>
+              </div>
+              <div style={{ fontWeight: 800, fontSize: 16, color: '#1f2937' }}>{r.monto}</div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <div style={{ padding: '6px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, border: '1px solid #fca5a5', color: '#dc2626', cursor: 'pointer' }}>Rechazar</div>
+              <div style={{ padding: '6px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: '#16a34a', color: '#fff', cursor: 'pointer' }}>Aprobar ✓</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    ),
+  },
+  {
+    title: 'Reportes',
+    caption: 'Exportá reportes detallados a Excel en un click',
+    content: (
+      <div style={{ padding: '20px 24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#333' }}>Reporte de gastos — Julio 2026</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, border: '1px solid #e5e7eb', color: '#555' }}>📅 Este mes</div>
+            <div style={{ padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, background: '#16a34a', color: '#fff' }}>📥 Excel</div>
+          </div>
+        </div>
+        {/* Big numbers */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 18 }}>
+          {[
+            { label: 'Total gastado', value: '$2.450.000', color: '#4f46e5' },
+            { label: 'Presupuesto', value: '$3.000.000', color: '#16a34a' },
+            { label: 'Disponible', value: '$550.000', color: '#f59e0b' },
+          ].map((s, i) => (
+            <div key={i} style={{ background: '#fff', borderRadius: 12, padding: 14, textAlign: 'center' as const, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize: 10, color: '#888', fontWeight: 500 }}>{s.label}</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: s.color, marginTop: 4 }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+        {/* Table */}
+        <div style={{ background: '#fff', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px 60px', padding: '10px 14px', background: '#f9fafb', fontSize: 10, fontWeight: 600, color: '#888', textTransform: 'uppercase' as const }}>
+            <span>Área</span><span>Gastado</span><span>Presupuesto</span><span>%</span>
+          </div>
+          {[
+            { area: 'Administración', gastado: '$820.000', presupuesto: '$1.000.000', pct: 82 },
+            { area: 'Dirección', gastado: '$650.000', presupuesto: '$800.000', pct: 81 },
+            { area: 'Sistemas', gastado: '$530.000', presupuesto: '$600.000', pct: 88 },
+            { area: 'Mantenimiento', gastado: '$450.000', presupuesto: '$600.000', pct: 75 },
+          ].map((r, i) => (
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px 60px', padding: '11px 14px', borderTop: '1px solid #f0f0f0', fontSize: 12, alignItems: 'center' }}>
+              <span style={{ fontWeight: 600, color: '#333' }}>{r.area}</span>
+              <span style={{ fontWeight: 700, color: '#1f2937' }}>{r.gastado}</span>
+              <span style={{ color: '#888' }}>{r.presupuesto}</span>
+              <span style={{ fontWeight: 700, color: r.pct > 85 ? '#dc2626' : r.pct > 75 ? '#f59e0b' : '#16a34a' }}>{r.pct}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+];
+
 const STEPS = [
   { num: '1', title: 'Registrá tu organización', desc: 'Creá tu cuenta y configurá áreas, roles y centros de costo.' },
   { num: '2', title: 'Invitá a tu equipo', desc: 'Compartí un código o habilitá el ingreso por dominio institucional.' },
@@ -53,6 +223,78 @@ function useInView(threshold = 0.15) {
     return () => obs.disconnect();
   }, [threshold]);
   return { ref, visible };
+}
+
+function AppShowcase() {
+  const [active, setActive] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval>>(null);
+
+  const startTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => setActive(p => (p + 1) % SCREENS.length), 5000);
+  }, []);
+
+  useEffect(() => {
+    startTimer();
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [startTimer]);
+
+  const goTo = (i: number) => { setActive(i); startTimer(); };
+
+  return (
+    <div className="lp-showcase">
+      {/* Browser frame */}
+      <div className="lp-browser-frame">
+        {/* Title bar */}
+        <div className="lp-browser-bar">
+          <div style={{ display: 'flex', gap: 6 }}>
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f57' }} />
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ffbd2e' }} />
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#28c840' }} />
+          </div>
+          <div className="lp-browser-url">
+            <span style={{ color: '#16a34a', marginRight: 4 }}>🔒</span>
+            box.app/{SCREENS[active].title.toLowerCase()}
+          </div>
+          <div style={{ width: 50 }} />
+        </div>
+        {/* App header inside frame */}
+        <div className="lp-app-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 18 }}>📦</span>
+            <span style={{ fontWeight: 800, fontSize: 15, color: '#00C2CB' }}>Box</span>
+          </div>
+          <div style={{ display: 'flex', gap: 16 }}>
+            {SCREENS.map((s, i) => (
+              <button key={i} onClick={() => goTo(i)} className={`lp-app-tab ${active === i ? 'active' : ''}`}>
+                {s.title}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 14 }}>🔔</span>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 11 }}>JB</div>
+          </div>
+        </div>
+        {/* Screen content */}
+        <div className="lp-screen-content">
+          {SCREENS.map((s, i) => (
+            <div key={i} className={`lp-screen ${active === i ? 'active' : ''}`}>
+              {s.content}
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Caption */}
+      <div className="lp-showcase-caption">{SCREENS[active].caption}</div>
+      {/* Dots */}
+      <div className="lp-showcase-dots">
+        {SCREENS.map((_, i) => (
+          <button key={i} onClick={() => goTo(i)} className={`lp-dot ${active === i ? 'active' : ''}`} />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function AnimatedSection({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -200,6 +442,69 @@ export default function LandingPage() {
         .lp-float-card-num { font-size: 28px; font-weight: 800; color: #00C2CB; }
         .lp-float-card-label { font-size: 13px; color: #888; font-weight: 500; margin-top: 2px; }
 
+        /* ---- APP SHOWCASE ---- */
+        .lp-showcase {
+          padding: 0 48px 100px; max-width: 1000px; margin: -40px auto 0;
+          position: relative; z-index: 2;
+        }
+        .lp-browser-frame {
+          border-radius: 16px; overflow: hidden;
+          box-shadow: 0 25px 80px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
+          background: #f7f7f8;
+        }
+        .lp-browser-bar {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 10px 16px; background: #e8e8ec; border-bottom: 1px solid #ddd;
+        }
+        .lp-browser-url {
+          flex: 1; max-width: 340px; margin: 0 auto;
+          background: #fff; border-radius: 6px; padding: 5px 14px;
+          font-size: 12px; color: #666; text-align: center;
+          border: 1px solid #ddd;
+        }
+        .lp-app-header {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 10px 24px; background: #fff; border-bottom: 1px solid #f0f0f0;
+        }
+        .lp-app-tab {
+          background: none; border: none; cursor: pointer;
+          font-size: 12px; font-weight: 600; color: #888;
+          padding: 6px 12px; border-radius: 8px; transition: all 0.2s;
+        }
+        .lp-app-tab:hover { color: #333; background: #f5f5f5; }
+        .lp-app-tab.active { color: #0891b2; background: #f0fdff; }
+        .lp-screen-content {
+          position: relative; min-height: 340px; background: #f7f7f8;
+          overflow: hidden;
+        }
+        .lp-screen {
+          position: absolute; inset: 0;
+          opacity: 0; transform: translateX(30px);
+          transition: opacity 0.5s ease, transform 0.5s ease;
+          pointer-events: none;
+        }
+        .lp-screen.active {
+          opacity: 1; transform: translateX(0);
+          pointer-events: auto; position: relative;
+        }
+        .lp-showcase-caption {
+          text-align: center; margin-top: 20px;
+          font-size: 16px; color: #666; font-weight: 500;
+          min-height: 24px;
+          transition: opacity 0.3s;
+        }
+        .lp-showcase-dots {
+          display: flex; justify-content: center; gap: 8px; margin-top: 16px;
+        }
+        .lp-dot {
+          width: 10px; height: 10px; border-radius: 50%;
+          background: #ddd; border: none; cursor: pointer;
+          transition: all 0.3s; padding: 0;
+        }
+        .lp-dot.active {
+          background: #00C2CB; width: 28px; border-radius: 5px;
+        }
+
         /* ---- FEATURES ---- */
         .lp-features {
           padding: 100px 48px; max-width: 1200px; margin: 0 auto;
@@ -285,6 +590,10 @@ export default function LandingPage() {
           .lp-float-cards { flex-direction: column; align-items: center; }
           .lp-features-grid { grid-template-columns: 1fr; }
           .lp-steps-list::before { left: 30px; }
+          .lp-showcase { padding: 0 12px 60px; margin-top: -20px; }
+          .lp-screen-content { min-height: 300px; overflow-x: auto; }
+          .lp-app-tab { font-size: 11px; padding: 4px 8px; }
+          .lp-app-header { padding: 8px 12px; }
         }
       `}</style>
 
@@ -337,6 +646,11 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* APP SHOWCASE */}
+      <AnimatedSection>
+        <AppShowcase />
+      </AnimatedSection>
 
       {/* FEATURES */}
       <section className="lp-features">
