@@ -605,10 +605,26 @@ export default function LandingPage() {
           .lp-float-cards { flex-direction: column; align-items: center; }
           .lp-features-grid { grid-template-columns: 1fr; }
           .lp-steps-list::before { left: 30px; }
-          .lp-showcase { padding: 0 12px 60px; margin-top: -20px; }
-          .lp-screen-content { min-height: 300px; overflow-x: auto; }
-          .lp-app-tab { font-size: 11px; padding: 4px 8px; }
+          .lp-showcase { padding: 0 8px 40px; margin-top: -20px; }
+          .lp-browser-frame { border-radius: 12px; }
+          .lp-browser-bar { padding: 8px 12px; }
+          .lp-browser-url { font-size: 11px; padding: 4px 10px; }
           .lp-app-header { padding: 8px 12px; }
+          .lp-app-header > div:first-child span:last-child { font-size: 13px !important; }
+          .lp-app-tab { font-size: 10px; padding: 4px 6px; }
+          .lp-screen-content { min-height: auto; }
+          /* Mobile: simplify dashboard grid */
+          .lp-screen-content [style*="grid-template-columns: repeat(4"] { grid-template-columns: repeat(2, 1fr) !important; }
+          .lp-screen-content [style*="grid-template-columns: 1.5fr"] { grid-template-columns: 1fr !important; }
+          /* Mobile: make tables scrollable */
+          .lp-screen-content [style*="grid-template-columns: 80px"] { grid-template-columns: 60px 1fr 60px 70px 65px !important; font-size: 10px !important; }
+          .lp-screen-content [style*="grid-template-columns: 80px"] span { font-size: 10px !important; }
+          /* Mobile: approval cards */
+          .lp-screen-content [style*="justify-content: space-between"] > div:last-child { font-size: 14px !important; }
+          /* Mobile: reportes grid */
+          .lp-screen-content [style*="grid-template-columns: repeat(3"] { grid-template-columns: 1fr !important; }
+          .lp-screen-content [style*="grid-template-columns: 1fr 100px 100px 60px"] { grid-template-columns: 1fr 80px 80px 45px !important; font-size: 10px !important; }
+          .lp-showcase-caption { font-size: 14px; }
         }
       `}</style>
 
