@@ -18,8 +18,9 @@ import {
   Descriptions,
   Tag,
   Modal,
+  Alert,
 } from 'antd'
-import { UploadOutlined } from '@ant-design/icons'
+import { UploadOutlined, WarningOutlined } from '@ant-design/icons'
 import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
 import { useFormValid } from '@/hooks/useFormValid'
 import ProveedorInfoCard from '@/components/ProveedorInfoCard'
@@ -98,6 +99,7 @@ export default function RegistrarCompraForm({ solicitud, archivos = [] }: Props)
   const prov = proveedorData
   const pagoDate = solicitud.dia_pago_programado ? dayjs(solicitud.dia_pago_programado) : null
   const canSubmit = !pagoDate || !pagoDate.startOf('day').isAfter(dayjs().startOf('day'))
+  const necesitaDatosBancarios = (medioPago === 'transferencia' || medioPago === 'cheque') && prov && !prov.datos_bancarios
 
   // Auto-fill proveedor fields from solicitud's proveedor
   useEffect(() => {
@@ -119,6 +121,11 @@ export default function RegistrarCompraForm({ solicitud, archivos = [] }: Props)
 
       if (fileList.length === 0) {
         message.error('Debe adjuntar el comprobante de compra')
+        return
+      }
+
+      if ((values.medio_pago === 'transferencia' || values.medio_pago === 'cheque') && prov && !prov.datos_bancarios) {
+        message.error('Debe cargar los datos bancarios del proveedor antes de registrar un pago por transferencia/cheque')
         return
       }
 
@@ -365,6 +372,23 @@ export default function RegistrarCompraForm({ solicitud, archivos = [] }: Props)
             )}
           </Space>
 
+          {necesitaDatosBancarios && (
+            <Alert
+              type="warning"
+              showIcon
+              icon={<WarningOutlined />}
+              style={{ marginBottom: 16 }}
+              message="Datos bancarios requeridos"
+              description={
+                <span>
+                  El proveedor <strong>{prov?.nombre}</strong> no tiene datos bancarios cargados.
+                  Debe cargarlos antes de registrar el pago por {medioPago}.{' '}
+                  <a onClick={openEditBancarios} style={{ fontWeight: 600 }}>Cargar datos bancarios</a>
+                </span>
+              }
+            />
+          )}
+
           <Form.Item
             label="Número de Factura"
             name="numero_factura"
@@ -444,7 +468,7 @@ export default function RegistrarCompraForm({ solicitud, archivos = [] }: Props)
             <AnimatedSubmitButton
               variant="send"
               onClick={handleSubmit}
-              disabled={loading || !canSubmit || hasErrors}
+              disabled={loading || !canSubmit || hasErrors || !!necesitaDatosBancarios}
             >
               {canSubmit ? 'Registrar Pago' : `Habilitado el ${pagoDate?.format('DD/MM/YYYY') ?? ''}`}
             </AnimatedSubmitButton>

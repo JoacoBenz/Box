@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Table, Tag, Button, Typography, Modal, Form, Select, Input, DatePicker, Space } from 'antd'
+import { Table, Tag, Button, Typography, Modal, Form, Select, Input, DatePicker, Space, Alert } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import Link from 'next/link'
 import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types'
@@ -24,6 +24,7 @@ interface Solicitud {
   dia_pago_programado: string | null
   area: { nombre: string } | null
   solicitante: { nombre: string }
+  proveedor?: { id: number; nombre: string; datos_bancarios: string | null; cuit: string | null } | null
 }
 
 const ALL_ESTADOS = Object.entries(ESTADOS_SOLICITUD).map(([value, { label }]) => ({ value, label }))
@@ -88,6 +89,9 @@ export default function GestionComprasPage() {
       setActionLoading(false)
     }
   }
+
+  const selectedSolicitud = solicitudes.find((s) => s.id === selectedId)
+  const proveedorSinBancarios = selectedSolicitud?.proveedor && !selectedSolicitud.proveedor.datos_bancarios
 
   const PRIORIDAD_COLORS: Record<string, string> = {
     urgente: 'red',
@@ -211,6 +215,24 @@ export default function GestionComprasPage() {
         okButtonProps={{ loading: actionLoading, disabled: hasErrors }}
         cancelText="Cancelar"
       >
+        {proveedorSinBancarios && (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message="Proveedor sin datos bancarios"
+            description={`El proveedor "${selectedSolicitud?.proveedor?.nombre}" no tiene datos bancarios cargados. Tesorería los va a necesitar para realizar la transferencia.`}
+          />
+        )}
+        {selectedSolicitud && !selectedSolicitud.proveedor && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message="Sin proveedor asignado"
+            description="Esta solicitud no tiene proveedor asignado. Tesorería deberá ingresar los datos del proveedor manualmente."
+          />
+        )}
         <Form form={programarForm} layout="vertical" onFinish={handleProgramarPago} {...formProps}>
           <Form.Item name="prioridad_compra" label="Prioridad" rules={[{ required: true, message: 'Seleccioná la prioridad' }]}>
             <Select placeholder="Seleccionar prioridad" options={[
