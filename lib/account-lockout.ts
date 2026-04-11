@@ -17,7 +17,10 @@ export function _cleanupExpired(): void {
   }
 }
 
-setInterval(_cleanupExpired, 60_000);
+let _cleanupTimer: ReturnType<typeof setInterval> | null = null;
+if (!_cleanupTimer) {
+  _cleanupTimer = setInterval(_cleanupExpired, 60_000);
+}
 
 export function isAccountLocked(email: string): { locked: boolean; remainingMs: number } {
   // Synchronous check uses in-memory (auth callback is sync)
@@ -67,7 +70,7 @@ export function recordFailedLogin(email: string): { locked: boolean; attemptsRem
       ON CONFLICT (email) DO UPDATE SET
         attempts = ${entry.count},
         locked_until = ${new Date(entry.lockedUntil)}
-    `.catch(() => {});
+    `.catch(err => console.error('[account-lockout] DB sync error:', err));
     return { locked: true, attemptsRemaining: 0 };
   }
 
@@ -81,11 +84,11 @@ export function recordFailedLogin(email: string): { locked: boolean; attemptsRem
     INSERT INTO account_lockouts (email, attempts, locked_until)
     VALUES (${key}, ${entry.count}, NULL)
     ON CONFLICT (email) DO UPDATE SET attempts = ${entry.count}
-  `.catch(() => {});
+  `.catch(err => console.error('[account-lockout] DB sync error:', err));
   return { locked: false, attemptsRemaining: MAX_FAILED_ATTEMPTS - entry.count };
 }
 
 export function clearFailedAttempts(email: string): void {
   memoryAttempts.delete(email.toLowerCase());
-  prisma.$queryRaw`DELETE FROM account_lockouts WHERE email = ${email.toLowerCase()}`.catch(() => {});
+  prisma.$queryRaw`DELETE FROM account_lockouts WHERE email = ${email.toLowerCase()}`.catch(err => console.error('[account-lockout] DB sync error:', err));
 }

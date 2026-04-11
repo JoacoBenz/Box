@@ -57,23 +57,17 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       db.solicitudes.count({
         where: { solicitante_id: userId, created_at: { gte: inicioMes } },
       }),
-      // Tasa de aprobación: last 90 days
-      Promise.all([
-        db.solicitudes.count({
-          where: {
-            solicitante_id: userId,
-            created_at: { gte: hace90Dias },
-            estado: { in: ['aprobada', 'abonada', 'cerrada', 'en_compras', 'pago_programado', 'recibida', 'recibida_con_obs'] },
-          },
-        }),
-        db.solicitudes.count({
-          where: {
-            solicitante_id: userId,
-            created_at: { gte: hace90Dias },
-            estado: { notIn: ['borrador'] },
-          },
-        }),
-      ]),
+      // Tasa de aprobación: last 90 days (single query with conditional count)
+      prisma.$queryRaw<{ aprobadas: string; total: string }[]>`
+        SELECT
+          COUNT(*) FILTER (WHERE estado IN ('aprobada','abonada','cerrada','en_compras','pago_programado','recibida','recibida_con_obs'))::text AS aprobadas,
+          COUNT(*)::text AS total
+        FROM solicitudes
+        WHERE tenant_id = ${tenantId}
+          AND solicitante_id = ${userId}
+          AND created_at >= ${hace90Dias}
+          AND estado != 'borrador'
+      `,
       // Mis solicitudes por estado (active)
       prisma.$queryRaw<{ estado: string; cantidad: string }[]>`
         SELECT estado, COUNT(*)::text AS cantidad
@@ -85,7 +79,8 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
         ORDER BY COUNT(*) DESC
       `,
     ]);
-    const [aprobadas90d, total90d] = tasaAprobacionData;
+    const aprobadas90d = parseInt(tasaAprobacionData[0]?.aprobadas ?? '0');
+    const total90d = parseInt(tasaAprobacionData[0]?.total ?? '0');
     result.misSolicitudes = misSolicitudes;
     result.solicitudesEnEjecucion = solicitudesEnEjecucion;
     result.solicitudesDevueltas = solicitudesDevueltas;
@@ -352,8 +347,10 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       ? Prisma.sql`AND s.area_id = ${directorAreaId}`
       : Prisma.empty;
 
+    // Cache key includes today's date since queries use inicioMes/inicioAño (derived from Date.now())
+    const todayStr = new Date().toISOString().slice(0, 10);
     const analyticsData = await cached(
-      `t:${tenantId}:dashboard:analytics:${directorAreaId ?? 'all'}`,
+      `t:${tenantId}:dashboard:analytics:${directorAreaId ?? 'all'}:${todayStr}`,
       2 * 60 * 1000, // 2 min TTL
       async () => {
         const [gastoAnualMensual, gastoPorArea, tendenciaMensual, gastoPorMedioPago, topProveedores, solicitudesPorEstado, solicitudesPorUrgencia] = await Promise.all([

@@ -19,6 +19,9 @@ export async function cached<T>(
 ): Promise<T> {
   const entry = store.get(key);
   if (entry && Date.now() < entry.expiresAt) {
+    // Update position for true LRU: delete and re-insert so it's "recently used"
+    store.delete(key);
+    store.set(key, entry);
     return entry.data;
   }
 
@@ -67,4 +70,7 @@ export function _cleanupExpired(): void {
 }
 
 // Periodic cleanup of expired entries
-setInterval(_cleanupExpired, 120_000); // every 2 minutes
+let _cleanupTimer: ReturnType<typeof setInterval> | null = null;
+if (!_cleanupTimer) {
+  _cleanupTimer = setInterval(_cleanupExpired, 120_000);
+}

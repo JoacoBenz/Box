@@ -1,5 +1,6 @@
 import { withAdminOverride, withAuth, validateBody } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
+import { checkRateLimitDb } from '@/lib/rate-limit';
 import { registrarAuditoria } from '@/lib/audit';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { solicitudSchema } from '@/lib/validators';
@@ -114,6 +115,11 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
 });
 
 export const POST = withAuth({ roles: ['solicitante'] }, async (request, { session, ip }) => {
+  const rl = await checkRateLimitDb(`solicitudes:${session.userId}`, 20, 60_000);
+  if (!rl.allowed) {
+    return Response.json({ error: { code: 'RATE_LIMITED', message: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' } }, { status: 429 });
+  }
+
   if (!session.areaId) {
     return Response.json({ error: { code: 'BAD_REQUEST', message: 'Tu cuenta no tiene un área asignada. Contactá al administrador.' } }, { status: 400 });
   }

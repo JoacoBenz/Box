@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { withAdminOverride, validateBody } from '@/lib/api-handler';
+import { checkRateLimitDb } from '@/lib/rate-limit';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { registrarAuditoria } from '@/lib/audit';
 import { usuarioSchema } from '@/lib/validators';
@@ -34,6 +35,11 @@ export const GET = withAdminOverride({ roles: ['admin', 'director', 'responsable
 });
 
 export const POST = withAdminOverride({ roles: ['admin', 'director', 'responsable_area'] }, async (request, { session, effectiveTenantId, ip }) => {
+  const rl = await checkRateLimitDb(`usuarios:${session.userId}`, 10, 60_000);
+  if (!rl.allowed) {
+    return Response.json({ error: { code: 'RATE_LIMITED', message: 'Demasiados intentos. Intentá de nuevo en un minuto.' } }, { status: 429 });
+  }
+
   if (!effectiveTenantId) {
     return Response.json({ error: { code: 'BAD_REQUEST', message: 'Seleccioná una organización antes de crear' } }, { status: 400 });
   }

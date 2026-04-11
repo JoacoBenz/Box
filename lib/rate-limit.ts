@@ -14,7 +14,10 @@ export function _cleanupExpired(): void {
   }
 }
 
-setInterval(_cleanupExpired, 60_000);
+let _cleanupTimer: ReturnType<typeof setInterval> | null = null;
+if (!_cleanupTimer) {
+  _cleanupTimer = setInterval(_cleanupExpired, 60_000);
+}
 
 function checkMemoryFallback(
   key: string,
@@ -84,5 +87,5 @@ export function checkRateLimit(
 export function resetRateLimit(key: string): void {
   memoryAttempts.delete(key);
   // Best-effort DB cleanup
-  prisma.$queryRaw`DELETE FROM rate_limits WHERE key = ${key}`.catch(() => {});
+  prisma.$queryRaw`DELETE FROM rate_limits WHERE key = ${key}`.catch(err => console.error('[rate-limit] DB sync error:', err));
 }
