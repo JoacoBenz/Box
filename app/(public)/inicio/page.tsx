@@ -44,7 +44,7 @@ const SCREEN_DATA = {
       { label: 'En proceso', value: '4', color: '#f59e0b', icon: '⏳' },
       { label: 'Gasto mensual', value: '$1.2M', color: '#0891b2', icon: '💰' },
     ],
-    bars: [40, 65, 50, 80, 70, 95, 60],
+    bars: [42, 68, 53, 84, 74, 100, 63],
     barLabels: ['E', 'F', 'M', 'A', 'M', 'J', 'J'],
     areas: [
       { name: 'Administración', pct: 35, color: '#4f46e5' },
@@ -98,7 +98,7 @@ function ScreenDashboard() {
           <div className="sc-bar-chart">
             {d.bars.map((h, i) => (
               <div key={i} className="sc-bar-col">
-                <div className="sc-bar" style={{ height: h }} />
+                <div className="sc-bar" style={{ height: `${h}%` }} />
                 <span className="sc-bar-label">{d.barLabels[i]}</span>
               </div>
             ))}
@@ -453,7 +453,7 @@ export default function LandingPage() {
         .sc-card { background: #fff; border-radius: 10px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
         .sc-no-pad { padding: 0; overflow: hidden; }
         .sc-card-title { font-size: 12px; font-weight: 700; color: #333; margin-bottom: 10px; }
-        .sc-bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 70px; }
+        .sc-bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 70px; clear: both; }
         .sc-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
         .sc-bar { width: 100%; border-radius: 4px; background: linear-gradient(180deg, #00C2CB, #0891b2); }
         .sc-bar-label { font-size: 8px; color: #aaa; }
@@ -676,7 +676,7 @@ export default function LandingPage() {
           .sc-charts-grid { grid-template-columns: 1fr; gap: 6px; }
           .sc-card { padding: 10px; }
           .sc-card-title { font-size: 11px; margin-bottom: 8px; }
-          .sc-bar-chart { height: 55px; }
+          .sc-bar-chart { height: 60px; margin-top: 4px; }
           .sc-progress-header { font-size: 9px; }
           .sc-totals-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
           .sc-total-card { padding: 6px; }
