@@ -662,20 +662,33 @@ export default function LandingPage() {
           .lp-screen-content { min-height: auto; }
           .lp-showcase-caption { font-size: 13px; }
           /* Screen content mobile */
-          .sc-pad { padding: 12px; }
+          .sc-pad { padding: 10px; }
           .sc-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px; }
-          .sc-stat-card { padding: 8px; }
-          .sc-stat-value { font-size: 16px; }
+          .sc-stat-card { padding: 8px 6px; }
+          .sc-stat-label { font-size: 9px; }
+          .sc-stat-value { font-size: 15px; }
           .sc-charts-grid { grid-template-columns: 1fr; gap: 8px; }
-          .sc-bar-chart { height: 50px; }
+          .sc-card { padding: 10px; }
+          .sc-bar-chart { height: 50px; gap: 4px; }
+          .sc-bar-label { font-size: 7px; }
+          .sc-progress-header { font-size: 9px; }
           .sc-totals-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
-          .sc-total-card { padding: 8px; }
-          .sc-total-value { font-size: 13px; }
+          .sc-total-card { padding: 6px; }
+          .sc-total-value { font-size: 12px; }
           .sc-sol-row { padding: 8px 10px; }
-          .sc-aprob-card { padding: 10px; }
-          .sc-aprob-title { font-size: 12px; }
+          .sc-sol-num { font-size: 10px; }
+          .sc-sol-title { font-size: 11px; }
+          .sc-sol-monto { font-size: 11px; }
+          .sc-badge { font-size: 8px; padding: 2px 5px; }
+          .sc-aprob-card { padding: 10px; margin-bottom: 6px; }
+          .sc-aprob-title { font-size: 11px; }
+          .sc-aprob-sub { font-size: 9px; }
           .sc-aprob-monto { font-size: 13px; }
-          .sc-report-header { flex-direction: column; gap: 8px; align-items: flex-start; }
+          .sc-btn-reject, .sc-btn-approve { font-size: 10px; padding: 4px 10px; }
+          .sc-report-header { flex-direction: column; gap: 6px; align-items: flex-start; }
+          .sc-report-area { font-size: 11px; }
+          .sc-report-gastado { font-size: 11px; }
+          .sc-report-pct { font-size: 11px; }
         }
       `}</style>
 
