@@ -583,6 +583,21 @@ export default function LandingPage() {
           background: #111; border-top: 1px solid rgba(255,255,255,0.05);
         }
 
+        /* ---- WHATSAPP FAB ---- */
+        .lp-wpp-fab {
+          position: fixed; bottom: 24px; right: 24px; z-index: 999;
+          width: 56px; height: 56px; border-radius: 50%;
+          background: #25d366; color: #fff;
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 4px 20px rgba(37,211,102,0.4);
+          transition: transform 0.25s, box-shadow 0.25s;
+          text-decoration: none;
+        }
+        .lp-wpp-fab:hover {
+          transform: scale(1.1);
+          box-shadow: 0 6px 28px rgba(37,211,102,0.55);
+        }
+
         /* ---- RESPONSIVE ---- */
         @media (max-width: 768px) {
           .lp-nav { padding: 12px 20px; }
@@ -712,6 +727,19 @@ export default function LandingPage() {
       <footer className="lp-footer">
         <p>&copy; {new Date().getFullYear()} Box — Sistema de gestión de compras</p>
       </footer>
+
+      {/* WhatsApp FAB */}
+      <a
+        href="https://wa.me/5491123885910"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="lp-wpp-fab"
+        aria-label="Contactar por WhatsApp"
+      >
+        <svg viewBox="0 0 32 32" width="28" height="28" fill="#fff">
+          <path d="M16.004 2.003C8.27 2.003 2 8.27 2 16.003c0 2.48.648 4.9 1.88 7.036L2 30l7.167-1.88A13.94 13.94 0 0016.004 30C23.738 30 30 23.737 30 16.003S23.738 2.003 16.004 2.003zm0 25.53a11.49 11.49 0 01-5.87-1.608l-.42-.25-4.35 1.14 1.16-4.244-.274-.436a11.46 11.46 0 01-1.763-6.132c0-6.357 5.175-11.53 11.537-11.53 6.36 0 11.533 5.173 11.533 11.53-.003 6.36-5.176 11.53-11.553 11.53zm6.33-8.64c-.347-.174-2.053-1.013-2.372-1.13-.32-.114-.553-.173-.786.175-.232.347-.9 1.13-1.104 1.363-.203.232-.406.26-.753.087-.347-.174-1.465-.54-2.79-1.72-1.032-.918-1.728-2.053-1.93-2.4-.203-.347-.022-.534.153-.707.157-.156.347-.406.52-.608.174-.203.232-.348.348-.58.116-.232.058-.435-.03-.608-.087-.174-.785-1.893-1.075-2.593-.283-.68-.57-.588-.786-.6-.203-.01-.435-.012-.667-.012-.232 0-.608.087-.926.435-.32.347-1.217 1.188-1.217 2.9 0 1.71 1.246 3.363 1.42 3.595.173.232 2.45 3.742 5.94 5.248.83.36 1.48.574 1.985.735.834.265 1.593.228 2.193.138.67-.1 2.053-.84 2.342-1.65.29-.81.29-1.506.203-1.65-.087-.146-.32-.232-.667-.406z"/>
+        </svg>
+      </a>
     </div>
   );
 }
