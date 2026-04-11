@@ -82,6 +82,33 @@ describe('cache', () => {
       for (let i = 0; i <= 500; i++) invalidateCache(`evict:${i}`);
       invalidateCache('evict:overflow');
     });
+
+    it('LRU: accessing an entry moves it to end, preventing eviction', async () => {
+      // Fill cache to 500
+      for (let i = 0; i < 500; i++) {
+        await cached(`lru:${i}`, 600_000, async () => `val-${i}`);
+      }
+
+      // Access lru:0 — should move it to end (most recently used)
+      await cached('lru:0', 600_000, async () => 'should-not-call');
+
+      // Add new entry — should evict lru:1 (now oldest), NOT lru:0
+      await cached('lru:new', 600_000, async () => 'new');
+
+      // lru:0 should still be cached (was moved to end)
+      const f0 = vi.fn().mockResolvedValue('refetched-0');
+      await cached('lru:0', 600_000, f0);
+      expect(f0).not.toHaveBeenCalled(); // still cached
+
+      // lru:1 should have been evicted
+      const f1 = vi.fn().mockResolvedValue('refetched-1');
+      await cached('lru:1', 600_000, f1);
+      expect(f1).toHaveBeenCalledOnce(); // had to refetch
+
+      // Cleanup
+      for (let i = 0; i <= 500; i++) invalidateCache(`lru:${i}`);
+      invalidateCache('lru:new');
+    });
   });
 
   describe('invalidateCache', () => {
