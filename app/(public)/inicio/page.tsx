@@ -279,13 +279,11 @@ function AppShowcase() {
             <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 11 }}>JB</div>
           </div>
         </div>
-        {/* Screen content */}
+        {/* Screen content — only render active to avoid absolute positioning issues */}
         <div className="lp-screen-content">
-          {SCREENS.map((s, i) => (
-            <div key={i} className={`lp-screen ${active === i ? 'active' : ''}`}>
-              {s.content}
-            </div>
-          ))}
+          <div className="lp-screen active" key={active}>
+            {SCREENS[active].content}
+          </div>
         </div>
       </div>
       {/* Caption */}
@@ -528,18 +526,14 @@ export default function LandingPage() {
         .lp-app-tab:hover { color: #333; background: #f5f5f5; }
         .lp-app-tab.active { color: #0891b2; background: #f0fdff; }
         .lp-screen-content {
-          position: relative; min-height: 340px; background: #f7f7f8;
-          overflow: hidden;
+          background: #f7f7f8;
         }
         .lp-screen {
-          position: absolute; inset: 0;
-          opacity: 0; transform: translateX(30px);
-          transition: opacity 0.5s ease, transform 0.5s ease;
-          pointer-events: none;
+          animation: screenFadeIn 0.4s ease;
         }
-        .lp-screen.active {
-          opacity: 1; transform: translateX(0);
-          pointer-events: auto; position: relative;
+        @keyframes screenFadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
         }
         .lp-showcase-caption {
           text-align: center; margin-top: 20px;
@@ -736,9 +730,7 @@ export default function LandingPage() {
       </section>
 
       {/* APP SHOWCASE */}
-      <AnimatedSection>
-        <AppShowcase />
-      </AnimatedSection>
+      <AppShowcase />
 
       {/* FEATURES */}
       <section className="lp-features">
