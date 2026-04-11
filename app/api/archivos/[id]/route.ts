@@ -2,6 +2,7 @@ import { withTenant, withAuth, parseId } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
 import { getSignedUrl, deleteFile } from '@/lib/supabase';
 import { verificarRol } from '@/lib/permissions';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 
 export const GET = withTenant(async (_request, { session }, params) => {
   const archivoId = parseId(params.id);
@@ -14,7 +15,7 @@ export const GET = withTenant(async (_request, { session }, params) => {
   return Response.redirect(signedUrl);
 });
 
-export const DELETE = withTenant(async (_request, { session }, params) => {
+export const DELETE = withTenant(async (request, { session }, params) => {
   const archivoId = parseId(params.id);
   if (!archivoId) return Response.json({ error: { code: 'BAD_REQUEST', message: 'ID inválido' } }, { status: 400 });
 
@@ -29,6 +30,16 @@ export const DELETE = withTenant(async (_request, { session }, params) => {
 
   await deleteFile(archivo.ruta_archivo);
   await prisma.archivos.delete({ where: { id: archivoId } });
+
+  await registrarAuditoria({
+    tenantId: session.tenantId,
+    usuarioId: session.userId,
+    accion: 'eliminar_archivo',
+    entidad: 'archivos',
+    entidadId: archivoId,
+    datosAnteriores: { nombre: archivo.nombre_original, ruta: archivo.ruta_archivo },
+    ipAddress: getClientIp(request),
+  });
 
   return Response.json({ message: 'Archivo eliminado' });
 });

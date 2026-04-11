@@ -97,7 +97,7 @@ export default function AdminCrudTable<T extends { id: number }>({
       const roles: string[] = s?.user?.roles ?? []
       setIsSuperAdmin(roles.includes('super_admin'))
       setOwnTenantId(s?.user?.tenantId ?? null)
-    }).catch(() => {})
+    }).catch((err) => console.error('[AdminCrudTable] session fetch error:', err))
   }, [])
 
   // Only super_admins can switch between tenants via the TenantSelector cookie.

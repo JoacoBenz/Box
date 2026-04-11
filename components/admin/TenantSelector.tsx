@@ -69,7 +69,7 @@ export default function TenantSelector({ value, onChange, compact }: Props) {
     fetch('/api/admin/tenants')
       .then(r => r.ok ? r.json() : [])
       .then((data: any[]) => setTenants(data.map(t => ({ id: t.id, nombre: t.nombre, slug: t.slug }))))
-      .catch(() => {})
+      .catch((err) => console.error('[TenantSelector] fetch error:', err))
   }, [])
 
   if (tenants.length <= 1) return null

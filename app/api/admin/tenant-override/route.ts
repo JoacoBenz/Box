@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { cookies } from 'next/headers';
+import { registrarAuditoria, getClientIp } from '@/lib/audit';
 
 const COOKIE_NAME = 'admin_tenant_id';
 
@@ -24,6 +25,16 @@ export async function POST(request: NextRequest) {
     } else {
       cookieStore.delete(COOKIE_NAME);
     }
+
+    await registrarAuditoria({
+      tenantId: session.tenantId,
+      usuarioId: session.userId,
+      accion: 'tenant_override',
+      entidad: 'tenant',
+      entidadId: tenantId ? Number(tenantId) : undefined,
+      datosNuevos: tenantId ? { tenantId } : { cleared: true },
+      ipAddress: getClientIp(request),
+    });
 
     return Response.json({ ok: true });
   } catch (error: any) {

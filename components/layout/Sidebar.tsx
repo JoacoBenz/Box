@@ -70,7 +70,7 @@ export function Sidebar({ roles, pendientes = {}, collapsed, isMobile, drawerOpe
     fetch('/api/admin/tenants')
       .then(r => r.ok ? r.json() : [])
       .then((data: any[]) => setTenants(data.map(t => ({ id: t.id, nombre: t.nombre }))))
-      .catch(() => {});
+      .catch((err) => console.error('[Sidebar] tenant fetch error:', err));
   }, [isAdmin]);
 
   const hasOrgSelected = isAdmin ? selectedTenant !== null : true;
