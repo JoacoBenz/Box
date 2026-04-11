@@ -37,7 +37,7 @@ export const DELETE = withTenant(async (request, { session }, params) => {
     accion: 'eliminar_archivo',
     entidad: 'archivos',
     entidadId: archivoId,
-    datosAnteriores: { nombre: archivo.nombre_original, ruta: archivo.ruta_archivo },
+    datosAnteriores: { nombre: archivo.nombre_archivo, ruta: archivo.ruta_archivo },
     ipAddress: getClientIp(request),
   });
 
