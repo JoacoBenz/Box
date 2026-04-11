@@ -1,3 +1,20 @@
+export const ESTADOS_SOLICITUD = {
+  BORRADOR: 'borrador',
+  ENVIADA: 'enviada',
+  PENDIENTE_VALIDACION: 'pendiente_validacion',
+  VALIDADA: 'validada',
+  RECHAZADA: 'rechazada',
+  APROBADA: 'aprobada',
+  EN_COMPRAS: 'en_compras',
+  PAGO_PROGRAMADO: 'pago_programado',
+  ABONADA: 'abonada',
+  RECIBIDA_CON_OBS: 'recibida_con_obs',
+  CERRADA: 'cerrada',
+  ANULADA: 'anulada',
+} as const;
+
+export type EstadoSolicitud = typeof ESTADOS_SOLICITUD[keyof typeof ESTADOS_SOLICITUD];
+
 export const ESTADO_COLOR: Record<string, string> = {
   borrador: 'default',
   enviada: 'processing',

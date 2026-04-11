@@ -204,37 +204,47 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (!usuario) {
         // No existing user — try to auto-create if domain matches a tenant with SSO enabled
         try {
-          const tenants = await prisma.tenants.findMany({
-            where: { estado: 'activo', desactivado: false },
-            include: { configuracion: true },
+          const providerKey = provider === 'google' ? 'sso_google_habilitado' : 'sso_microsoft_habilitado';
+
+          // Targeted query: find tenant whose sso_dominio matches the email domain
+          const matchingConfig = await prisma.configuracion.findFirst({
+            where: { clave: 'sso_dominio', valor: { equals: domain, mode: 'insensitive' } },
+            select: { tenant_id: true },
           });
 
-          for (const tenant of tenants) {
-            const configs = Object.fromEntries(tenant.configuracion.map(c => [c.clave, c.valor]));
-            const providerKey = provider === 'google' ? 'sso_google_habilitado' : 'sso_microsoft_habilitado';
-            const ssoEnabled = configs[providerKey] === 'true' || configs[providerKey] === '1';
-            const ssoDomain = configs['sso_dominio'];
+          if (matchingConfig) {
+            // Check if the SSO provider is enabled for that tenant
+            const providerEnabled = await prisma.configuracion.findFirst({
+              where: { tenant_id: matchingConfig.tenant_id, clave: providerKey, valor: { in: ['true', '1'] } },
+            });
 
-            if (ssoEnabled && ssoDomain && domain.toLowerCase() === ssoDomain.toLowerCase()) {
-              // Auto-create user with no area (pending onboarding)
-              const rolSolicitante = await prisma.roles.findFirst({ where: { nombre: 'solicitante' } });
-              const newUser = await prisma.usuarios.create({
-                data: {
-                  tenant_id: tenant.id,
-                  nombre: user.name || email.split('@')[0],
-                  email,
-                  password_hash: '',
-                  oauth_provider: provider,
-                  oauth_sub: sub,
-                  activo: true,
-                },
+            if (providerEnabled) {
+              // Verify the tenant is active
+              const tenant = await prisma.tenants.findFirst({
+                where: { id: matchingConfig.tenant_id, estado: 'activo', desactivado: false },
               });
-              if (rolSolicitante) {
-                await prisma.usuarios_roles.create({
-                  data: { usuario_id: newUser.id, rol_id: rolSolicitante.id },
+
+              if (tenant) {
+                // Auto-create user with no area (pending onboarding)
+                const rolSolicitante = await prisma.roles.findFirst({ where: { nombre: 'solicitante' } });
+                const newUser = await prisma.usuarios.create({
+                  data: {
+                    tenant_id: tenant.id,
+                    nombre: user.name || email.split('@')[0],
+                    email,
+                    password_hash: '',
+                    oauth_provider: provider,
+                    oauth_sub: sub,
+                    activo: true,
+                  },
                 });
+                if (rolSolicitante) {
+                  await prisma.usuarios_roles.create({
+                    data: { usuario_id: newUser.id, rol_id: rolSolicitante.id },
+                  });
+                }
+                return true;
               }
-              return true;
             }
           }
         } catch (err) {

@@ -143,7 +143,7 @@ export const POST = withAuth({ roles: ['solicitante', 'responsable_area'] }, asy
 
   // Auto-create/update productos when solicitud transitions to cerrada
   if (nuevoEstado === 'cerrada') {
-    await sincronizarProductos(session.tenantId, solicitud_id).catch(() => {});
+    await sincronizarProductos(session.tenantId, solicitud_id).catch(err => console.error('[recepciones] sincronizarProductos error:', err));
   }
 
   if (conforme) {

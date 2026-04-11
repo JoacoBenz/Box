@@ -203,7 +203,7 @@ export default function SolicitudesTable({ roles, areas }: Props) {
       },
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [router])
+  ], [router, tokens])
 
   return (
     <div>
