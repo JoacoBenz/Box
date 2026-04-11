@@ -13,6 +13,11 @@ export interface AreaBudgetStatus {
 /**
  * Hard-check area budget. Returns { permitido: false } if the new amount
  * would push the area over its monthly or annual budget.
+ *
+ * NOTE: This function and `verificarPresupuesto` (centro_costo) run similar
+ * aggregation queries. They are intentionally separate because they are called
+ * from different routes (compras POST vs solicitudes aprobar). If a caller ever
+ * needs both checks, consider a combined query to avoid two round-trips.
  */
 export async function verificarPresupuestoArea(
   tenantId: number,

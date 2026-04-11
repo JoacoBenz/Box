@@ -42,7 +42,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Double-check email is still unique
+    // Defense-in-depth: re-check email uniqueness inside verification.
+    // A race condition can occur if two users register with the same email
+    // nearly simultaneously — both pass the initial check in /registro, but
+    // only the first to verify should succeed. Do NOT remove this check.
     const existingUser = await prisma.usuarios.findFirst({ where: { email: pending.email } });
     if (existingUser) {
       await prisma.registros_pendientes.update({ where: { id: pending.id }, data: { verificado: true } });

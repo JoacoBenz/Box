@@ -208,7 +208,10 @@ export function buildEmailHtml(
 
 /** Determine if a user should receive the digest email */
 export function shouldSendDigest(emailDigest: boolean, _hasUrgent: boolean): boolean {
-  // Urgent override temporarily disabled
+  // TODO: _hasUrgent is intentionally kept for future use. The plan is to
+  // send digests even when emailDigest=false if there are urgent solicitudes
+  // (e.g. 3+ business days waiting). Temporarily disabled until UX for
+  // urgent-only notifications is finalized.
   if (!emailDigest) return false;
   return true;
 }

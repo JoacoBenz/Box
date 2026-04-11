@@ -83,27 +83,23 @@ export const POST = withTenant(async (request, { session, db }, params) => {
     destinatarios.add(solicitud.solicitante_id);
   }
 
-  // 2. Notify all roles involved in the flow: responsable_area, director, compras, tesoreria
+  // 2. Notify all roles involved in the flow: responsable_area (same area only), director, compras, tesoreria
   const usersWithRoles = await prisma.usuarios.findMany({
     where: {
       tenant_id: session.tenantId,
       activo: true,
-      usuarios_roles: { some: { rol: { nombre: { in: ['responsable_area', 'director', 'compras', 'tesoreria'] } } } },
+      OR: [
+        // responsable_area: only those in the solicitud's area
+        { area_id: solicitud.area_id, usuarios_roles: { some: { rol: { nombre: 'responsable_area' } } } },
+        // director, compras, tesoreria: no area filter
+        { usuarios_roles: { some: { rol: { nombre: { in: ['director', 'compras', 'tesoreria'] } } } } },
+      ],
     },
-    select: { id: true, area_id: true, usuarios_roles: { select: { rol: { select: { nombre: true } } } } },
+    select: { id: true },
   });
 
   for (const u of usersWithRoles) {
-    if (u.id === userId) continue; // Don't notify the commenter
-    const uRoles = u.usuarios_roles.map(ur => ur.rol.nombre);
-    // Responsable: only if they belong to the solicitud's area
-    if (uRoles.includes('responsable_area') && u.area_id === solicitud.area_id) {
-      destinatarios.add(u.id);
-    }
-    // Director, compras, tesoreria: always
-    if (uRoles.includes('director') || uRoles.includes('compras') || uRoles.includes('tesoreria')) {
-      destinatarios.add(u.id);
-    }
+    if (u.id !== userId) destinatarios.add(u.id);
   }
 
   // Create all notifications (fire and forget, with logging)
