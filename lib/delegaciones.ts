@@ -11,15 +11,17 @@ export async function getRolesEfectivos(
   baseRoles: RolNombre[]
 ): Promise<{ roles: RolNombre[]; delegaciones: { rol: string; deleganteNombre: string }[] }> {
   const db = tenantPrisma(tenantId);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
 
   const delegacionesActivas = await db.delegaciones.findMany({
     where: {
       delegado_id: userId,
       activo: true,
-      fecha_inicio: { lte: today },
-      fecha_fin: { gte: today },
+      fecha_inicio: { lte: todayEnd },
+      fecha_fin: { gte: todayStart },
     },
     include: {
       delegante: { select: { nombre: true } },

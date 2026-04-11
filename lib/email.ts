@@ -16,7 +16,15 @@ function getTransporter(): nodemailer.Transporter {
   return transporter;
 }
 
-const EMAIL_FROM = process.env.EMAIL_FROM ?? `Box <${process.env.GMAIL_USER ?? 'noreply@box.com'}>`;
+const EMAIL_FROM = process.env.EMAIL_FROM ?? (
+  process.env.GMAIL_USER
+    ? `Box <${process.env.GMAIL_USER}>`
+    : undefined
+);
+
+if (!EMAIL_FROM) {
+  console.warn('[email] Neither EMAIL_FROM nor GMAIL_USER is set. Emails will fail until configured.');
+}
 
 export async function sendEmail({
   to,
@@ -30,6 +38,10 @@ export async function sendEmail({
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
     console.warn(`[email] GMAIL credentials not set. Email to ${to} not sent: ${subject}`);
     return;
+  }
+
+  if (!EMAIL_FROM) {
+    throw new Error('[email] EMAIL_FROM is undefined. Set EMAIL_FROM or GMAIL_USER env variable.');
   }
 
   try {

@@ -17,7 +17,11 @@ export function calcularMatching(
   itemsSolicitud: Array<{ id: number; cantidad: any; precio_estimado: any }>
 ): MatchingResult {
   const discrepancies: string[] = [];
-  const montoSolicitud = itemsSolicitud.reduce((acc, item) => acc + Number(item.cantidad) * Number(item.precio_estimado ?? 0), 0);
+  const montoSolicitud = itemsSolicitud.reduce((acc, item) => {
+    const cantidad = Number(item.cantidad);
+    const precio = Number(item.precio_estimado ?? 0);
+    return acc + (isNaN(cantidad) || isNaN(precio) ? 0 : cantidad * precio);
+  }, 0);
   const montoCompra = compra ? Number(compra.monto_total) : 0;
 
   // 1. Price variance: compra vs solicitud estimate
@@ -34,14 +38,17 @@ export function calcularMatching(
   const receivedByItem = new Map<number, number>();
   for (const ri of itemsRecibidos) {
     const current = receivedByItem.get(ri.item_solicitud_id) ?? 0;
-    receivedByItem.set(ri.item_solicitud_id, current + Number(ri.cantidad_recibida));
+    const cantRecibida = Number(ri.cantidad_recibida);
+    receivedByItem.set(ri.item_solicitud_id, current + (isNaN(cantRecibida) ? 0 : cantRecibida));
   }
 
   let montoRecibido = 0;
   for (const item of itemsSolicitud) {
-    const ordered = Number(item.cantidad);
+    const orderedRaw = Number(item.cantidad);
+    const ordered = isNaN(orderedRaw) ? 0 : orderedRaw;
     const received = receivedByItem.get(item.id) ?? 0;
-    const precio = Number(item.precio_estimado ?? 0);
+    const precioRaw = Number(item.precio_estimado ?? 0);
+    const precio = isNaN(precioRaw) ? 0 : precioRaw;
     montoRecibido += received * precio;
 
     if (received < ordered) {

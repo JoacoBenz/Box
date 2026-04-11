@@ -115,8 +115,8 @@ export const compraSchema = z
     proveedor_nombre: nonBlank(2, 'Nombre del proveedor requerido').max(255),
     proveedor_detalle: z.string().max(500).optional().nullable(),
     fecha_compra: z.string().refine((val) => {
-      if (isNaN(Date.parse(val))) return false;
       const d = new Date(val);
+      if (isNaN(d.getTime())) return false;
       const now = new Date();
       const fiveYearsAgo = new Date();
       fiveYearsAgo.setFullYear(now.getFullYear() - 5);
