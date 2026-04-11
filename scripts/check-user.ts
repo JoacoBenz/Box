@@ -1,27 +1,18 @@
-import { PrismaClient } from '../app/generated/prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-
-const p = new PrismaClient({ adapter: new PrismaPg(process.env.DATABASE_URL!) });
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+import pg from 'pg';
+const { Client } = pg;
 
 async function main() {
-  const users = await p.usuarios.findMany({
-    where: { email: 'joakobenz@gmail.com' },
-    include: { usuarios_roles: { include: { rol: true } } },
-  });
-  console.log('Found users:', users.length);
-  for (const u of users) {
-    console.log(`  id=${u.id} tenant=${u.tenant_id} area=${u.area_id} oauth=${u.oauth_provider} roles=${u.usuarios_roles.map(r => r.rol.nombre).join(',')}`);
-  }
-  if (users.length > 0) {
-    // Delete all
-    for (const u of users) {
-      await p.usuarios_roles.deleteMany({ where: { usuario_id: u.id } });
-      await p.usuarios.delete({ where: { id: u.id } });
-      console.log(`  DELETED id=${u.id}`);
-    }
-  } else {
-    console.log('  No user found - clean slate');
-  }
+  const c = new Client({ connectionString: process.env.DATABASE_URL });
+  await c.connect();
+  console.log('Connected');
+  const res = await c.query("SELECT id, email, activo, password_hash IS NOT NULL as tiene_pass FROM usuarios WHERE email ILIKE '%director%'");
+  console.log('Users:', JSON.stringify(res.rows, null, 2));
+  const locks = await c.query("SELECT * FROM account_lockouts");
+  console.log('Lockouts:', JSON.stringify(locks.rows, null, 2));
+  await c.query("DELETE FROM account_lockouts");
+  console.log('Lockouts cleared');
+  await c.end();
 }
-
-main().catch(e => console.error('Error:', e)).finally(() => p.$disconnect());
+main().catch(e => { console.error(e); process.exit(1); });

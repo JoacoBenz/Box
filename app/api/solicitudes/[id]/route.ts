@@ -53,6 +53,16 @@ export const PATCH = withAuth({}, async (request, { session, db, ip }, params) =
   }
 
   const body = await request.json();
+
+  // Optimistic locking: verify no concurrent modification
+  const expectedUpdatedAt = body?.updated_at;
+  if (expectedUpdatedAt) {
+    const current = solicitud.updated_at.toISOString();
+    if (current !== expectedUpdatedAt) {
+      return Response.json({ error: { code: 'CONFLICT', message: 'Esta solicitud fue modificada por otro usuario. Recargá la página.' } }, { status: 409 });
+    }
+  }
+
   const parsed = validateBody(solicitudSchema.partial(), body);
   if (!parsed.success) return parsed.response;
 

@@ -105,6 +105,8 @@ model usuarios {
   @@unique([tenant_id, id])
   @@unique([tenant_id, email])
   @@unique([oauth_provider, oauth_sub])
+  @@index([tenant_id, email])
+  @@index([oauth_provider])
 }
 
 model usuarios_roles {
@@ -195,6 +197,7 @@ model items_solicitud {
 
   @@index([solicitud_id])
   @@index([tenant_id, solicitud_id])
+  @@index([tenant_id, producto_id])
 }
 
 model compras {
@@ -222,6 +225,7 @@ model compras {
   @@unique([tenant_id, numero_factura])
   @@index([tenant_id, solicitud_id])
   @@index([tenant_id, fecha_compra])
+  @@index([proveedor_id])
 }
 
 model recepciones {
@@ -241,6 +245,7 @@ model recepciones {
   items_recepcion items_recepcion[]
 
   @@index([tenant_id, solicitud_id])
+  @@index([receptor_id])
 }
 
 model items_recepcion {
@@ -273,6 +278,7 @@ model archivos {
   subido_por usuarios @relation(fields: [subido_por_id], references: [id])
 
   @@index([tenant_id, entidad, entidad_id])
+  @@index([subido_por_id])
 }
 
 model notificaciones {
@@ -291,6 +297,7 @@ model notificaciones {
   solicitud       solicitudes? @relation(fields: [solicitud_id], references: [id])
 
   @@index([tenant_id, usuario_destino_id, leida])
+  @@index([solicitud_id])
 }
 
 model log_auditoria {
@@ -310,6 +317,7 @@ model log_auditoria {
 
   @@index([tenant_id, created_at])
   @@index([tenant_id, usuario_id])
+  @@index([tenant_id, entidad, entidad_id])
 }
 
 model configuracion {
@@ -361,6 +369,7 @@ model centros_costo {
   solicitudes solicitudes[]
 
   @@unique([tenant_id, codigo])
+  @@index([tenant_id, area_id])
 }
 
 model delegaciones {
@@ -381,6 +390,7 @@ model delegaciones {
 
   @@unique([tenant_id, delegante_id, delegado_id, rol_delegado, fecha_inicio])
   @@index([tenant_id, delegado_id, activo])
+  @@index([delegante_id, activo])
 }
 
 model comentarios {
@@ -396,6 +406,7 @@ model comentarios {
   usuario   usuarios    @relation(fields: [usuario_id], references: [id])
 
   @@index([tenant_id, solicitud_id])
+  @@index([usuario_id])
 }
 
 model codigos_invitacion {

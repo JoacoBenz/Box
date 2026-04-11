@@ -10,6 +10,10 @@ export const GET = withAdminOverride({}, async (_request, { db }, params) => {
   const solicitudId = Number(params.id);
   if (isNaN(solicitudId)) return apiError('VALIDATION', 'ID inválido', 400);
 
+  // Verify solicitud exists within the tenant scope
+  const solicitud = await db.solicitudes.findFirst({ where: { id: solicitudId } });
+  if (!solicitud) return apiError('NOT_FOUND', 'Solicitud no encontrada', 404);
+
   const comentarios = await db.comentarios.findMany({
     where: { solicitud_id: solicitudId },
     include: {
@@ -57,10 +61,11 @@ export const POST = withTenant(async (request, { session, db }, params) => {
 
   const comentario = await db.comentarios.create({
     data: {
+      tenant_id: session.tenantId,
       solicitud_id: solicitudId,
       usuario_id: session.userId,
       mensaje,
-    } as any,
+    },
     include: { usuario: { select: { id: true, nombre: true } } },
   });
 
