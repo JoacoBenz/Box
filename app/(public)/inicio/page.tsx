@@ -454,8 +454,8 @@ export default function LandingPage() {
         .sc-no-pad { padding: 0; overflow: hidden; }
         .sc-card-title { font-size: 12px; font-weight: 700; color: #333; margin-bottom: 10px; }
         .sc-bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 70px; clear: both; }
-        .sc-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
-        .sc-bar { width: 100%; border-radius: 4px; background: linear-gradient(180deg, #00C2CB, #0891b2); }
+        .sc-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+        .sc-bar { width: 100%; border-radius: 4px; background: linear-gradient(180deg, #00C2CB, #0891b2); min-height: 2px; }
         .sc-bar-label { font-size: 8px; color: #aaa; }
         .sc-progress-row { margin-bottom: 7px; }
         .sc-progress-header { display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-bottom: 2px; }
@@ -669,18 +669,19 @@ export default function LandingPage() {
           .lp-showcase-caption { font-size: 13px; }
           /* Screen content mobile */
           .sc-pad { padding: 10px; }
-          .sc-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px; }
-          .sc-stat-card { padding: 8px 6px; }
+          .sc-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 8px; }
+          .sc-stat-card { padding: 8px; }
           .sc-stat-label { font-size: 9px; }
-          .sc-stat-value { font-size: 15px; }
+          .sc-stat-value { font-size: 16px; }
           .sc-charts-grid { grid-template-columns: 1fr; gap: 6px; }
-          .sc-card { padding: 10px; }
+          .sc-card { padding: 12px; }
           .sc-card-title { font-size: 11px; margin-bottom: 8px; }
-          .sc-bar-chart { height: 60px; margin-top: 4px; }
+          .sc-bar-chart { height: 80px; }
+          .sc-bar-label { font-size: 8px; }
           .sc-progress-header { font-size: 9px; }
-          .sc-totals-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
-          .sc-total-card { padding: 6px; }
-          .sc-total-value { font-size: 12px; }
+          .sc-totals-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+          .sc-total-card { padding: 8px; }
+          .sc-total-value { font-size: 13px; }
           .sc-sol-row { padding: 8px 10px; }
           .sc-sol-num { font-size: 10px; }
           .sc-sol-title { font-size: 11px; }
