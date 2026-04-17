@@ -17,8 +17,10 @@ async function login(email: string): Promise<string> {
   const csrfRes = await fetch(`${BASE}/api/auth/csrf`);
   const { csrfToken } = await csrfRes.json();
   const cookies = csrfRes.headers.getSetCookie?.() ?? [];
-  const sessionCookie = cookies.find(c => c.includes('authjs.csrf-token') || c.includes('next-auth'));
-  const allCookies = cookies.map(c => c.split(';')[0]).join('; ');
+  const sessionCookie = cookies.find(
+    (c) => c.includes('authjs.csrf-token') || c.includes('next-auth'),
+  );
+  const allCookies = cookies.map((c) => c.split(';')[0]).join('; ');
 
   // Sign in
   const signInRes = await fetch(`${BASE}/api/auth/callback/credentials`, {
@@ -29,7 +31,7 @@ async function login(email: string): Promise<string> {
   });
 
   const signInCookies = signInRes.headers.getSetCookie?.() ?? [];
-  const allAfter = [...cookies, ...signInCookies].map(c => c.split(';')[0]).join('; ');
+  const allAfter = [...cookies, ...signInCookies].map((c) => c.split(';')[0]).join('; ');
 
   // Follow redirect to get session token
   const loc = signInRes.headers.get('location');
@@ -39,14 +41,21 @@ async function login(email: string): Promise<string> {
       redirect: 'manual',
     });
     const moreCookies = followRes.headers.getSetCookie?.() ?? [];
-    const finalCookies = [...cookies, ...signInCookies, ...moreCookies].map(c => c.split(';')[0]).join('; ');
+    const finalCookies = [...cookies, ...signInCookies, ...moreCookies]
+      .map((c) => c.split(';')[0])
+      .join('; ');
     return finalCookies;
   }
 
   return allAfter;
 }
 
-async function api(method: string, path: string, cookies: string, body?: any): Promise<{ status: number; data: any }> {
+async function api(
+  method: string,
+  path: string,
+  cookies: string,
+  body?: any,
+): Promise<{ status: number; data: any }> {
   const res = await fetch(`${BASE}${path}`, {
     method,
     headers: {
@@ -59,7 +68,12 @@ async function api(method: string, path: string, cookies: string, body?: any): P
   return { status: res.status, data };
 }
 
-async function apiFormData(method: string, path: string, cookies: string, formData: FormData): Promise<{ status: number; data: any }> {
+async function apiFormData(
+  method: string,
+  path: string,
+  cookies: string,
+  formData: FormData,
+): Promise<{ status: number; data: any }> {
   const res = await fetch(`${BASE}${path}`, {
     method,
     headers: { Cookie: cookies },
@@ -128,7 +142,10 @@ async function getNotificacionesBySolicitud(solicitudId: number) {
 
 /** Get the user ID from the test email */
 async function getUserByEmail(email: string) {
-  return prisma.usuarios.findFirst({ where: { email }, select: { id: true, nombre: true, area_id: true } });
+  return prisma.usuarios.findFirst({
+    where: { email },
+    select: { id: true, nombre: true, area_id: true },
+  });
 }
 
 // ─── Test Runner ─────────────────────────────────────────────────────────────
@@ -154,12 +171,24 @@ function assert(condition: boolean, testName: string, detail?: string) {
 async function createSolicitud(cookies: string, titulo: string): Promise<number> {
   const { data } = await api('POST', '/api/solicitudes', cookies, {
     titulo,
-    descripcion: 'Descripción detallada del pedido para testing del flujo completo de la aplicación',
-    justificacion: 'Justificación necesaria para realizar pruebas automatizadas del sistema de compras',
+    descripcion:
+      'Descripción detallada del pedido para testing del flujo completo de la aplicación',
+    justificacion:
+      'Justificación necesaria para realizar pruebas automatizadas del sistema de compras',
     urgencia: 'normal',
     items: [
-      { descripcion: 'Item de prueba número uno', cantidad: 10, unidad: 'unidad', precio_estimado: 100 },
-      { descripcion: 'Item de prueba número dos', cantidad: 5, unidad: 'unidad', precio_estimado: 200 },
+      {
+        descripcion: 'Item de prueba número uno',
+        cantidad: 10,
+        unidad: 'unidad',
+        precio_estimado: 100,
+      },
+      {
+        descripcion: 'Item de prueba número dos',
+        cantidad: 5,
+        unidad: 'unidad',
+        precio_estimado: 200,
+      },
     ],
   });
   return data.id;
@@ -202,9 +231,16 @@ async function main() {
   assert(sol?.solicitante_id === juanUser!.id, 'F1.1 DB solicitante_id correct');
   assert(sol?.titulo === 'Flujo 1 - Camino feliz', 'F1.1 DB titulo correct');
   assert(sol?.urgencia === 'normal', 'F1.1 DB urgencia = normal');
-  assert(sol?.items_solicitud.length === 2, 'F1.1 DB 2 items created', `actual=${sol?.items_solicitud.length}`);
+  assert(
+    sol?.items_solicitud.length === 2,
+    'F1.1 DB 2 items created',
+    `actual=${sol?.items_solicitud.length}`,
+  );
   assert(sol?.items_solicitud[0]?.cantidad?.toString() === '10', 'F1.1 DB item1 cantidad=10');
-  assert(sol?.items_solicitud[1]?.precio_estimado?.toString() === '200', 'F1.1 DB item2 precio=200');
+  assert(
+    sol?.items_solicitud[1]?.precio_estimado?.toString() === '200',
+    'F1.1 DB item2 precio=200',
+  );
   assert(sol?.numero != null && sol.numero.length > 0, 'F1.1 DB numero assigned');
   assert(sol?.area_id === juanUser!.area_id, 'F1.1 DB area_id matches solicitante area');
   assert(sol?.fecha_envio === null, 'F1.1 DB fecha_envio null (borrador)');
@@ -219,14 +255,22 @@ async function main() {
   assert(res.status === 200, 'F1.3 María valida', `status=${res.status}`);
   sol = await getSolicitud(f1Id);
   assert(sol?.estado === 'validada', 'F1.3 DB estado = validada');
-  assert(sol?.validado_por_id === mariaUser!.id, 'F1.3 DB validado_por = María', `actual=${sol?.validado_por_id}`);
+  assert(
+    sol?.validado_por_id === mariaUser!.id,
+    'F1.3 DB validado_por = María',
+    `actual=${sol?.validado_por_id}`,
+  );
   assert(sol?.fecha_validacion !== null, 'F1.3 DB fecha_validacion set');
 
   res = await api('POST', `/api/solicitudes/${f1Id}/aprobar`, ana);
   assert(res.status === 200, 'F1.4 Ana aprueba', `status=${res.status}`);
   sol = await getSolicitud(f1Id);
   const f1EstadoAprobada = sol?.estado ?? '';
-  assert(f1EstadoAprobada === 'en_compras' || f1EstadoAprobada === 'aprobada', 'F1.4 DB estado = en_compras', `actual=${f1EstadoAprobada}`);
+  assert(
+    f1EstadoAprobada === 'en_compras' || f1EstadoAprobada === 'aprobada',
+    'F1.4 DB estado = en_compras',
+    `actual=${f1EstadoAprobada}`,
+  );
   assert(sol?.aprobado_por_id === anaUser!.id, 'F1.4 DB aprobado_por = Ana');
   assert(sol?.fecha_aprobacion !== null, 'F1.4 DB fecha_aprobacion set');
 
@@ -238,7 +282,9 @@ async function main() {
     });
     const f1PostProcesar = await getSolicitudEstado(f1Id);
     if (f1PostProcesar === 'en_compras') {
-      res = await api('POST', `/api/solicitudes/${f1Id}/programar-pago`, pedro, { dia_pago_programado: '2026-04-15' });
+      res = await api('POST', `/api/solicitudes/${f1Id}/programar-pago`, pedro, {
+        dia_pago_programado: '2026-04-15',
+      });
     }
     assert(res.status === 200, 'F1.5 Pedro programa pago', `status=${res.status}`);
     sol = await getSolicitud(f1Id);
@@ -253,21 +299,33 @@ async function main() {
   const provRes = await api('GET', '/api/proveedores', laura);
   let proveedorId: number | null = provRes.data?.[0]?.id ?? null;
   if (!proveedorId) {
-    const newProv = await api('POST', '/api/proveedores', laura, { nombre: 'Proveedor Test', cuit: '20-12345678-9' });
+    const newProv = await api('POST', '/api/proveedores', laura, {
+      nombre: 'Proveedor Test',
+      cuit: '20-12345678-9',
+    });
     proveedorId = newProv.data?.id;
   }
 
-  res = await apiFormData('POST', '/api/compras', laura, buildCompraFormData({
-    solicitud_id: f1Id,
-    proveedor_id: proveedorId,
-    proveedor_nombre: 'Proveedor Test',
-    monto_total: 1500,
-    medio_pago: 'transferencia',
-    referencia_bancaria: 'TRF-001',
-    fecha_compra: '2026-04-06',
-    numero_factura: `A-0001-${String(Date.now()).slice(-8)}`,
-  }));
-  assert(res.status === 200 || res.status === 201, 'F1.6 Laura registra compra', `status=${res.status} ${JSON.stringify(res.data?.error ?? '')}`);
+  res = await apiFormData(
+    'POST',
+    '/api/compras',
+    laura,
+    buildCompraFormData({
+      solicitud_id: f1Id,
+      proveedor_id: proveedorId,
+      proveedor_nombre: 'Proveedor Test',
+      monto_total: 1500,
+      medio_pago: 'transferencia',
+      referencia_bancaria: 'TRF-001',
+      fecha_compra: '2026-04-06',
+      numero_factura: `A-0001-${String(Date.now()).slice(-8)}`,
+    }),
+  );
+  assert(
+    res.status === 200 || res.status === 201,
+    'F1.6 Laura registra compra',
+    `status=${res.status} ${JSON.stringify(res.data?.error ?? '')}`,
+  );
   sol = await getSolicitud(f1Id);
   assert(sol?.estado === 'abonada', 'F1.6 DB estado = abonada', `actual=${sol?.estado}`);
 
@@ -277,12 +335,24 @@ async function main() {
   assert(f1Compras[0]?.ejecutado_por_id === lauraUser!.id, 'F1.6 DB compra.ejecutado_por = Laura');
   assert(f1Compras[0]?.monto_total?.toString() === '1500', 'F1.6 DB compra.monto_total = 1500');
   assert(f1Compras[0]?.medio_pago === 'transferencia', 'F1.6 DB compra.medio_pago = transferencia');
-  assert(f1Compras[0]?.referencia_bancaria === 'TRF-001', 'F1.6 DB compra.referencia_bancaria = TRF-001');
-  assert(f1Compras[0]?.proveedor_nombre === 'Proveedor Test', 'F1.6 DB compra.proveedor_nombre correct');
+  assert(
+    f1Compras[0]?.referencia_bancaria === 'TRF-001',
+    'F1.6 DB compra.referencia_bancaria = TRF-001',
+  );
+  assert(
+    f1Compras[0]?.proveedor_nombre === 'Proveedor Test',
+    'F1.6 DB compra.proveedor_nombre correct',
+  );
 
   // DB: verify archivo (comprobante) uploaded
-  const f1Archivos = await prisma.archivos.findMany({ where: { entidad: 'compra', entidad_id: f1Compras[0]?.id } });
-  assert(f1Archivos.length >= 1, 'F1.6 DB comprobante archivo exists', `count=${f1Archivos.length}`);
+  const f1Archivos = await prisma.archivos.findMany({
+    where: { entidad: 'compra', entidad_id: f1Compras[0]?.id },
+  });
+  assert(
+    f1Archivos.length >= 1,
+    'F1.6 DB comprobante archivo exists',
+    `count=${f1Archivos.length}`,
+  );
 
   // Juan confirms reception
   res = await api('POST', '/api/recepciones', juan, {
@@ -291,7 +361,11 @@ async function main() {
     observaciones: null,
     items: [],
   });
-  assert(res.status === 200 || res.status === 201, 'F1.7 Juan recepción conforme', `status=${res.status} ${JSON.stringify(res.data?.error ?? '')}`);
+  assert(
+    res.status === 200 || res.status === 201,
+    'F1.7 Juan recepción conforme',
+    `status=${res.status} ${JSON.stringify(res.data?.error ?? '')}`,
+  );
   sol = await getSolicitud(f1Id);
   const f1Final = sol?.estado ?? '';
   assert(['recibida', 'cerrada'].includes(f1Final), 'F1.7 DB estado final', `actual=${f1Final}`);
@@ -301,7 +375,10 @@ async function main() {
   assert(f1Recepciones.length === 1, 'F1.7 DB recepcion record exists');
   assert(f1Recepciones[0]?.receptor_id === juanUser!.id, 'F1.7 DB recepcion.receptor = Juan');
   assert(f1Recepciones[0]?.conforme === true, 'F1.7 DB recepcion.conforme = true');
-  assert(f1Recepciones[0]?.tipo_problema === null, 'F1.7 DB recepcion.tipo_problema = null (conforme)');
+  assert(
+    f1Recepciones[0]?.tipo_problema === null,
+    'F1.7 DB recepcion.tipo_problema = null (conforme)',
+  );
 
   // DB: verify audit log has entries for this solicitud
   const f1Audit = await getAuditLog('solicitud', f1Id);
@@ -320,18 +397,24 @@ async function main() {
 
   const f2Id = await createSolicitud(juan, 'Flujo 2 - Devolución resp');
   await api('POST', `/api/solicitudes/${f2Id}/enviar`, juan);
-  assert(await getSolicitudEstado(f2Id) === 'enviada', 'F2.1 Enviada');
+  assert((await getSolicitudEstado(f2Id)) === 'enviada', 'F2.1 Enviada');
 
-  res = await api('POST', `/api/solicitudes/${f2Id}/devolver`, maria, { observaciones: 'Falta justificación detallada', origen: 'responsable' });
+  res = await api('POST', `/api/solicitudes/${f2Id}/devolver`, maria, {
+    observaciones: 'Falta justificación detallada',
+    origen: 'responsable',
+  });
   assert(res.status === 200, 'F2.2 María devuelve', `status=${res.status}`);
   sol = await getSolicitud(f2Id);
   assert(sol?.estado === 'devuelta_resp', 'F2.2 DB estado = devuelta_resp');
-  assert(sol?.observaciones_responsable === 'Falta justificación detallada', 'F2.2 DB observaciones_responsable saved');
+  assert(
+    sol?.observaciones_responsable === 'Falta justificación detallada',
+    'F2.2 DB observaciones_responsable saved',
+  );
 
   // Juan can re-send
   res = await api('POST', `/api/solicitudes/${f2Id}/enviar`, juan);
   assert(res.status === 200, 'F2.3 Juan re-envía', `status=${res.status}`);
-  assert(await getSolicitudEstado(f2Id) === 'enviada', 'F2.3 Estado = enviada');
+  assert((await getSolicitudEstado(f2Id)) === 'enviada', 'F2.3 Estado = enviada');
 
   // María validates
   res = await api('POST', `/api/solicitudes/${f2Id}/validar`, maria);
@@ -350,29 +433,38 @@ async function main() {
   const f3Id = await createSolicitud(juan, 'Flujo 3 - Devolución dir');
   await api('POST', `/api/solicitudes/${f3Id}/enviar`, juan);
   await api('POST', `/api/solicitudes/${f3Id}/validar`, maria);
-  assert(await getSolicitudEstado(f3Id) === 'validada', 'F3.1 Validada');
+  assert((await getSolicitudEstado(f3Id)) === 'validada', 'F3.1 Validada');
 
-  res = await api('POST', `/api/solicitudes/${f3Id}/devolver`, ana, { observaciones: 'Presupuesto excesivo, revisar alternativas', origen: 'director' });
+  res = await api('POST', `/api/solicitudes/${f3Id}/devolver`, ana, {
+    observaciones: 'Presupuesto excesivo, revisar alternativas',
+    origen: 'director',
+  });
   assert(res.status === 200, 'F3.2 Ana devuelve', `status=${res.status}`);
   sol = await getSolicitud(f3Id);
   assert(sol?.estado === 'devuelta_dir', 'F3.2 DB estado = devuelta_dir');
-  assert(sol?.observaciones_director === 'Presupuesto excesivo, revisar alternativas', 'F3.2 DB observaciones_director saved');
+  assert(
+    sol?.observaciones_director === 'Presupuesto excesivo, revisar alternativas',
+    'F3.2 DB observaciones_director saved',
+  );
 
   // Juan re-sends
   res = await api('POST', `/api/solicitudes/${f3Id}/enviar`, juan);
   assert(res.status === 200, 'F3.3 Juan re-envía', `status=${res.status}`);
-  assert(await getSolicitudEstado(f3Id) === 'enviada', 'F3.3 Estado = enviada');
+  assert((await getSolicitudEstado(f3Id)) === 'enviada', 'F3.3 Estado = enviada');
 
   // devuelta_dir can also be re-validated directly
   const f3bId = await createSolicitud(juan, 'Flujo 3b - Revalidar devuelta_dir');
   await api('POST', `/api/solicitudes/${f3bId}/enviar`, juan);
   await api('POST', `/api/solicitudes/${f3bId}/validar`, maria);
-  await api('POST', `/api/solicitudes/${f3bId}/devolver`, ana, { observaciones: 'Revisar los montos estimados', origen: 'director' });
-  assert(await getSolicitudEstado(f3bId) === 'devuelta_dir', 'F3b.1 devuelta_dir');
+  await api('POST', `/api/solicitudes/${f3bId}/devolver`, ana, {
+    observaciones: 'Revisar los montos estimados',
+    origen: 'director',
+  });
+  assert((await getSolicitudEstado(f3bId)) === 'devuelta_dir', 'F3b.1 devuelta_dir');
 
   res = await api('POST', `/api/solicitudes/${f3bId}/validar`, maria);
   assert(res.status === 200, 'F3b.2 María re-valida devuelta_dir', `status=${res.status}`);
-  assert(await getSolicitudEstado(f3bId) === 'validada', 'F3b.2 Estado = validada');
+  assert((await getSolicitudEstado(f3bId)) === 'validada', 'F3b.2 Estado = validada');
 
   // ═══════════════════════════════════════════════════════════════════════════
   // FLUJO 4: Rechazo
@@ -384,9 +476,11 @@ async function main() {
   const f4Id = await createSolicitud(juan, 'Flujo 4 - Rechazo');
   await api('POST', `/api/solicitudes/${f4Id}/enviar`, juan);
   await api('POST', `/api/solicitudes/${f4Id}/validar`, maria);
-  assert(await getSolicitudEstado(f4Id) === 'validada', 'F4.1 Validada');
+  assert((await getSolicitudEstado(f4Id)) === 'validada', 'F4.1 Validada');
 
-  res = await api('POST', `/api/solicitudes/${f4Id}/rechazar`, ana, { motivo: 'No hay presupuesto' });
+  res = await api('POST', `/api/solicitudes/${f4Id}/rechazar`, ana, {
+    motivo: 'No hay presupuesto',
+  });
   assert(res.status === 200, 'F4.2 Ana rechaza', `status=${res.status}`);
   sol = await getSolicitud(f4Id);
   assert(sol?.estado === 'rechazada', 'F4.2 DB estado = rechazada (terminal)');
@@ -408,17 +502,21 @@ async function main() {
   // 5a: Anular desde enviada (solicitante owner)
   const f5aId = await createSolicitud(juan, 'Flujo 5a - Anular enviada');
   await api('POST', `/api/solicitudes/${f5aId}/enviar`, juan);
-  res = await api('POST', `/api/solicitudes/${f5aId}/anular`, juan, { motivo: 'Ya no necesito este pedido' });
+  res = await api('POST', `/api/solicitudes/${f5aId}/anular`, juan, {
+    motivo: 'Ya no necesito este pedido',
+  });
   assert(res.status === 200, 'F5a Anular desde enviada (owner)', `status=${res.status}`);
-  assert(await getSolicitudEstado(f5aId) === 'anulada', 'F5a Estado = anulada');
+  assert((await getSolicitudEstado(f5aId)) === 'anulada', 'F5a Estado = anulada');
 
   // 5b: Anular desde validada (directora)
   const f5bId = await createSolicitud(juan, 'Flujo 5b - Anular validada');
   await api('POST', `/api/solicitudes/${f5bId}/enviar`, juan);
   await api('POST', `/api/solicitudes/${f5bId}/validar`, maria);
-  res = await api('POST', `/api/solicitudes/${f5bId}/anular`, ana, { motivo: 'Cancelado por decisión de dirección' });
+  res = await api('POST', `/api/solicitudes/${f5bId}/anular`, ana, {
+    motivo: 'Cancelado por decisión de dirección',
+  });
   assert(res.status === 200, 'F5b Anular desde validada (directora)', `status=${res.status}`);
-  assert(await getSolicitudEstado(f5bId) === 'anulada', 'F5b Estado = anulada');
+  assert((await getSolicitudEstado(f5bId)) === 'anulada', 'F5b Estado = anulada');
 
   // 5c: Anular desde aprobada/en_compras (admin)
   const f5cId = await createSolicitud(juan, 'Flujo 5c - Anular en_compras');
@@ -426,13 +524,17 @@ async function main() {
   await api('POST', `/api/solicitudes/${f5cId}/validar`, maria);
   await api('POST', `/api/solicitudes/${f5cId}/aprobar`, ana);
   const f5cEstado = await getSolicitudEstado(f5cId);
-  res = await api('POST', `/api/solicitudes/${f5cId}/anular`, carlos, { motivo: 'Admin cancela esta solicitud' });
+  res = await api('POST', `/api/solicitudes/${f5cId}/anular`, carlos, {
+    motivo: 'Admin cancela esta solicitud',
+  });
   assert(res.status === 200, `F5c Anular desde ${f5cEstado} (admin)`, `status=${res.status}`);
-  assert(await getSolicitudEstado(f5cId) === 'anulada', 'F5c Estado = anulada');
+  assert((await getSolicitudEstado(f5cId)) === 'anulada', 'F5c Estado = anulada');
 
   // 5d: NO anular desde borrador
   const f5dId = await createSolicitud(juan, 'Flujo 5d - No anular borrador');
-  res = await api('POST', `/api/solicitudes/${f5dId}/anular`, juan, { motivo: 'Test de anulación desde borrador' });
+  res = await api('POST', `/api/solicitudes/${f5dId}/anular`, juan, {
+    motivo: 'Test de anulación desde borrador',
+  });
   assert(res.status !== 200, 'F5d No anular borrador', `status=${res.status}`);
 
   // 5e: NO anular desde abonada
@@ -444,18 +546,27 @@ async function main() {
   // Go through en_compras → pago_programado → abonada
   const f5eEstado = await getSolicitudEstado(f5eId);
   if (f5eEstado === 'en_compras') {
-    await api('POST', `/api/solicitudes/${f5eId}/programar-pago`, pedro, { dia_pago_programado: '2026-04-15' });
+    await api('POST', `/api/solicitudes/${f5eId}/programar-pago`, pedro, {
+      dia_pago_programado: '2026-04-15',
+    });
   }
-  await apiFormData('POST', '/api/compras', laura, buildCompraFormData({
-    solicitud_id: f5eId,
-    proveedor_id: proveedorId,
-    proveedor_nombre: 'Proveedor Test',
-    monto_total: 500,
-    medio_pago: 'efectivo',
-    fecha_compra: '2026-04-06',
-  }));
-  assert(await getSolicitudEstado(f5eId) === 'abonada', 'F5e Llegó a abonada');
-  res = await api('POST', `/api/solicitudes/${f5eId}/anular`, ana, { motivo: 'Test anulación desde abonada' });
+  await apiFormData(
+    'POST',
+    '/api/compras',
+    laura,
+    buildCompraFormData({
+      solicitud_id: f5eId,
+      proveedor_id: proveedorId,
+      proveedor_nombre: 'Proveedor Test',
+      monto_total: 500,
+      medio_pago: 'efectivo',
+      fecha_compra: '2026-04-06',
+    }),
+  );
+  assert((await getSolicitudEstado(f5eId)) === 'abonada', 'F5e Llegó a abonada');
+  res = await api('POST', `/api/solicitudes/${f5eId}/anular`, ana, {
+    motivo: 'Test anulación desde abonada',
+  });
   assert(res.status !== 200, 'F5e No anular abonada', `status=${res.status}`);
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -472,22 +583,37 @@ async function main() {
     tipo_problema: 'dañado',
     observaciones: 'Llegó dañado un item, hay que devolver',
   });
-  assert(res.status === 200 || res.status === 201, 'F6.1 Recepción no conforme', `status=${res.status} ${JSON.stringify(res.data?.error ?? '')}`);
+  assert(
+    res.status === 200 || res.status === 201,
+    'F6.1 Recepción no conforme',
+    `status=${res.status} ${JSON.stringify(res.data?.error ?? '')}`,
+  );
   sol = await getSolicitud(f5eId);
-  assert(sol?.estado === 'recibida_con_obs', 'F6.1 DB estado = recibida_con_obs', `actual=${sol?.estado}`);
+  assert(
+    sol?.estado === 'recibida_con_obs',
+    'F6.1 DB estado = recibida_con_obs',
+    `actual=${sol?.estado}`,
+  );
 
   // DB: verify recepcion with problem details
   const f6Recepciones = await getRecepcionesBySolicitud(f5eId);
   assert(f6Recepciones.length === 1, 'F6.1 DB recepcion record exists');
   assert(f6Recepciones[0]?.conforme === false, 'F6.1 DB recepcion.conforme = false');
   assert(f6Recepciones[0]?.tipo_problema === 'dañado', 'F6.1 DB recepcion.tipo_problema = dañado');
-  assert(f6Recepciones[0]?.observaciones === 'Llegó dañado un item, hay que devolver', 'F6.1 DB recepcion.observaciones saved');
+  assert(
+    f6Recepciones[0]?.observaciones === 'Llegó dañado un item, hay que devolver',
+    'F6.1 DB recepcion.observaciones saved',
+  );
   assert(f6Recepciones[0]?.receptor_id === juanUser!.id, 'F6.1 DB recepcion.receptor = Juan');
 
   // Laura (tesorería) cierra
   res = await api('POST', `/api/solicitudes/${f5eId}/cerrar`, laura);
-  assert(res.status === 200, 'F6.2 Laura cierra', `status=${res.status} ${JSON.stringify(res.data?.error ?? '')}`);
-  assert(await getSolicitudEstado(f5eId) === 'cerrada', 'F6.2 DB estado = cerrada');
+  assert(
+    res.status === 200,
+    'F6.2 Laura cierra',
+    `status=${res.status} ${JSON.stringify(res.data?.error ?? '')}`,
+  );
+  assert((await getSolicitudEstado(f5eId)) === 'cerrada', 'F6.2 DB estado = cerrada');
 
   // ═══════════════════════════════════════════════════════════════════════════
   // FLUJO 7: Segregación de funciones
@@ -502,7 +628,11 @@ async function main() {
   sol = await getSolicitud(f7Id);
   const f7Estado = sol?.estado ?? '';
   // Responsable's own solicitudes are auto-validated (skip enviada → go to validada)
-  assert(f7Estado === 'validada' || f7Estado === 'enviada', 'F7.1 María envía propia (auto-validada)', `estado=${f7Estado}`);
+  assert(
+    f7Estado === 'validada' || f7Estado === 'enviada',
+    'F7.1 María envía propia (auto-validada)',
+    `estado=${f7Estado}`,
+  );
   if (f7Estado === 'validada') {
     assert(sol?.solicitante_id === mariaUser!.id, 'F7.1 DB solicitante = María');
     assert(sol?.fecha_validacion !== null, 'F7.1 DB auto-validación fecha_validacion set');
@@ -510,7 +640,11 @@ async function main() {
 
   // If auto-validated, María can't re-validate; if enviada, she can't validate her own
   res = await api('POST', `/api/solicitudes/${f7Id}/validar`, maria);
-  assert(res.status !== 200, 'F7.2 María NO puede validar su propia solicitud', `status=${res.status}`);
+  assert(
+    res.status !== 200,
+    'F7.2 María NO puede validar su propia solicitud',
+    `status=${res.status}`,
+  );
 
   // ═══════════════════════════════════════════════════════════════════════════
   // FLUJO 8: Permisos incorrectos
@@ -557,11 +691,24 @@ async function main() {
   assert(res.status !== 200, 'F9.2 No aprobar desde borrador', `status=${res.status}`);
 
   // Can't register purchase from borrador
-  res = await apiFormData('POST', '/api/compras', laura, buildCompraFormData({
-    solicitud_id: f9Id, proveedor_id: proveedorId, proveedor_nombre: 'Proveedor Test',
-    monto_total: 100, medio_pago: 'efectivo', fecha_compra: '2026-04-06',
-  }));
-  assert(res.status !== 200 && res.status !== 201, 'F9.3 No comprar desde borrador', `status=${res.status}`);
+  res = await apiFormData(
+    'POST',
+    '/api/compras',
+    laura,
+    buildCompraFormData({
+      solicitud_id: f9Id,
+      proveedor_id: proveedorId,
+      proveedor_nombre: 'Proveedor Test',
+      monto_total: 100,
+      medio_pago: 'efectivo',
+      fecha_compra: '2026-04-06',
+    }),
+  );
+  assert(
+    res.status !== 200 && res.status !== 201,
+    'F9.3 No comprar desde borrador',
+    `status=${res.status}`,
+  );
 
   // Send it, then try to approve without validating
   await api('POST', `/api/solicitudes/${f9Id}/enviar`, juan);
@@ -589,20 +736,41 @@ async function main() {
       prioridad_compra: 'normal',
       dia_pago_programado: '2026-04-20',
     });
-    assert(res.status === 200, 'F10.1 Pedro procesa compra', `status=${res.status} ${JSON.stringify(res.data?.error ?? '')}`);
+    assert(
+      res.status === 200,
+      'F10.1 Pedro procesa compra',
+      `status=${res.status} ${JSON.stringify(res.data?.error ?? '')}`,
+    );
 
     // procesar-compras already transitions to pago_programado
-    assert(await getSolicitudEstado(f10Id) === 'pago_programado', 'F10.2 Estado = pago_programado');
+    assert(
+      (await getSolicitudEstado(f10Id)) === 'pago_programado',
+      'F10.2 Estado = pago_programado',
+    );
 
     // Laura registers purchase from pago_programado
     const f10Factura = `A-0010-${String(Date.now()).slice(-8)}`;
-    res = await apiFormData('POST', '/api/compras', laura, buildCompraFormData({
-      solicitud_id: f10Id, proveedor_id: proveedorId, proveedor_nombre: 'Proveedor Test',
-      monto_total: 2000, medio_pago: 'transferencia', referencia_bancaria: 'TRF-010',
-      fecha_compra: '2026-04-06', numero_factura: f10Factura,
-    }));
-    assert(res.status === 200 || res.status === 201, 'F10.3 Laura compra desde pago_programado', `status=${res.status}`);
-    assert(await getSolicitudEstado(f10Id) === 'abonada', 'F10.3 DB estado = abonada');
+    res = await apiFormData(
+      'POST',
+      '/api/compras',
+      laura,
+      buildCompraFormData({
+        solicitud_id: f10Id,
+        proveedor_id: proveedorId,
+        proveedor_nombre: 'Proveedor Test',
+        monto_total: 2000,
+        medio_pago: 'transferencia',
+        referencia_bancaria: 'TRF-010',
+        fecha_compra: '2026-04-06',
+        numero_factura: f10Factura,
+      }),
+    );
+    assert(
+      res.status === 200 || res.status === 201,
+      'F10.3 Laura compra desde pago_programado',
+      `status=${res.status}`,
+    );
+    assert((await getSolicitudEstado(f10Id)) === 'abonada', 'F10.3 DB estado = abonada');
 
     // DB: verify compra details
     const f10Compras = await getComprasBySolicitud(f10Id);
@@ -626,11 +794,15 @@ async function main() {
   await api('POST', `/api/solicitudes/${f11Id}/aprobar`, ana);
   const f11Estado = await getSolicitudEstado(f11Id);
   if (f11Estado === 'en_compras') {
-    await api('POST', `/api/solicitudes/${f11Id}/programar-pago`, pedro, { dia_pago_programado: '2026-04-25' });
-    assert(await getSolicitudEstado(f11Id) === 'pago_programado', 'F11.1 pago_programado');
-    res = await api('POST', `/api/solicitudes/${f11Id}/anular`, ana, { motivo: 'Cancelar pago programado por cambio de prioridad' });
+    await api('POST', `/api/solicitudes/${f11Id}/programar-pago`, pedro, {
+      dia_pago_programado: '2026-04-25',
+    });
+    assert((await getSolicitudEstado(f11Id)) === 'pago_programado', 'F11.1 pago_programado');
+    res = await api('POST', `/api/solicitudes/${f11Id}/anular`, ana, {
+      motivo: 'Cancelar pago programado por cambio de prioridad',
+    });
     assert(res.status === 200, 'F11.2 Anular desde pago_programado', `status=${res.status}`);
-    assert(await getSolicitudEstado(f11Id) === 'anulada', 'F11.2 Estado = anulada');
+    assert((await getSolicitudEstado(f11Id)) === 'anulada', 'F11.2 Estado = anulada');
   } else {
     console.log(`  ⏭️  Skipped (estado=${f11Estado})`);
   }
@@ -643,15 +815,21 @@ async function main() {
   console.log('══════════════════════════════════════════════');
 
   // rechazada
-  res = await api('POST', `/api/solicitudes/${f4Id}/anular`, ana, { motivo: 'Test anulación desde rechazada' });
+  res = await api('POST', `/api/solicitudes/${f4Id}/anular`, ana, {
+    motivo: 'Test anulación desde rechazada',
+  });
   assert(res.status !== 200, 'F12.1 No anular rechazada', `status=${res.status}`);
 
   // anulada
-  res = await api('POST', `/api/solicitudes/${f5aId}/anular`, ana, { motivo: 'Test anulación desde anulada' });
+  res = await api('POST', `/api/solicitudes/${f5aId}/anular`, ana, {
+    motivo: 'Test anulación desde anulada',
+  });
   assert(res.status !== 200, 'F12.2 No anular anulada', `status=${res.status}`);
 
   // cerrada
-  res = await api('POST', `/api/solicitudes/${f5eId}/anular`, ana, { motivo: 'Test anulación desde cerrada' });
+  res = await api('POST', `/api/solicitudes/${f5eId}/anular`, ana, {
+    motivo: 'Test anulación desde cerrada',
+  });
   assert(res.status !== 200, 'F12.3 No anular cerrada', `status=${res.status}`);
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -682,7 +860,10 @@ async function main() {
   assert(res.status === 200, 'F14.1 GET solicitudes list', `status=${res.status}`);
   if (res.data?.data?.length > 0) {
     const firstSol = res.data.data[0];
-    assert(Array.isArray(firstSol.items_solicitud), 'F14.2 items_solicitud included in list response');
+    assert(
+      Array.isArray(firstSol.items_solicitud),
+      'F14.2 items_solicitud included in list response',
+    );
     if (firstSol.items_solicitud?.length > 0) {
       assert('precio_estimado' in firstSol.items_solicitud[0], 'F14.3 items have precio_estimado');
       assert('cantidad' in firstSol.items_solicitud[0], 'F14.4 items have cantidad');
@@ -694,8 +875,14 @@ async function main() {
     await api('POST', `/api/solicitudes/${f14Id}/validar`, maria);
     res = await api('GET', `/api/solicitudes?estado=validada&limit=5`, ana);
     const sol14 = res.data?.data?.find((s: any) => s.id === f14Id);
-    assert(sol14 && Array.isArray(sol14.items_solicitud), 'F14.2 items_solicitud included in list response');
-    assert(sol14?.items_solicitud?.[0]?.precio_estimado != null, 'F14.3 items have precio_estimado');
+    assert(
+      sol14 && Array.isArray(sol14.items_solicitud),
+      'F14.2 items_solicitud included in list response',
+    );
+    assert(
+      sol14?.items_solicitud?.[0]?.precio_estimado != null,
+      'F14.3 items have precio_estimado',
+    );
     assert(sol14?.items_solicitud?.[0]?.cantidad != null, 'F14.4 items have cantidad');
     // Clean up — approve it
     await api('POST', `/api/solicitudes/${f14Id}/aprobar`, ana);
@@ -714,11 +901,17 @@ async function main() {
 
   // Get updated_at for optimistic locking
   let sol15 = await getSolicitud(f15Id);
-  res = await api('POST', `/api/solicitudes/${f15Id}/aprobar`, ana, { updated_at: sol15!.updated_at.toISOString() });
+  res = await api('POST', `/api/solicitudes/${f15Id}/aprobar`, ana, {
+    updated_at: sol15!.updated_at.toISOString(),
+  });
   assert(res.status === 200, 'F15.1 Inline approve with updated_at', `status=${res.status}`);
 
   sol15 = await getSolicitud(f15Id);
-  assert(sol15!.estado === 'en_compras', 'F15.2 DB estado = en_compras after approve', `estado=${sol15!.estado}`);
+  assert(
+    sol15!.estado === 'en_compras',
+    'F15.2 DB estado = en_compras after approve',
+    `estado=${sol15!.estado}`,
+  );
   assert(sol15!.aprobado_por_id !== null, 'F15.3 DB aprobado_por set');
   assert(sol15!.fecha_aprobacion !== null, 'F15.4 DB fecha_aprobacion set');
 
@@ -747,20 +940,40 @@ async function main() {
   // Bulk approve
   res = await api('POST', '/api/solicitudes/aprobar-masivo', ana, { ids: bulkIds });
   assert(res.status === 200, 'F16.1 Bulk approve returns 200', `status=${res.status}`);
-  assert(res.data.aprobadas === 3, 'F16.2 3 solicitudes approved', `aprobadas=${res.data.aprobadas}`);
-  assert(res.data.errores?.length === 0, 'F16.3 No errors', `errores=${JSON.stringify(res.data.errores)}`);
+  assert(
+    res.data.aprobadas === 3,
+    'F16.2 3 solicitudes approved',
+    `aprobadas=${res.data.aprobadas}`,
+  );
+  assert(
+    res.data.errores?.length === 0,
+    'F16.3 No errors',
+    `errores=${JSON.stringify(res.data.errores)}`,
+  );
 
   // Verify DB state for all 3
   for (const bulkId of bulkIds) {
     const solBulk = await getSolicitud(bulkId);
-    assert(solBulk!.estado === 'en_compras', `F16.4 DB sol ${bulkId} estado = en_compras`, `estado=${solBulk!.estado}`);
+    assert(
+      solBulk!.estado === 'en_compras',
+      `F16.4 DB sol ${bulkId} estado = en_compras`,
+      `estado=${solBulk!.estado}`,
+    );
   }
 
   // Bulk approve with invalid IDs (already approved)
   res = await api('POST', '/api/solicitudes/aprobar-masivo', ana, { ids: bulkIds });
   assert(res.status === 200, 'F16.5 Bulk re-approve returns 200', `status=${res.status}`);
-  assert(res.data.aprobadas === 0, 'F16.6 0 re-approved (already en_compras)', `aprobadas=${res.data.aprobadas}`);
-  assert(res.data.errores?.length === 3, 'F16.7 3 errors (wrong state)', `errores=${res.data.errores?.length}`);
+  assert(
+    res.data.aprobadas === 0,
+    'F16.6 0 re-approved (already en_compras)',
+    `aprobadas=${res.data.aprobadas}`,
+  );
+  assert(
+    res.data.errores?.length === 3,
+    'F16.7 3 errors (wrong state)',
+    `errores=${res.data.errores?.length}`,
+  );
 
   // Bulk approve with empty array
   res = await api('POST', '/api/solicitudes/aprobar-masivo', ana, { ids: [] });
@@ -768,7 +981,11 @@ async function main() {
 
   // Non-director cannot bulk approve
   res = await api('POST', '/api/solicitudes/aprobar-masivo', juan, { ids: [1] });
-  assert(res.status === 403 || res.status === 401, 'F16.9 Solicitante cannot bulk approve', `status=${res.status}`);
+  assert(
+    res.status === 403 || res.status === 401,
+    'F16.9 Solicitante cannot bulk approve',
+    `status=${res.status}`,
+  );
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SUMMARY
@@ -779,12 +996,15 @@ async function main() {
 
   if (failures.length > 0) {
     console.log('\nFallas:');
-    failures.forEach(f => console.log(f));
+    failures.forEach((f) => console.log(f));
   }
 
   console.log('');
 }
 
 main()
-  .catch(e => { console.error('FATAL:', e); process.exit(1); })
+  .catch((e) => {
+    console.error('FATAL:', e);
+    process.exit(1);
+  })
   .finally(() => prisma.$disconnect());

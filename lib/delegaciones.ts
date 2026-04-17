@@ -8,7 +8,7 @@ import type { RolNombre } from '@/types';
 export async function getRolesEfectivos(
   tenantId: number,
   userId: number,
-  baseRoles: RolNombre[]
+  baseRoles: RolNombre[],
 ): Promise<{ roles: RolNombre[]; delegaciones: { rol: string; deleganteNombre: string }[] }> {
   const db = tenantPrisma(tenantId);
   const today = new Date();

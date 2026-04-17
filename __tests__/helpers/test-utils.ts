@@ -57,7 +57,10 @@ export function mockSession(overrides: Record<string, any> = {}) {
 }
 
 /** Builds a Request object for testing API routes */
-export function mockRequest(url: string, options: { method?: string; body?: any; headers?: Record<string, string> } = {}) {
+export function mockRequest(
+  url: string,
+  options: { method?: string; body?: any; headers?: Record<string, string> } = {},
+) {
   const { method = 'GET', body, headers = {} } = options;
   const init: RequestInit = { method, headers: { 'Content-Type': 'application/json', ...headers } };
   if (body) init.body = JSON.stringify(body);

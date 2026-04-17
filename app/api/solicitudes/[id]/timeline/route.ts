@@ -19,7 +19,7 @@ export const GET = withAdminOverride({}, async (_request, { db }, params) => {
   });
 
   // Map to timeline events
-  const timeline = events.map(e => ({
+  const timeline = events.map((e) => ({
     id: Number(e.id),
     accion: e.accion,
     usuario: e.usuario.nombre,

@@ -25,9 +25,7 @@ describe('cache', () => {
     it('refetches after TTL expires', async () => {
       vi.useFakeTimers();
       const key = uniqueKey();
-      const fetcher = vi.fn()
-        .mockResolvedValueOnce('old')
-        .mockResolvedValueOnce('new');
+      const fetcher = vi.fn().mockResolvedValueOnce('old').mockResolvedValueOnce('new');
 
       await cached(key, 5_000, fetcher);
       vi.advanceTimersByTime(5_001);

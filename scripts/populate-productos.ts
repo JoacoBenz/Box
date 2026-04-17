@@ -22,7 +22,7 @@ async function main() {
   console.log(`Found ${items.length} items from cerrada solicitudes\n`);
 
   // Group by tenant + normalized name
-  const seen = new Map<string, typeof items[0]>();
+  const seen = new Map<string, (typeof items)[0]>();
   for (const item of items) {
     const key = `${item.solicitud.tenant_id}:${item.descripcion.trim().toLowerCase()}`;
     // Keep the latest one (by id)
@@ -71,7 +71,9 @@ async function main() {
       });
       linked += updated.count;
 
-      console.log(`  ✅ ${nombre} (tenant ${item.solicitud.tenant_id}) → linked ${updated.count} items`);
+      console.log(
+        `  ✅ ${nombre} (tenant ${item.solicitud.tenant_id}) → linked ${updated.count} items`,
+      );
     } catch (err: any) {
       console.log(`  ⚠️ ${nombre}: ${err.message}`);
     }
@@ -81,4 +83,7 @@ async function main() {
   await prisma.$disconnect();
 }
 
-main().catch(e => { console.error('FATAL:', e); process.exit(1); });
+main().catch((e) => {
+  console.error('FATAL:', e);
+  process.exit(1);
+});

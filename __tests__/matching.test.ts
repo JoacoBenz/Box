@@ -10,7 +10,7 @@ describe('calcularMatching', () => {
       { items_solicitud: items },
       { monto_total: 1000 },
       [{ item_solicitud_id: 1, cantidad_recibida: 10 }],
-      items
+      items,
     );
     expect(result.matched).toBe(true);
     expect(result.discrepancies).toHaveLength(0);
@@ -25,7 +25,7 @@ describe('calcularMatching', () => {
       { items_solicitud: items },
       { monto_total: 1090 }, // 9% over
       [{ item_solicitud_id: 1, cantidad_recibida: 10 }],
-      items
+      items,
     );
     expect(result.matched).toBe(true);
   });
@@ -36,10 +36,10 @@ describe('calcularMatching', () => {
       { items_solicitud: items },
       { monto_total: 1200 }, // 20% over
       [{ item_solicitud_id: 1, cantidad_recibida: 10 }],
-      items
+      items,
     );
     expect(result.matched).toBe(false);
-    expect(result.discrepancies.some(d => d.includes('Varianza de precio'))).toBe(true);
+    expect(result.discrepancies.some((d) => d.includes('Varianza de precio'))).toBe(true);
   });
 
   it('detects quantity shortfall', () => {
@@ -48,10 +48,10 @@ describe('calcularMatching', () => {
       { items_solicitud: items },
       { monto_total: 1000 },
       [{ item_solicitud_id: 1, cantidad_recibida: 7 }],
-      items
+      items,
     );
     expect(result.matched).toBe(false);
-    expect(result.discrepancies.some(d => d.includes('faltante: 3'))).toBe(true);
+    expect(result.discrepancies.some((d) => d.includes('faltante: 3'))).toBe(true);
     expect(result.montoRecibido).toBe(700);
   });
 
@@ -61,10 +61,10 @@ describe('calcularMatching', () => {
       { items_solicitud: items },
       { monto_total: 1000 },
       [{ item_solicitud_id: 1, cantidad_recibida: 12 }],
-      items
+      items,
     );
     expect(result.matched).toBe(false);
-    expect(result.discrepancies.some(d => d.includes('excedente: 2'))).toBe(true);
+    expect(result.discrepancies.some((d) => d.includes('excedente: 2'))).toBe(true);
   });
 
   it('handles multiple items with mixed discrepancies', () => {
@@ -79,7 +79,7 @@ describe('calcularMatching', () => {
         { item_solicitud_id: 1, cantidad_recibida: 5 },
         { item_solicitud_id: 2, cantidad_recibida: 8 },
       ],
-      items
+      items,
     );
     expect(result.matched).toBe(false);
     expect(result.discrepancies).toHaveLength(1); // only item 2 has shortfall
@@ -98,7 +98,7 @@ describe('calcularMatching', () => {
         { item_solicitud_id: 1, cantidad_recibida: 2 },
         { item_solicitud_id: 2, cantidad_recibida: 3 },
       ],
-      items
+      items,
     );
     expect(result.montoSolicitud).toBe(1300);
     expect(result.montoCompra).toBe(1350);
@@ -111,7 +111,7 @@ describe('calcularMatching', () => {
       { items_solicitud: items },
       null,
       [{ item_solicitud_id: 1, cantidad_recibida: 5 }],
-      items
+      items,
     );
     expect(result.montoCompra).toBe(0);
     expect(result.matched).toBe(true);
@@ -119,14 +119,9 @@ describe('calcularMatching', () => {
 
   it('handles empty items recibidos', () => {
     const items = makeItems([{ id: 1, cantidad: 5, precio_estimado: 100 }]);
-    const result = calcularMatching(
-      { items_solicitud: items },
-      { monto_total: 500 },
-      [],
-      items
-    );
+    const result = calcularMatching({ items_solicitud: items }, { monto_total: 500 }, [], items);
     expect(result.matched).toBe(false);
-    expect(result.discrepancies.some(d => d.includes('faltante: 5'))).toBe(true);
+    expect(result.discrepancies.some((d) => d.includes('faltante: 5'))).toBe(true);
     expect(result.montoRecibido).toBe(0);
   });
 
@@ -136,7 +131,7 @@ describe('calcularMatching', () => {
       { items_solicitud: items },
       { monto_total: 0 },
       [{ item_solicitud_id: 1, cantidad_recibida: 5 }],
-      items
+      items,
     );
     expect(result.montoSolicitud).toBe(0);
     expect(result.montoRecibido).toBe(0);
@@ -152,7 +147,7 @@ describe('calcularMatching', () => {
         { item_solicitud_id: 1, cantidad_recibida: 6 },
         { item_solicitud_id: 1, cantidad_recibida: 4 },
       ],
-      items
+      items,
     );
     expect(result.matched).toBe(true);
     expect(result.montoRecibido).toBe(1000);

@@ -32,7 +32,7 @@ export async function GET() {
       email: usuario.email,
       area: usuario.area?.nombre ?? null,
       organizacion: usuario.tenant?.nombre ?? null,
-      roles: usuario.usuarios_roles.map(ur => ur.rol.nombre),
+      roles: usuario.usuarios_roles.map((ur) => ur.rol.nombre),
       tienePassword: !!usuario.password_hash,
       emailDigest: usuario.email_digest,
     });
@@ -61,13 +61,20 @@ export async function PATCH(request: NextRequest) {
     if (passwordNuevo) {
       const usuario = await prisma.usuarios.findUnique({
         where: { id: session.userId },
-        select: { password_hash: true, usuarios_roles: { select: { rol: { select: { nombre: true } } } } },
+        select: {
+          password_hash: true,
+          usuarios_roles: { select: { rol: { select: { nombre: true } } } },
+        },
       });
 
-      const isAdmin = usuario?.usuarios_roles?.some(ur => ur.rol.nombre === 'admin');
+      const isAdmin = usuario?.usuarios_roles?.some((ur) => ur.rol.nombre === 'admin');
 
       if (!usuario?.password_hash && !isAdmin) {
-        return apiError('VALIDATION_ERROR', 'No se puede cambiar la contraseña de cuentas SSO', 400);
+        return apiError(
+          'VALIDATION_ERROR',
+          'No se puede cambiar la contraseña de cuentas SSO',
+          400,
+        );
       }
 
       if (usuario?.password_hash) {
@@ -81,7 +88,11 @@ export async function PATCH(request: NextRequest) {
       }
 
       if (passwordNuevo.length < 8) {
-        return apiError('VALIDATION_ERROR', 'La nueva contraseña debe tener al menos 8 caracteres', 400);
+        return apiError(
+          'VALIDATION_ERROR',
+          'La nueva contraseña debe tener al menos 8 caracteres',
+          400,
+        );
       }
 
       updateData.password_hash = await bcrypt.hash(passwordNuevo, 12);
@@ -97,9 +108,15 @@ export async function PATCH(request: NextRequest) {
     });
 
     await registrarAuditoria({
-      tenantId: session.tenantId, usuarioId: session.userId,
-      accion: 'actualizar_perfil', entidad: 'usuario', entidadId: session.userId,
-      datosNuevos: { nombre: updateData.nombre ?? undefined, passwordChanged: !!updateData.password_hash },
+      tenantId: session.tenantId,
+      usuarioId: session.userId,
+      accion: 'actualizar_perfil',
+      entidad: 'usuario',
+      entidadId: session.userId,
+      datosNuevos: {
+        nombre: updateData.nombre ?? undefined,
+        passwordChanged: !!updateData.password_hash,
+      },
       ipAddress: getClientIp(request),
     });
 

@@ -43,10 +43,20 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
         where: { solicitante_id: userId, estado: { notIn: ['rechazada', 'cerrada', 'anulada'] } },
         orderBy: { created_at: 'desc' },
         take: 5,
-        select: { id: true, numero: true, titulo: true, estado: true, urgencia: true, created_at: true },
+        select: {
+          id: true,
+          numero: true,
+          titulo: true,
+          estado: true,
+          urgencia: true,
+          created_at: true,
+        },
       }),
       db.solicitudes.count({
-        where: { solicitante_id: userId, estado: { in: ['aprobada', 'en_compras', 'pago_programado', 'abonada'] } },
+        where: {
+          solicitante_id: userId,
+          estado: { in: ['aprobada', 'en_compras', 'pago_programado', 'abonada'] },
+        },
       }),
       db.solicitudes.count({
         where: { solicitante_id: userId, estado: { in: ['devuelta_resp', 'devuelta_dir'] } },
@@ -63,7 +73,17 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
           where: {
             solicitante_id: userId,
             created_at: { gte: hace90Dias },
-            estado: { in: ['aprobada', 'abonada', 'cerrada', 'en_compras', 'pago_programado', 'recibida', 'recibida_con_obs'] },
+            estado: {
+              in: [
+                'aprobada',
+                'abonada',
+                'cerrada',
+                'en_compras',
+                'pago_programado',
+                'recibida',
+                'recibida_con_obs',
+              ],
+            },
           },
         }),
         db.solicitudes.count({
@@ -92,7 +112,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
     result.recepcionesPendientes = recepcionesPendientes;
     result.solicitudesMesSolicitante = solicitudesMesSolicitante;
     result.tasaAprobacion = total90d > 0 ? Math.round((aprobadas90d / total90d) * 100) : 0;
-    result.misSolicitudesPorEstado = misSolicitudesPorEstado.map(r => ({
+    result.misSolicitudesPorEstado = misSolicitudesPorEstado.map((r) => ({
       estado: r.estado,
       cantidad: parseInt(r.cantidad),
     }));
@@ -115,7 +135,14 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
         where: { area_id: areaId },
         orderBy: { created_at: 'desc' },
         take: 10,
-        select: { id: true, numero: true, titulo: true, estado: true, urgencia: true, created_at: true },
+        select: {
+          id: true,
+          numero: true,
+          titulo: true,
+          estado: true,
+          urgencia: true,
+          created_at: true,
+        },
       }),
       db.solicitudes.count({
         where: { area_id: areaId, created_at: { gte: inicioMes } },
@@ -147,7 +174,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
     result.devueltasArea = devueltasArea;
     result.gastoAreaMes = parseFloat(gastoAreaData[0]?.total_mes ?? '0');
     result.gastoAreaAño = parseFloat(gastoAreaData[0]?.total_anio ?? '0');
-    result.solicitudesAreaPorEstado = solicitudesAreaPorEstado.map(r => ({
+    result.solicitudesAreaPorEstado = solicitudesAreaPorEstado.map((r) => ({
       estado: r.estado,
       cantidad: parseInt(r.cantidad),
     }));
@@ -158,14 +185,15 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
     // Director can pick an area to filter, or see all (default)
     const dirAreaFilter = directorAreaId ? { area_id: directorAreaId } : {};
     const areaFilter = dirAreaFilter;
-    const [pendientesAprobar, aprobadasSemana, rechazadasSemana, urgentesPendientes] = await Promise.all([
-      db.solicitudes.count({ where: { estado: 'validada', ...areaFilter } }),
-      db.solicitudes.count({ where: { fecha_aprobacion: { gte: semanaAtras }, ...areaFilter } }),
-      db.solicitudes.count({ where: { fecha_rechazo: { gte: semanaAtras }, ...areaFilter } }),
-      db.solicitudes.count({
-        where: { estado: 'validada', urgencia: { in: ['urgente', 'critica'] }, ...areaFilter },
-      }),
-    ]);
+    const [pendientesAprobar, aprobadasSemana, rechazadasSemana, urgentesPendientes] =
+      await Promise.all([
+        db.solicitudes.count({ where: { estado: 'validada', ...areaFilter } }),
+        db.solicitudes.count({ where: { fecha_aprobacion: { gte: semanaAtras }, ...areaFilter } }),
+        db.solicitudes.count({ where: { fecha_rechazo: { gte: semanaAtras }, ...areaFilter } }),
+        db.solicitudes.count({
+          where: { estado: 'validada', urgencia: { in: ['urgente', 'critica'] }, ...areaFilter },
+        }),
+      ]);
     result.pendientesAprobar = pendientesAprobar;
     result.aprobadasSemana = aprobadasSemana;
     result.rechazadasSemana = rechazadasSemana;
@@ -175,19 +203,32 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
   // ── Compras section (cross-area — sees all solicitudes) ──
   if (roles.includes('compras')) {
     const areaFilter = {};
-    const [solicitudesAprobadas, solicitudesEnCompras, pagoProgramado, urgentesPipeline] = await Promise.all([
-      db.solicitudes.count({ where: { estado: 'aprobada', ...areaFilter } }),
-      db.solicitudes.count({ where: { estado: 'en_compras', ...areaFilter } }),
-      db.solicitudes.count({ where: { estado: 'pago_programado', ...areaFilter } }),
-      db.solicitudes.count({
-        where: { estado: { in: ['aprobada', 'en_compras'] }, urgencia: { in: ['urgente', 'critica'] }, ...areaFilter },
-      }),
-    ]);
+    const [solicitudesAprobadas, solicitudesEnCompras, pagoProgramado, urgentesPipeline] =
+      await Promise.all([
+        db.solicitudes.count({ where: { estado: 'aprobada', ...areaFilter } }),
+        db.solicitudes.count({ where: { estado: 'en_compras', ...areaFilter } }),
+        db.solicitudes.count({ where: { estado: 'pago_programado', ...areaFilter } }),
+        db.solicitudes.count({
+          where: {
+            estado: { in: ['aprobada', 'en_compras'] },
+            urgencia: { in: ['urgente', 'critica'] },
+            ...areaFilter,
+          },
+        }),
+      ]);
     const pipeline = await db.solicitudes.findMany({
       where: { estado: { in: ['aprobada', 'en_compras', 'pago_programado'] }, ...areaFilter },
       orderBy: { created_at: 'desc' },
       take: 10,
-      select: { id: true, numero: true, titulo: true, estado: true, urgencia: true, prioridad_compra: true, dia_pago_programado: true },
+      select: {
+        id: true,
+        numero: true,
+        titulo: true,
+        estado: true,
+        urgencia: true,
+        prioridad_compra: true,
+        dia_pago_programado: true,
+      },
     });
     // Tiempo promedio pipeline (last 90 days)
     const tiempoPipeline = await prisma.$queryRaw<{ avg_days: string | null }[]>`
@@ -210,10 +251,24 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
   if (roles.includes('tesoreria')) {
     const areaFilter = {};
     const proximaSemanaDias = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    const [pendientesComprar, recepcionesConObs, pagoProgramadoProximo, ultimasCompras, comprasSinRecepcion] = await Promise.all([
-      db.solicitudes.count({ where: { estado: { in: ['aprobada', 'pago_programado'] }, ...areaFilter } }),
+    const [
+      pendientesComprar,
+      recepcionesConObs,
+      pagoProgramadoProximo,
+      ultimasCompras,
+      comprasSinRecepcion,
+    ] = await Promise.all([
+      db.solicitudes.count({
+        where: { estado: { in: ['aprobada', 'pago_programado'] }, ...areaFilter },
+      }),
       db.solicitudes.count({ where: { estado: 'recibida_con_obs', ...areaFilter } }),
-      db.solicitudes.count({ where: { estado: 'pago_programado', dia_pago_programado: { gte: new Date(), lte: proximaSemanaDias }, ...areaFilter } }),
+      db.solicitudes.count({
+        where: {
+          estado: 'pago_programado',
+          dia_pago_programado: { gte: new Date(), lte: proximaSemanaDias },
+          ...areaFilter,
+        },
+      }),
       db.compras.findMany({
         orderBy: { created_at: 'desc' },
         take: 5,
@@ -254,12 +309,23 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       orgsTopUso,
     ] = await Promise.all([
       prisma.tenants.count({ where: { slug: { not: '__platform__' } } }),
-      prisma.tenants.count({ where: { estado: 'activo', desactivado: false, slug: { not: '__platform__' } } }),
+      prisma.tenants.count({
+        where: { estado: 'activo', desactivado: false, slug: { not: '__platform__' } },
+      }),
       prisma.tenants.count({ where: { estado: 'pendiente', slug: { not: '__platform__' } } }),
-      prisma.tenants.count({ where: { slug: { not: '__platform__' }, OR: [{ estado: 'suspendido' }, { desactivado: true }] } }),
+      prisma.tenants.count({
+        where: {
+          slug: { not: '__platform__' },
+          OR: [{ estado: 'suspendido' }, { desactivado: true }],
+        },
+      }),
       prisma.usuarios.count({ where: { activo: true, tenant: { slug: { not: '__platform__' } } } }),
-      prisma.usuarios.count({ where: { created_at: { gte: inicioMes }, tenant: { slug: { not: '__platform__' } } } }),
-      prisma.tenants.count({ where: { fecha_registro: { gte: inicioMes }, slug: { not: '__platform__' } } }),
+      prisma.usuarios.count({
+        where: { created_at: { gte: inicioMes }, tenant: { slug: { not: '__platform__' } } },
+      }),
+      prisma.tenants.count({
+        where: { fecha_registro: { gte: inicioMes }, slug: { not: '__platform__' } },
+      }),
       // Orgs dormidas: activas pero sin actividad en 30 días
       prisma.$queryRaw<{ cantidad: string }[]>`
         SELECT COUNT(*)::text AS cantidad
@@ -299,7 +365,15 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
         ORDER BY mes ASC
       `,
       // Top orgs por uso: más usuarios activos + actividad reciente
-      prisma.$queryRaw<{ id: number; org: string; estado: string; usuarios: string; ultimo_acceso: string | null }[]>`
+      prisma.$queryRaw<
+        {
+          id: number;
+          org: string;
+          estado: string;
+          usuarios: string;
+          ultimo_acceso: string | null;
+        }[]
+      >`
         SELECT t.id, t.nombre AS org, t.estado,
                COUNT(u.id)::text AS usuarios,
                MAX(u.updated_at)::text AS ultimo_acceso
@@ -322,9 +396,15 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       orgsNuevasMes,
       orgsDormidas: parseInt(orgsDormidas[0]?.cantidad ?? '0'),
       promedioUsuariosPorOrg: parseInt(promedioUsuariosPorOrg[0]?.promedio ?? '0'),
-      crecimientoOrgs: crecimientoOrgsData.map(r => ({ mes: r.mes, cantidad: parseInt(r.cantidad) })),
-      crecimientoUsuarios: crecimientoUsuariosData.map(r => ({ mes: r.mes, cantidad: parseInt(r.cantidad) })),
-      orgsTopUso: orgsTopUso.map(r => ({
+      crecimientoOrgs: crecimientoOrgsData.map((r) => ({
+        mes: r.mes,
+        cantidad: parseInt(r.cantidad),
+      })),
+      crecimientoUsuarios: crecimientoUsuariosData.map((r) => ({
+        mes: r.mes,
+        cantidad: parseInt(r.cantidad),
+      })),
+      orgsTopUso: orgsTopUso.map((r) => ({
         id: r.id,
         org: r.org,
         estado: r.estado,
@@ -335,7 +415,8 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
   }
 
   // ── Analytics (director, tesoreria, compras — NOT admin, who has platform-level metrics) ──
-  const hasAnalytics = roles.includes('director') || roles.includes('tesoreria') || roles.includes('compras');
+  const hasAnalytics =
+    roles.includes('director') || roles.includes('tesoreria') || roles.includes('compras');
   if (hasAnalytics) {
     // Area filter for director — applied to analytics queries
     const areaJoinFilter = directorAreaId
@@ -356,7 +437,15 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       `t:${tenantId}:dashboard:analytics:${directorAreaId ?? 'all'}`,
       2 * 60 * 1000, // 2 min TTL
       async () => {
-        const [gastoAnualMensual, gastoPorArea, tendenciaMensual, gastoPorMedioPago, topProveedores, solicitudesPorEstado, solicitudesPorUrgencia] = await Promise.all([
+        const [
+          gastoAnualMensual,
+          gastoPorArea,
+          tendenciaMensual,
+          gastoPorMedioPago,
+          topProveedores,
+          solicitudesPorEstado,
+          solicitudesPorUrgencia,
+        ] = await Promise.all([
           prisma.$queryRaw<{ total_anual: string | null; total_mensual: string | null }[]>`
             SELECT
               COALESCE(SUM(c.monto_total), 0)::text AS total_anual,
@@ -416,38 +505,54 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
             GROUP BY urgencia
           `,
         ]);
-        return { gastoAnualMensual, gastoPorArea, tendenciaMensual, gastoPorMedioPago, topProveedores, solicitudesPorEstado, solicitudesPorUrgencia };
-      }
+        return {
+          gastoAnualMensual,
+          gastoPorArea,
+          tendenciaMensual,
+          gastoPorMedioPago,
+          topProveedores,
+          solicitudesPorEstado,
+          solicitudesPorUrgencia,
+        };
+      },
     );
 
-    const { gastoAnualMensual, gastoPorArea, tendenciaMensual, gastoPorMedioPago, topProveedores, solicitudesPorEstado, solicitudesPorUrgencia } = analyticsData;
+    const {
+      gastoAnualMensual,
+      gastoPorArea,
+      tendenciaMensual,
+      gastoPorMedioPago,
+      topProveedores,
+      solicitudesPorEstado,
+      solicitudesPorUrgencia,
+    } = analyticsData;
     result.gastoAnual = parseFloat(gastoAnualMensual[0]?.total_anual ?? '0');
     result.gastoMensual = parseFloat(gastoAnualMensual[0]?.total_mensual ?? '0');
-    result.gastoPorArea = gastoPorArea.map(r => ({
+    result.gastoPorArea = gastoPorArea.map((r) => ({
       area: r.area_nombre,
       total: parseFloat(r.total),
       cantidad: parseInt(r.cantidad),
     }));
-    result.tendenciaMensual = tendenciaMensual.map(r => ({
+    result.tendenciaMensual = tendenciaMensual.map((r) => ({
       mes: r.mes,
       total: parseFloat(r.total),
       cantidad: parseInt(r.cantidad),
     }));
-    result.gastoPorMedioPago = gastoPorMedioPago.map(r => ({
+    result.gastoPorMedioPago = gastoPorMedioPago.map((r) => ({
       medioPago: r.medio_pago,
       total: parseFloat(r.total),
       cantidad: parseInt(r.cantidad),
     }));
-    result.topProveedores = topProveedores.map(r => ({
+    result.topProveedores = topProveedores.map((r) => ({
       proveedor: r.proveedor,
       total: parseFloat(r.total),
       cantidad: parseInt(r.cantidad),
     }));
-    result.solicitudesPorEstado = solicitudesPorEstado.map(r => ({
+    result.solicitudesPorEstado = solicitudesPorEstado.map((r) => ({
       estado: r.estado,
       cantidad: parseInt(r.cantidad),
     }));
-    result.solicitudesPorUrgencia = solicitudesPorUrgencia.map(r => ({
+    result.solicitudesPorUrgencia = solicitudesPorUrgencia.map((r) => ({
       urgencia: r.urgencia,
       cantidad: parseInt(r.cantidad),
     }));

@@ -1,4 +1,11 @@
-export type RolNombre = 'solicitante' | 'responsable_area' | 'director' | 'tesoreria' | 'compras' | 'admin' | 'super_admin';
+export type RolNombre =
+  | 'solicitante'
+  | 'responsable_area'
+  | 'director'
+  | 'tesoreria'
+  | 'compras'
+  | 'admin'
+  | 'super_admin';
 
 export type EstadoTenant = 'pendiente' | 'activo' | 'rechazado' | 'suspendido';
 
@@ -54,24 +61,24 @@ export interface PaginatedResponse<T> {
 }
 
 export const ESTADOS_SOLICITUD: Record<EstadoSolicitud, { label: string; color: string }> = {
-  borrador:          { label: 'Borrador',                      color: 'default' },
-  enviada:           { label: 'Enviada',                       color: 'blue' },
-  devuelta_resp:     { label: 'Devuelta',                      color: 'orange' },
-  validada:          { label: 'Validada',                      color: 'cyan' },
-  devuelta_dir:      { label: 'Devuelta por Aprobador',         color: 'orange' },
-  aprobada:          { label: 'Aprobada',                      color: 'green' },
-  en_compras:        { label: 'En Compras',                    color: 'processing' },
-  pago_programado:   { label: 'Pago Programado',               color: 'purple' },
-  rechazada:         { label: 'Rechazada',                     color: 'red' },
-  abonada:           { label: 'Abonada',                       color: 'geekblue' },
-  recibida:          { label: 'Recibida',                      color: 'lime' },
-  recibida_con_obs:  { label: 'Recibida con observaciones',    color: 'gold' },
-  anulada:           { label: 'Anulada',                       color: 'default' },
-  cerrada:           { label: 'Cerrada',                       color: 'purple' },
+  borrador: { label: 'Borrador', color: 'default' },
+  enviada: { label: 'Enviada', color: 'blue' },
+  devuelta_resp: { label: 'Devuelta', color: 'orange' },
+  validada: { label: 'Validada', color: 'cyan' },
+  devuelta_dir: { label: 'Devuelta por Aprobador', color: 'orange' },
+  aprobada: { label: 'Aprobada', color: 'green' },
+  en_compras: { label: 'En Compras', color: 'processing' },
+  pago_programado: { label: 'Pago Programado', color: 'purple' },
+  rechazada: { label: 'Rechazada', color: 'red' },
+  abonada: { label: 'Abonada', color: 'geekblue' },
+  recibida: { label: 'Recibida', color: 'lime' },
+  recibida_con_obs: { label: 'Recibida con observaciones', color: 'gold' },
+  anulada: { label: 'Anulada', color: 'default' },
+  cerrada: { label: 'Cerrada', color: 'purple' },
 };
 
 export const URGENCIAS: Record<UrgenciaSolicitud, { label: string; color: string }> = {
-  normal:  { label: 'Normal',  color: 'default' },
+  normal: { label: 'Normal', color: 'default' },
   urgente: { label: 'Urgente', color: 'orange' },
   critica: { label: 'Crítica', color: 'red' },
 };

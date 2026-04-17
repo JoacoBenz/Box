@@ -6,7 +6,10 @@ const mockFindMany = vi.fn();
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    notificaciones: { create: (...args: any[]) => mockCreate(...args), createMany: (...args: any[]) => mockCreateMany(...args) },
+    notificaciones: {
+      create: (...args: any[]) => mockCreate(...args),
+      createMany: (...args: any[]) => mockCreateMany(...args),
+    },
     usuarios: { findMany: (...args: any[]) => mockFindMany(...args) },
   },
   tenantPrisma: () => ({}),
@@ -26,7 +29,14 @@ beforeEach(() => {
 describe('crearNotificacion', () => {
   it('creates a notification with correct fields', async () => {
     mockCreate.mockResolvedValue({});
-    await crearNotificacion({ tenantId: 1, destinatarioId: 2, tipo: 'test', titulo: 'Titulo', mensaje: 'Msg', solicitudId: 5 });
+    await crearNotificacion({
+      tenantId: 1,
+      destinatarioId: 2,
+      tipo: 'test',
+      titulo: 'Titulo',
+      mensaje: 'Msg',
+      solicitudId: 5,
+    });
     expect(mockCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
         tenant_id: 1,
@@ -42,25 +52,49 @@ describe('crearNotificacion', () => {
 
   it('includes solicitudId when provided', async () => {
     mockCreate.mockResolvedValue({});
-    await crearNotificacion({ tenantId: 1, destinatarioId: 2, tipo: 'test', titulo: 'T', mensaje: 'M', solicitudId: 99 });
+    await crearNotificacion({
+      tenantId: 1,
+      destinatarioId: 2,
+      tipo: 'test',
+      titulo: 'T',
+      mensaje: 'M',
+      solicitudId: 99,
+    });
     expect(mockCreate.mock.calls[0][0].data.solicitud_id).toBe(99);
   });
 
   it('omits solicitud_id when not provided', async () => {
     mockCreate.mockResolvedValue({});
-    await crearNotificacion({ tenantId: 1, destinatarioId: 2, tipo: 'test', titulo: 'T', mensaje: 'M' });
+    await crearNotificacion({
+      tenantId: 1,
+      destinatarioId: 2,
+      tipo: 'test',
+      titulo: 'T',
+      mensaje: 'M',
+    });
     expect(mockCreate.mock.calls[0][0].data.solicitud_id).toBeUndefined();
   });
 
   it('swallows errors', async () => {
     mockCreate.mockRejectedValue(new Error('fail'));
-    await expect(crearNotificacion({ tenantId: 1, destinatarioId: 2, tipo: 'test', titulo: 'T', mensaje: 'M' })).resolves.toBeUndefined();
+    await expect(
+      crearNotificacion({
+        tenantId: 1,
+        destinatarioId: 2,
+        tipo: 'test',
+        titulo: 'T',
+        mensaje: 'M',
+      }),
+    ).resolves.toBeUndefined();
   });
 });
 
 describe('notificarAdmins', () => {
   it('creates notifications for all active admin users', async () => {
-    mockFindMany.mockResolvedValue([{ id: 10, tenant_id: 0 }, { id: 20, tenant_id: 0 }]);
+    mockFindMany.mockResolvedValue([
+      { id: 10, tenant_id: 0 },
+      { id: 20, tenant_id: 0 },
+    ]);
     mockCreateMany.mockResolvedValue({ count: 2 });
     await notificarAdmins('Titulo', 'Mensaje');
     expect(mockCreateMany).toHaveBeenCalledWith({
@@ -90,8 +124,16 @@ describe('notificarPorRol', () => {
     await notificarPorRol(1, 'director', 'Titulo', 'Msg', 10);
     expect(mockCreateMany).toHaveBeenCalledWith({
       data: expect.arrayContaining([
-        expect.objectContaining({ usuario_destino_id: 5, tipo: 'notif_director', solicitud_id: 10 }),
-        expect.objectContaining({ usuario_destino_id: 6, tipo: 'notif_director', solicitud_id: 10 }),
+        expect.objectContaining({
+          usuario_destino_id: 5,
+          tipo: 'notif_director',
+          solicitud_id: 10,
+        }),
+        expect.objectContaining({
+          usuario_destino_id: 6,
+          tipo: 'notif_director',
+          solicitud_id: 10,
+        }),
       ]),
     });
   });

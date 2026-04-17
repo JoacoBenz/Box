@@ -2,7 +2,10 @@ import { z } from 'zod';
 
 // Helper: reject strings that are only whitespace
 const nonBlank = (min: number, msg: string) =>
-  z.string().min(min, msg).refine((v) => v.trim().length >= min, msg);
+  z
+    .string()
+    .min(min, msg)
+    .refine((v) => v.trim().length >= min, msg);
 
 // Shared strong password policy
 export const passwordSchema = z
@@ -67,10 +70,7 @@ export const usuarioSchema = z.object({
 export const itemSolicitudSchema = z.object({
   producto_id: z.number().int().positive().optional().nullable(),
   descripcion: nonBlank(2, 'La descripción del ítem es requerida').max(255),
-  cantidad: z
-    .number()
-    .positive('La cantidad debe ser mayor a 0')
-    .max(999999, 'Cantidad excesiva'),
+  cantidad: z.number().positive('La cantidad debe ser mayor a 0').max(999999, 'Cantidad excesiva'),
   unidad: z.string().min(1, 'Unidad requerida').max(50).default('unidades'),
   precio_estimado: z
     .number()
@@ -89,14 +89,23 @@ export const solicitudSchema = z.object({
   proveedor_sugerido: z.string().max(255).optional().nullable().or(z.literal('')),
   proveedor_id: z.number().int().positive().optional().nullable(),
   centro_costo_id: z.number().int().positive().optional().nullable(),
-  items: z.array(itemSolicitudSchema).min(1, 'Agregá al menos un ítem').max(100, 'Máximo 100 ítems'),
+  items: z
+    .array(itemSolicitudSchema)
+    .min(1, 'Agregá al menos un ítem')
+    .max(100, 'Máximo 100 ítems'),
 });
 
 export const proveedorSchema = z.object({
   nombre: nonBlank(2, 'Mínimo 2 caracteres').max(255),
   cuit: cuitSchema,
   datos_bancarios: z.string().max(500).optional().nullable().or(z.literal('')),
-  link_pagina: z.string().url('URL inválida. Incluí https://').max(500).optional().nullable().or(z.literal('')),
+  link_pagina: z
+    .string()
+    .url('URL inválida. Incluí https://')
+    .max(500)
+    .optional()
+    .nullable()
+    .or(z.literal('')),
   telefono: z
     .string()
     .max(12)
@@ -133,7 +142,7 @@ export const compraSchema = z
       .max(20)
       .refine(
         (v) => !v || facturaRegex.test(v),
-        'Formato de factura inválido. Usá: A-0001-00012345'
+        'Formato de factura inválido. Usá: A-0001-00012345',
       )
       .optional()
       .nullable()
@@ -141,12 +150,11 @@ export const compraSchema = z
     observaciones: z.string().max(2000).optional().nullable(),
   })
   .refine(
-    (data) =>
-      !['transferencia', 'cheque'].includes(data.medio_pago) || !!data.referencia_bancaria,
+    (data) => !['transferencia', 'cheque'].includes(data.medio_pago) || !!data.referencia_bancaria,
     {
       message: 'La referencia bancaria es obligatoria para transferencias y cheques',
       path: ['referencia_bancaria'],
-    }
+    },
   );
 
 export const procesarComprasSchema = z.object({
@@ -163,7 +171,7 @@ export const centroCostoSchema = z.object({
     .max(20)
     .refine(
       (v) => /^[A-Z0-9_-]+$/i.test(v),
-      'El código solo puede contener letras, números, guiones y guiones bajos'
+      'El código solo puede contener letras, números, guiones y guiones bajos',
     )
     .refine((v) => v.trim() === v, 'El código no puede tener espacios'),
   presupuesto_anual: z.number().nonnegative().max(999_999_999).optional().nullable(),
@@ -177,20 +185,34 @@ export const recepcionSchema = z
     conforme: z.boolean(),
     tipo_problema: z.enum(['faltante', 'dañado', 'diferente', 'otro']).optional().nullable(),
     observaciones: z.string().max(2000).optional().nullable(),
-    items: z.array(z.object({
-      item_solicitud_id: z.number().int().positive(),
-      cantidad_recibida: z.number().positive('La cantidad debe ser mayor a 0'),
-      conforme: z.boolean().default(true),
-      observaciones: z.string().max(500).optional().nullable(),
-    })).optional(),
+    items: z
+      .array(
+        z.object({
+          item_solicitud_id: z.number().int().positive(),
+          cantidad_recibida: z.number().positive('La cantidad debe ser mayor a 0'),
+          conforme: z.boolean().default(true),
+          observaciones: z.string().max(500).optional().nullable(),
+        }),
+      )
+      .optional(),
   })
-  .refine((data) => data.conforme || (data.tipo_problema && data.observaciones && data.observaciones.trim().length >= 10), {
-    message: 'Si no es conforme, indicá el tipo de problema y describí qué pasó (mínimo 10 caracteres)',
-  });
+  .refine(
+    (data) =>
+      data.conforme ||
+      (data.tipo_problema && data.observaciones && data.observaciones.trim().length >= 10),
+    {
+      message:
+        'Si no es conforme, indicá el tipo de problema y describí qué pasó (mínimo 10 caracteres)',
+    },
+  );
 
 export const devolucionSchema = z.object({
-  observaciones: nonBlank(10, 'Describí el motivo de la devolución (mínimo 10 caracteres)').max(2000),
-  origen: z.enum(['responsable', 'director'], { message: 'origen debe ser responsable o director' }),
+  observaciones: nonBlank(10, 'Describí el motivo de la devolución (mínimo 10 caracteres)').max(
+    2000,
+  ),
+  origen: z.enum(['responsable', 'director'], {
+    message: 'origen debe ser responsable o director',
+  }),
 });
 
 export const rechazoSchema = z.object({

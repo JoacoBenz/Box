@@ -8,12 +8,18 @@ export async function GET(request: NextRequest) {
     const ip = getClientIp(request);
     const rateLimit = await checkRateLimitDb(`unirse-codigo:${ip}`, 10, 60_000);
     if (!rateLimit.allowed) {
-      return Response.json({ error: { code: 'RATE_LIMITED', message: 'Demasiados intentos' } }, { status: 429 });
+      return Response.json(
+        { error: { code: 'RATE_LIMITED', message: 'Demasiados intentos' } },
+        { status: 429 },
+      );
     }
 
     const codigo = request.nextUrl.searchParams.get('codigo')?.toUpperCase();
     if (!codigo || codigo.length < 4) {
-      return Response.json({ error: { code: 'VALIDATION_ERROR', message: 'Código inválido' } }, { status: 400 });
+      return Response.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'Código inválido' } },
+        { status: 400 },
+      );
     }
 
     const inv = await prisma.codigos_invitacion.findFirst({
@@ -22,11 +28,17 @@ export async function GET(request: NextRequest) {
     });
 
     if (!inv || inv.tenant.estado !== 'activo' || inv.tenant.desactivado) {
-      return Response.json({ error: { code: 'NOT_FOUND', message: 'Código inválido o expirado' } }, { status: 404 });
+      return Response.json(
+        { error: { code: 'NOT_FOUND', message: 'Código inválido o expirado' } },
+        { status: 404 },
+      );
     }
 
     if (inv.max_usos && inv.usos >= inv.max_usos) {
-      return Response.json({ error: { code: 'CONFLICT', message: 'Este código ya alcanzó el máximo de usos' } }, { status: 409 });
+      return Response.json(
+        { error: { code: 'CONFLICT', message: 'Este código ya alcanzó el máximo de usos' } },
+        { status: 409 },
+      );
     }
 
     const areas = await prisma.areas.findMany({
@@ -42,6 +54,9 @@ export async function GET(request: NextRequest) {
       areas,
     });
   } catch {
-    return Response.json({ error: { code: 'INTERNAL', message: 'Error interno' } }, { status: 500 });
+    return Response.json(
+      { error: { code: 'INTERNAL', message: 'Error interno' } },
+      { status: 500 },
+    );
   }
 }

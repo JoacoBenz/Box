@@ -44,7 +44,12 @@ export default function VerificarEmailPage() {
 
   return (
     <Card
-      style={{ width: 'min(480px, calc(100vw - 32px))', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: 'none', borderRadius: 20 }}
+      style={{
+        width: 'min(480px, calc(100vw - 32px))',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+        border: 'none',
+        borderRadius: 20,
+      }}
       styles={{ body: { padding: '40px 36px' } }}
     >
       {status === 'loading' && (
@@ -59,7 +64,13 @@ export default function VerificarEmailPage() {
           status="success"
           title="Email verificado"
           subTitle={message}
-          extra={<Link href="/login"><Button type="primary" size="large">Ir al login</Button></Link>}
+          extra={
+            <Link href="/login">
+              <Button type="primary" size="large">
+                Ir al login
+              </Button>
+            </Link>
+          }
         />
       )}
 
@@ -68,7 +79,13 @@ export default function VerificarEmailPage() {
           status="error"
           title="No se pudo verificar"
           subTitle={message}
-          extra={<Link href="/registro"><Button type="primary" size="large">Registrarse de nuevo</Button></Link>}
+          extra={
+            <Link href="/registro">
+              <Button type="primary" size="large">
+                Registrarse de nuevo
+              </Button>
+            </Link>
+          }
         />
       )}
     </Card>

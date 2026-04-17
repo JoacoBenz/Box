@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
-import { Button, Card, Col, Row, Tag, Typography, Empty, Progress, Table } from 'antd'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { Button, Card, Col, Row, Tag, Typography, Empty, Progress, Table } from 'antd';
 import {
   DollarOutlined,
   FileTextOutlined,
@@ -21,20 +21,20 @@ import {
   AlertOutlined,
   GlobalOutlined,
   UserAddOutlined,
-} from '@ant-design/icons'
-import Link from 'next/link'
-import dynamic from 'next/dynamic'
-import type { DashboardData } from '@/types/dashboard'
+} from '@ant-design/icons';
+import Link from 'next/link';
+import dynamic from 'next/dynamic';
+import type { DashboardData } from '@/types/dashboard';
 
 const DirectorDashboard = dynamic(() => import('./components/DirectorDashboard'), {
   loading: () => <div style={{ textAlign: 'center', padding: 40 }}>Cargando dashboard...</div>,
   ssr: false,
-})
+});
 
-import { useTheme } from '@/components/ThemeProvider'
-import { ESTADO_COLOR, ESTADO_LABEL, URGENCIA_COLOR } from '@/lib/constants'
+import { useTheme } from '@/components/ThemeProvider';
+import { ESTADO_COLOR, ESTADO_LABEL, URGENCIA_COLOR } from '@/lib/constants';
 
-const { Title, Text } = Typography
+const { Title, Text } = Typography;
 
 const MEDIO_PAGO_LABEL: Record<string, string> = {
   transferencia: 'Transferencia',
@@ -42,146 +42,293 @@ const MEDIO_PAGO_LABEL: Record<string, string> = {
   efectivo: 'Efectivo',
   tarjeta: 'Tarjeta',
   otro: 'Otro',
-}
+};
 
 function formatMoney(amount: number): string {
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount)
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    maximumFractionDigits: 0,
+  }).format(amount);
 }
 
 // ── Count-up hook ──
 function useCountUp(rawTarget: number | undefined | null, duration = 800) {
-  const target = rawTarget ?? 0
-  const [value, setValue] = useState(0)
-  const ref = useRef<number | null>(null)
+  const target = rawTarget ?? 0;
+  const [value, setValue] = useState(0);
+  const ref = useRef<number | null>(null);
 
   useEffect(() => {
-    if (target === 0) { setValue(0); return }
-    const start = performance.now()
-    function tick(now: number) {
-      const progress = Math.min((now - start) / duration, 1)
-      const eased = 1 - Math.pow(1 - progress, 3)
-      setValue(Math.round(eased * target))
-      if (progress < 1) ref.current = requestAnimationFrame(tick)
+    if (target === 0) {
+      setValue(0);
+      return;
     }
-    ref.current = requestAnimationFrame(tick)
-    return () => { if (ref.current) cancelAnimationFrame(ref.current) }
-  }, [target, duration])
+    const start = performance.now();
+    function tick(now: number) {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.round(eased * target));
+      if (progress < 1) ref.current = requestAnimationFrame(tick);
+    }
+    ref.current = requestAnimationFrame(tick);
+    return () => {
+      if (ref.current) cancelAnimationFrame(ref.current);
+    };
+  }, [target, duration]);
 
-  return value
+  return value;
 }
 
 // ── Stat Card Component ──
-function StatCard({ title, value, icon, color, format, suffix, delay = 0 }: {
-  title: string; value: number | undefined | null; icon: React.ReactNode; color: string; format?: 'money' | 'percent'; suffix?: string; delay?: number
+function StatCard({
+  title,
+  value,
+  icon,
+  color,
+  format,
+  suffix,
+  delay = 0,
+}: {
+  title: string;
+  value: number | undefined | null;
+  icon: React.ReactNode;
+  color: string;
+  format?: 'money' | 'percent';
+  suffix?: string;
+  delay?: number;
 }) {
-  const { tokens } = useTheme()
-  const count = useCountUp(value)
+  const { tokens } = useTheme();
+  const count = useCountUp(value);
   return (
-    <Card className={`glass-card glass-${color}`} style={{ animationDelay: `${delay}ms` }} styles={{ body: { padding: '20px 24px' } }}>
+    <Card
+      className={`glass-card glass-${color}`}
+      style={{ animationDelay: `${delay}ms` }}
+      styles={{ body: { padding: '20px 24px' } }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <div className={`stat-icon icon-${color}`}>{icon}</div>
         <div>
-          <Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 500 }}>{title}</Text>
-          <div className="count-up" style={{ fontSize: 28, fontWeight: 800, color: tokens.textPrimary, lineHeight: 1.2 }}>
-            {format === 'money' ? formatMoney(count) : format === 'percent' ? `${count}%` : count}{suffix ?? ''}
+          <Text
+            type="secondary"
+            style={{
+              fontSize: 12,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              fontWeight: 500,
+            }}
+          >
+            {title}
+          </Text>
+          <div
+            className="count-up"
+            style={{ fontSize: 28, fontWeight: 800, color: tokens.textPrimary, lineHeight: 1.2 }}
+          >
+            {format === 'money' ? formatMoney(count) : format === 'percent' ? `${count}%` : count}
+            {suffix ?? ''}
           </div>
         </div>
       </div>
     </Card>
-  )
+  );
 }
 
 // ── Mini Stat Card ──
-function MiniStatCard({ title, value, icon, color, format, suffix }: {
-  title: string; value: number | undefined | null; icon: React.ReactNode; color: string; format?: 'money' | 'percent'; suffix?: string
+function MiniStatCard({
+  title,
+  value,
+  icon,
+  color,
+  format,
+  suffix,
+}: {
+  title: string;
+  value: number | undefined | null;
+  icon: React.ReactNode;
+  color: string;
+  format?: 'money' | 'percent';
+  suffix?: string;
 }) {
-  const { tokens } = useTheme()
-  const count = useCountUp(value)
+  const { tokens } = useTheme();
+  const count = useCountUp(value);
   return (
-    <Card className={`glass-card glass-${color}`} size="small" styles={{ body: { padding: '14px 18px' } }}>
+    <Card
+      className={`glass-card glass-${color}`}
+      size="small"
+      styles={{ body: { padding: '14px 18px' } }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div className={`stat-icon icon-${color}`} style={{ width: 32, height: 32, borderRadius: 8, fontSize: 14 }}>{icon}</div>
+        <div
+          className={`stat-icon icon-${color}`}
+          style={{ width: 32, height: 32, borderRadius: 8, fontSize: 14 }}
+        >
+          {icon}
+        </div>
         <div>
-          <Text type="secondary" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</Text>
-          <div className="count-up" style={{ fontSize: 20, fontWeight: 700, color: tokens.textPrimary }}>
-            {format === 'money' ? formatMoney(count) : format === 'percent' ? `${count}%` : count}{suffix ?? ''}
+          <Text
+            type="secondary"
+            style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}
+          >
+            {title}
+          </Text>
+          <div
+            className="count-up"
+            style={{ fontSize: 20, fontWeight: 700, color: tokens.textPrimary }}
+          >
+            {format === 'money' ? formatMoney(count) : format === 'percent' ? `${count}%` : count}
+            {suffix ?? ''}
           </div>
         </div>
       </div>
     </Card>
-  )
+  );
 }
 
 // ── Pending Action Card ──
-function PendingActionCard({ count, label, href, buttonText }: {
-  count: number; label: string; href: string; buttonText: string
+function PendingActionCard({
+  count,
+  label,
+  href,
+  buttonText,
+}: {
+  count: number;
+  label: string;
+  href: string;
+  buttonText: string;
 }) {
-  const { tokens } = useTheme()
+  const { tokens } = useTheme();
   return (
-    <Card style={{ borderRadius: 16, borderColor: count > 0 ? '#f59e0b' : '#22c55e', borderWidth: 2 }} styles={{ body: { padding: '20px' } }}>
+    <Card
+      style={{ borderRadius: 16, borderColor: count > 0 ? '#f59e0b' : '#22c55e', borderWidth: 2 }}
+      styles={{ body: { padding: '20px' } }}
+    >
       <div style={{ textAlign: 'center', marginBottom: 12 }}>
         <div style={{ fontSize: 32, fontWeight: 800, color: tokens.textPrimary }}>{count}</div>
-        <Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 500 }}>{label}</Text>
+        <Text
+          type="secondary"
+          style={{
+            fontSize: 12,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            fontWeight: 500,
+          }}
+        >
+          {label}
+        </Text>
       </div>
       <Link href={href} style={{ textDecoration: 'none' }}>
-        <Button block type="primary" size="large" style={{ fontWeight: 600 }}>{buttonText}</Button>
+        <Button block type="primary" size="large" style={{ fontWeight: 600 }}>
+          {buttonText}
+        </Button>
       </Link>
     </Card>
-  )
+  );
 }
 
 // ── Section Title ──
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  const { tokens } = useTheme()
+  const { tokens } = useTheme();
   return (
-    <div style={{ fontSize: 18, fontWeight: 700, color: tokens.textPrimary, marginBottom: 16, letterSpacing: '-0.5px' }}>{children}</div>
-  )
+    <div
+      style={{
+        fontSize: 18,
+        fontWeight: 700,
+        color: tokens.textPrimary,
+        marginBottom: 16,
+        letterSpacing: '-0.5px',
+      }}
+    >
+      {children}
+    </div>
+  );
 }
 
 // ── Estado Tags (mini chart) ──
 function EstadoTags({ data }: { data: { estado: string; cantidad: number }[] }) {
-  if (!data || data.length === 0) return null
+  if (!data || data.length === 0) return null;
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '8px 0' }}>
       {data.map((item) => (
-        <Tag key={item.estado} color={ESTADO_COLOR[item.estado] ?? 'default'} style={{ fontSize: 13, padding: '4px 14px', margin: 0 }}>
+        <Tag
+          key={item.estado}
+          color={ESTADO_COLOR[item.estado] ?? 'default'}
+          style={{ fontSize: 13, padding: '4px 14px', margin: 0 }}
+        >
           {ESTADO_LABEL[item.estado] ?? item.estado}: <strong>{item.cantidad}</strong>
         </Tag>
       ))}
     </div>
-  )
+  );
 }
 
 // ── Greeting ──
 function Greeting() {
-  const { tokens } = useTheme()
-  const hour = new Date().getHours()
-  const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches'
-  const date = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const { tokens } = useTheme();
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
+  const date = new Date().toLocaleDateString('es-AR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 
   return (
     <div style={{ marginBottom: 28 }}>
-      <div style={{ fontSize: 28, fontWeight: 800, color: tokens.textPrimary, letterSpacing: '-0.5px' }}>
+      <div
+        style={{
+          fontSize: 28,
+          fontWeight: 800,
+          color: tokens.textPrimary,
+          letterSpacing: '-0.5px',
+        }}
+      >
         {greeting} 👋
       </div>
-      <Text type="secondary" style={{ fontSize: 14, textTransform: 'capitalize' }}>{date}</Text>
+      <Text type="secondary" style={{ fontSize: 14, textTransform: 'capitalize' }}>
+        {date}
+      </Text>
     </div>
-  )
+  );
 }
 
 // ── Loading Skeleton ──
 function DashboardSkeleton() {
-  const { tokens } = useTheme()
+  const { tokens } = useTheme();
   return (
     <div className="page-content" style={{ padding: 4 }}>
       <div style={{ marginBottom: 28 }}>
-        <div style={{ width: 240, height: 32, background: tokens.skeletonBg, borderRadius: 8, marginBottom: 8, animation: 'pulse 1.5s ease-in-out infinite' }} />
-        <div style={{ width: 180, height: 16, background: tokens.skeletonBg, borderRadius: 6, animation: 'pulse 1.5s ease-in-out infinite' }} />
+        <div
+          style={{
+            width: 240,
+            height: 32,
+            background: tokens.skeletonBg,
+            borderRadius: 8,
+            marginBottom: 8,
+            animation: 'pulse 1.5s ease-in-out infinite',
+          }}
+        />
+        <div
+          style={{
+            width: 180,
+            height: 16,
+            background: tokens.skeletonBg,
+            borderRadius: 6,
+            animation: 'pulse 1.5s ease-in-out infinite',
+          }}
+        />
       </div>
       <Row gutter={[16, 16]}>
-        {[1, 2, 3, 4].map(i => (
+        {[1, 2, 3, 4].map((i) => (
           <Col key={i} xs={24} sm={12} lg={6}>
-            <div style={{ height: 100, background: tokens.skeletonBg, borderRadius: 16, animation: 'pulse 1.5s ease-in-out infinite', animationDelay: `${i * 100}ms` }} />
+            <div
+              style={{
+                height: 100,
+                background: tokens.skeletonBg,
+                borderRadius: 16,
+                animation: 'pulse 1.5s ease-in-out infinite',
+                animationDelay: `${i * 100}ms`,
+              }}
+            />
           </Col>
         ))}
       </Row>
@@ -192,19 +339,41 @@ function DashboardSkeleton() {
         }
       `}</style>
     </div>
-  )
+  );
 }
 
 // ── Bar chart row helper ──
-function BarChartRow({ label, value, maxValue, color, subtext, index, formatValue }: {
-  label: string; value: number; maxValue: number; color: string; subtext: string; index: number; formatValue?: (v: number) => string
+function BarChartRow({
+  label,
+  value,
+  maxValue,
+  color,
+  subtext,
+  index,
+  formatValue,
+}: {
+  label: string;
+  value: number;
+  maxValue: number;
+  color: string;
+  subtext: string;
+  index: number;
+  formatValue?: (v: number) => string;
 }) {
-  const { tokens } = useTheme()
+  const { tokens } = useTheme();
   return (
-    <div style={{ padding: '12px 0', borderBottom: 'none', animation: `staggerIn 0.3s ease-out ${index * 80}ms both` }}>
+    <div
+      style={{
+        padding: '12px 0',
+        borderBottom: 'none',
+        animation: `staggerIn 0.3s ease-out ${index * 80}ms both`,
+      }}
+    >
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
         <Text style={{ fontWeight: 500 }}>{label}</Text>
-        <Text strong style={{ color: tokens.textPrimary }}>{formatValue ? formatValue(value) : formatMoney(value)}</Text>
+        <Text strong style={{ color: tokens.textPrimary }}>
+          {formatValue ? formatValue(value) : formatMoney(value)}
+        </Text>
       </div>
       <Progress
         percent={maxValue > 0 ? Math.round((value / maxValue) * 100) : 0}
@@ -212,78 +381,96 @@ function BarChartRow({ label, value, maxValue, color, subtext, index, formatValu
         size="small"
         strokeColor={color}
       />
-      <Text type="secondary" style={{ fontSize: 11 }}>{subtext}</Text>
+      <Text type="secondary" style={{ fontSize: 11 }}>
+        {subtext}
+      </Text>
     </div>
-  )
+  );
 }
 
 export default function DashboardPage() {
-  const { tokens } = useTheme()
+  const { tokens } = useTheme();
   // Fields are populated conditionally by role — accessed within role-conditional blocks
-  const [data, setData] = useState<Record<string, any> | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [directorAreaId, setDirectorAreaId] = useState<number | null>(null)
+  const [data, setData] = useState<Record<string, any> | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [directorAreaId, setDirectorAreaId] = useState<number | null>(null);
 
   const fetchDashboard = useCallback((areaId?: number | null) => {
-    const params = new URLSearchParams()
-    if (areaId) params.set('directorAreaId', String(areaId))
-    const url = `/api/dashboard${params.toString() ? `?${params}` : ''}`
+    const params = new URLSearchParams();
+    if (areaId) params.set('directorAreaId', String(areaId));
+    const url = `/api/dashboard${params.toString() ? `?${params}` : ''}`;
     fetch(url)
-      .then(r => r.json())
+      .then((r) => r.json())
       .then(setData)
       .catch(() => setData(null))
-      .finally(() => setLoading(false))
-  }, [])
+      .finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
-    fetchDashboard()
-  }, [fetchDashboard])
+    fetchDashboard();
+  }, [fetchDashboard]);
 
   // Re-fetch when admin switches tenant
   useEffect(() => {
     const handler = () => {
-      setLoading(true)
-      setDirectorAreaId(null)
-      fetchDashboard()
-    }
-    window.addEventListener('admin-tenant-change', handler)
-    return () => window.removeEventListener('admin-tenant-change', handler)
-  }, [fetchDashboard])
+      setLoading(true);
+      setDirectorAreaId(null);
+      fetchDashboard();
+    };
+    window.addEventListener('admin-tenant-change', handler);
+    return () => window.removeEventListener('admin-tenant-change', handler);
+  }, [fetchDashboard]);
 
   const handleDirectorAreaChange = (value: number | null) => {
-    setDirectorAreaId(value)
-    fetchDashboard(value)
-  }
+    setDirectorAreaId(value);
+    fetchDashboard(value);
+  };
 
   // Chart maxes (memoized to avoid recalculation on every render)
-  const maxAreaTotal = useMemo(() => Math.max(...(data?.gastoPorArea ?? []).map((a: any) => a.total), 1), [data?.gastoPorArea])
-  const maxProvTotal = useMemo(() => Math.max(...(data?.topProveedores ?? []).map((p: any) => p.total), 1), [data?.topProveedores])
-  const maxMesTrend = useMemo(() => Math.max(...(data?.tendenciaMensual ?? []).map((m: any) => m.total), 1), [data?.tendenciaMensual])
+  const maxAreaTotal = useMemo(
+    () => Math.max(...(data?.gastoPorArea ?? []).map((a: any) => a.total), 1),
+    [data?.gastoPorArea],
+  );
+  const maxProvTotal = useMemo(
+    () => Math.max(...(data?.topProveedores ?? []).map((p: any) => p.total), 1),
+    [data?.topProveedores],
+  );
+  const maxMesTrend = useMemo(
+    () => Math.max(...(data?.tendenciaMensual ?? []).map((m: any) => m.total), 1),
+    [data?.tendenciaMensual],
+  );
 
-  if (loading) return <DashboardSkeleton />
-  if (!data) return <Empty description="No se pudo cargar el dashboard. Intentá recargar la página." />
+  if (loading) return <DashboardSkeleton />;
+  if (!data)
+    return <Empty description="No se pudo cargar el dashboard. Intentá recargar la página." />;
 
   // Role detection
-  const hasAnalytics = data.gastoPorArea !== undefined
-  const hasSolicitante = data.misSolicitudes !== undefined
-  const hasResponsable = data.pendientesValidar !== undefined
-  const hasDirector = data.pendientesAprobar !== undefined
-  const hasCompras = data.solicitudesAprobadas !== undefined || data.solicitudesEnCompras !== undefined
-  const hasTesoreria = data.pendientesComprar !== undefined
-  const hasAdmin = data.adminPlatform !== undefined
+  const hasAnalytics = data.gastoPorArea !== undefined;
+  const hasSolicitante = data.misSolicitudes !== undefined;
+  const hasResponsable = data.pendientesValidar !== undefined;
+  const hasDirector = data.pendientesAprobar !== undefined;
+  const hasCompras =
+    data.solicitudesAprobadas !== undefined || data.solicitudesEnCompras !== undefined;
+  const hasTesoreria = data.pendientesComprar !== undefined;
+  const hasAdmin = data.adminPlatform !== undefined;
 
   // Determine which analytics charts to show per role
   // Admin sees platform-level metrics, not org-level analytics
-  const showGastoPorArea = (!hasDirector) && hasTesoreria && !hasAdmin
-  const showTendenciaMensual = hasAnalytics && !hasDirector && !hasAdmin
-  const showGastoPorMedioPago = hasCompras || (hasTesoreria && !hasAdmin)
-  const showTopProveedores = hasCompras || (hasTesoreria && !hasAdmin)
-  const showSolicitudesPorEstado = false // now handled per-role in their own sections
-  const showSolicitudesPorUrgencia = false
+  const showGastoPorArea = !hasDirector && hasTesoreria && !hasAdmin;
+  const showTendenciaMensual = hasAnalytics && !hasDirector && !hasAdmin;
+  const showGastoPorMedioPago = hasCompras || (hasTesoreria && !hasAdmin);
+  const showTopProveedores = hasCompras || (hasTesoreria && !hasAdmin);
+  const showSolicitudesPorEstado = false; // now handled per-role in their own sections
+  const showSolicitudesPorUrgencia = false;
 
   // Check if any pending actions exist
-  const hasPendingActions = hasResponsable || hasDirector || hasCompras || hasTesoreria ||
-    (hasSolicitante && ((data.solicitudesDevueltas ?? 0) > 0 || (data.recepcionesPendientes ?? 0) > 0))
+  const hasPendingActions =
+    hasResponsable ||
+    hasDirector ||
+    hasCompras ||
+    hasTesoreria ||
+    (hasSolicitante &&
+      ((data.solicitudesDevueltas ?? 0) > 0 || (data.recepcionesPendientes ?? 0) > 0));
 
   return (
     <div className="page-content">
@@ -363,118 +550,245 @@ export default function DashboardPage() {
       {/* ═══════════════════════════════════════════════════ */}
       {/* ── 2. MIS MÉTRICAS ────────────────────────────── */}
       {/* ═══════════════════════════════════════════════════ */}
-      {(hasSolicitante || hasResponsable || hasCompras || hasTesoreria || hasAdmin || (hasAnalytics && !hasDirector)) && (
-      <div style={{ marginBottom: 28 }}>
-        <SectionTitle>Mis Métricas</SectionTitle>
-        <Row gutter={[16, 16]}>
-          {/* === Gasto Año / Mes (shared by analytics roles, director has its own) === */}
-          {hasAnalytics && !hasDirector && (
-            <>
-              <Col xs={24} sm={12} lg={6}>
-                <StatCard title="Gasto del Año" value={data.gastoAnual} icon={<DollarOutlined />} color="blue" format="money" />
-              </Col>
-              <Col xs={24} sm={12} lg={6}>
-                <StatCard title="Gasto del Mes" value={data.gastoMensual} icon={<DollarOutlined />} color="green" format="money" delay={50} />
-              </Col>
-            </>
-          )}
+      {(hasSolicitante ||
+        hasResponsable ||
+        hasCompras ||
+        hasTesoreria ||
+        hasAdmin ||
+        (hasAnalytics && !hasDirector)) && (
+        <div style={{ marginBottom: 28 }}>
+          <SectionTitle>Mis Métricas</SectionTitle>
+          <Row gutter={[16, 16]}>
+            {/* === Gasto Año / Mes (shared by analytics roles, director has its own) === */}
+            {hasAnalytics && !hasDirector && (
+              <>
+                <Col xs={24} sm={12} lg={6}>
+                  <StatCard
+                    title="Gasto del Año"
+                    value={data.gastoAnual}
+                    icon={<DollarOutlined />}
+                    color="blue"
+                    format="money"
+                  />
+                </Col>
+                <Col xs={24} sm={12} lg={6}>
+                  <StatCard
+                    title="Gasto del Mes"
+                    value={data.gastoMensual}
+                    icon={<DollarOutlined />}
+                    color="green"
+                    format="money"
+                    delay={50}
+                  />
+                </Col>
+              </>
+            )}
 
-          {/* === SOLICITANTE metrics === */}
-          {hasSolicitante && (
-            <>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="En Ejecución" value={data.solicitudesEnEjecucion} icon={<ShoppingCartOutlined />} color="blue" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Este Mes" value={data.solicitudesMesSolicitante} icon={<FileTextOutlined />} color="purple" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Tasa Aprobación" value={data.tasaAprobacion} icon={<PercentageOutlined />} color="green" suffix="%" />
-              </Col>
-            </>
-          )}
+            {/* === SOLICITANTE metrics === */}
+            {hasSolicitante && (
+              <>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="En Ejecución"
+                    value={data.solicitudesEnEjecucion}
+                    icon={<ShoppingCartOutlined />}
+                    color="blue"
+                  />
+                </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="Este Mes"
+                    value={data.solicitudesMesSolicitante}
+                    icon={<FileTextOutlined />}
+                    color="purple"
+                  />
+                </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="Tasa Aprobación"
+                    value={data.tasaAprobacion}
+                    icon={<PercentageOutlined />}
+                    color="green"
+                    suffix="%"
+                  />
+                </Col>
+              </>
+            )}
 
-          {/* === RESPONSABLE metrics (hidden for director) === */}
-          {hasResponsable && !hasDirector && (
-            <>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Área: Este Mes" value={data.solicitudesAreaMes} icon={<FileTextOutlined />} color="blue" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Gasto Área (mes)" value={data.gastoAreaMes} icon={<DollarOutlined />} color="green" format="money" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Gasto Área (año)" value={data.gastoAreaAño} icon={<DollarOutlined />} color="blue" format="money" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Devueltas (área)" value={data.devueltasArea} icon={<ExclamationCircleOutlined />} color={data.devueltasArea > 0 ? 'orange' : 'green'} />
-              </Col>
-            </>
-          )}
+            {/* === RESPONSABLE metrics (hidden for director) === */}
+            {hasResponsable && !hasDirector && (
+              <>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="Área: Este Mes"
+                    value={data.solicitudesAreaMes}
+                    icon={<FileTextOutlined />}
+                    color="blue"
+                  />
+                </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="Gasto Área (mes)"
+                    value={data.gastoAreaMes}
+                    icon={<DollarOutlined />}
+                    color="green"
+                    format="money"
+                  />
+                </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="Gasto Área (año)"
+                    value={data.gastoAreaAño}
+                    icon={<DollarOutlined />}
+                    color="blue"
+                    format="money"
+                  />
+                </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="Devueltas (área)"
+                    value={data.devueltasArea}
+                    icon={<ExclamationCircleOutlined />}
+                    color={data.devueltasArea > 0 ? 'orange' : 'green'}
+                  />
+                </Col>
+              </>
+            )}
 
-          {/* === DIRECTOR metrics are rendered below via DirectorDashboard === */}
+            {/* === DIRECTOR metrics are rendered below via DirectorDashboard === */}
 
-          {/* === COMPRAS metrics === */}
-          {hasCompras && (
-            <>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Aprobadas" value={data.solicitudesAprobadas ?? 0} icon={<CheckCircleOutlined />} color="green" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="En Compras" value={data.solicitudesEnCompras ?? 0} icon={<ShoppingCartOutlined />} color="blue" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Pago Programado" value={data.pagoProgramado} icon={<ClockCircleOutlined />} color="purple" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Tiempo Prom. Pipeline" value={data.tiempoPromedioPipeline} icon={<FieldTimeOutlined />} color="cyan" suffix=" días" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Urgentes Pipeline" value={data.urgentesPipeline} icon={<ThunderboltOutlined />} color={data.urgentesPipeline > 0 ? 'red' : 'green'} />
-              </Col>
-            </>
-          )}
+            {/* === COMPRAS metrics === */}
+            {hasCompras && (
+              <>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="Aprobadas"
+                    value={data.solicitudesAprobadas ?? 0}
+                    icon={<CheckCircleOutlined />}
+                    color="green"
+                  />
+                </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="En Compras"
+                    value={data.solicitudesEnCompras ?? 0}
+                    icon={<ShoppingCartOutlined />}
+                    color="blue"
+                  />
+                </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="Pago Programado"
+                    value={data.pagoProgramado}
+                    icon={<ClockCircleOutlined />}
+                    color="purple"
+                  />
+                </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="Tiempo Prom. Pipeline"
+                    value={data.tiempoPromedioPipeline}
+                    icon={<FieldTimeOutlined />}
+                    color="cyan"
+                    suffix=" días"
+                  />
+                </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="Urgentes Pipeline"
+                    value={data.urgentesPipeline}
+                    icon={<ThunderboltOutlined />}
+                    color={data.urgentesPipeline > 0 ? 'red' : 'green'}
+                  />
+                </Col>
+              </>
+            )}
 
-          {/* === TESORERÍA metrics === */}
-          {hasTesoreria && (
-            <>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Recepciones c/obs" value={data.recepcionesConObs} icon={<WarningOutlined />} color={data.recepcionesConObs > 0 ? 'orange' : 'green'} />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Pagos Próximos (7d)" value={data.pagoProgramadoProximo} icon={<ClockCircleOutlined />} color="orange" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Sin Recepción" value={data.comprasSinRecepcion} icon={<InboxOutlined />} color={data.comprasSinRecepcion > 0 ? 'red' : 'green'} />
-              </Col>
-            </>
-          )}
+            {/* === TESORERÍA metrics === */}
+            {hasTesoreria && (
+              <>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="Recepciones c/obs"
+                    value={data.recepcionesConObs}
+                    icon={<WarningOutlined />}
+                    color={data.recepcionesConObs > 0 ? 'orange' : 'green'}
+                  />
+                </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="Pagos Próximos (7d)"
+                    value={data.pagoProgramadoProximo}
+                    icon={<ClockCircleOutlined />}
+                    color="orange"
+                  />
+                </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="Sin Recepción"
+                    value={data.comprasSinRecepcion}
+                    icon={<InboxOutlined />}
+                    color={data.comprasSinRecepcion > 0 ? 'red' : 'green'}
+                  />
+                </Col>
+              </>
+            )}
 
-          {/* === ADMIN platform metrics (6 key metrics, single row) === */}
-          {hasAdmin && (
-            <>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Orgs Activas" value={data.adminPlatform.orgActivas} icon={<GlobalOutlined />} color="green" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Pendientes Aprob." value={data.adminPlatform.orgPendientes} icon={<ClockCircleOutlined />} color={data.adminPlatform.orgPendientes > 0 ? 'orange' : 'green'} />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Orgs Dormidas (30d)" value={data.adminPlatform.orgsDormidas} icon={<AlertOutlined />} color={data.adminPlatform.orgsDormidas > 0 ? 'orange' : 'green'} />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Usuarios Plataforma" value={data.adminPlatform.totalUsuariosPlataforma} icon={<TeamOutlined />} color="cyan" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Nuevos Usuarios (mes)" value={data.adminPlatform.usuariosNuevosMes} icon={<UserAddOutlined />} color="blue" />
-              </Col>
-              <Col xs={12} sm={8} lg={4}>
-                <MiniStatCard title="Prom. Usuarios/Org" value={data.adminPlatform.promedioUsuariosPorOrg} icon={<TeamOutlined />} color="purple" />
-              </Col>
-            </>
-          )}
-        </Row>
-      </div>
+            {/* === ADMIN platform metrics (6 key metrics, single row) === */}
+            {hasAdmin && (
+              <>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="Orgs Activas"
+                    value={data.adminPlatform.orgActivas}
+                    icon={<GlobalOutlined />}
+                    color="green"
+                  />
+                </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="Pendientes Aprob."
+                    value={data.adminPlatform.orgPendientes}
+                    icon={<ClockCircleOutlined />}
+                    color={data.adminPlatform.orgPendientes > 0 ? 'orange' : 'green'}
+                  />
+                </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="Orgs Dormidas (30d)"
+                    value={data.adminPlatform.orgsDormidas}
+                    icon={<AlertOutlined />}
+                    color={data.adminPlatform.orgsDormidas > 0 ? 'orange' : 'green'}
+                  />
+                </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="Usuarios Plataforma"
+                    value={data.adminPlatform.totalUsuariosPlataforma}
+                    icon={<TeamOutlined />}
+                    color="cyan"
+                  />
+                </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="Nuevos Usuarios (mes)"
+                    value={data.adminPlatform.usuariosNuevosMes}
+                    icon={<UserAddOutlined />}
+                    color="blue"
+                  />
+                </Col>
+                <Col xs={12} sm={8} lg={4}>
+                  <MiniStatCard
+                    title="Prom. Usuarios/Org"
+                    value={data.adminPlatform.promedioUsuariosPorOrg}
+                    icon={<TeamOutlined />}
+                    color="purple"
+                  />
+                </Col>
+              </>
+            )}
+          </Row>
+        </div>
       )}
 
       {/* ═══════════════════════════════════════════════════ */}
@@ -495,13 +809,33 @@ export default function DashboardPage() {
         <div style={{ marginBottom: 28 }}>
           {/* Pending approvals banner */}
           {data.adminPlatform.orgPendientes > 0 && (
-            <Card style={{ borderRadius: 16, marginBottom: 16, background: tokens.adminBannerBg, border: `1px solid ${tokens.adminBannerBorder}` }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Card
+              style={{
+                borderRadius: 16,
+                marginBottom: 16,
+                background: tokens.adminBannerBg,
+                border: `1px solid ${tokens.adminBannerBorder}`,
+              }}
+            >
+              <div
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+              >
                 <Text strong style={{ fontSize: 15, color: tokens.adminBannerText }}>
-                  {data.adminPlatform.orgPendientes} {data.adminPlatform.orgPendientes !== 1 ? 'organizaciones pendientes' : 'organización pendiente'} de aprobación
+                  {data.adminPlatform.orgPendientes}{' '}
+                  {data.adminPlatform.orgPendientes !== 1
+                    ? 'organizaciones pendientes'
+                    : 'organización pendiente'}{' '}
+                  de aprobación
                 </Text>
                 <Link href="/gestion/aprobaciones-org">
-                  <Button type="primary" style={{ background: tokens.adminBannerBtn, borderColor: tokens.adminBannerBtn, fontWeight: 600 }}>
+                  <Button
+                    type="primary"
+                    style={{
+                      background: tokens.adminBannerBtn,
+                      borderColor: tokens.adminBannerBtn,
+                      fontWeight: 600,
+                    }}
+                  >
                     Revisar Aprobaciones
                   </Button>
                 </Link>
@@ -514,9 +848,20 @@ export default function DashboardPage() {
             {data.adminPlatform.orgsTopUso?.length > 0 && (
               <Col xs={24} lg={14}>
                 <Card
-                  title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Organizaciones por Uso</span>}
+                  title={
+                    <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
+                      Organizaciones por Uso
+                    </span>
+                  }
                   style={{ borderRadius: 16 }}
-                  extra={<Link href="/gestion/tenants" style={{ color: tokens.colorPrimary, fontWeight: 600 }}>Ver todas <ArrowRightOutlined /></Link>}
+                  extra={
+                    <Link
+                      href="/gestion/tenants"
+                      style={{ color: tokens.colorPrimary, fontWeight: 600 }}
+                    >
+                      Ver todas <ArrowRightOutlined />
+                    </Link>
+                  }
                 >
                   <Table
                     dataSource={data.adminPlatform.orgsTopUso}
@@ -525,8 +870,22 @@ export default function DashboardPage() {
                     size="small"
                     columns={[
                       { title: 'Organizaci\u00f3n', dataIndex: 'org', ellipsis: true },
-                      { title: 'Usuarios', dataIndex: 'usuarios', width: 90, align: 'center' as const, render: (v: number) => <Tag color={v > 5 ? 'blue' : v > 0 ? 'cyan' : 'default'}>{v}</Tag> },
-                      { title: '\u00daltimo acceso', dataIndex: 'ultimoAcceso', width: 140, render: (v: string | null) => v ? new Date(v).toLocaleDateString('es-AR') : '\u2014' },
+                      {
+                        title: 'Usuarios',
+                        dataIndex: 'usuarios',
+                        width: 90,
+                        align: 'center' as const,
+                        render: (v: number) => (
+                          <Tag color={v > 5 ? 'blue' : v > 0 ? 'cyan' : 'default'}>{v}</Tag>
+                        ),
+                      },
+                      {
+                        title: '\u00daltimo acceso',
+                        dataIndex: 'ultimoAcceso',
+                        width: 140,
+                        render: (v: string | null) =>
+                          v ? new Date(v).toLocaleDateString('es-AR') : '\u2014',
+                      },
                     ]}
                   />
                 </Card>
@@ -536,13 +895,24 @@ export default function DashboardPage() {
             {/* Growth charts */}
             <Col xs={24} lg={10}>
               {data.adminPlatform.crecimientoOrgs?.length > 0 && (
-                <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Crecimiento Orgs (6 meses)</span>} style={{ borderRadius: 16, marginBottom: 16 }} styles={{ body: { padding: '16px 24px' } }}>
+                <Card
+                  title={
+                    <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
+                      Crecimiento Orgs (6 meses)
+                    </span>
+                  }
+                  style={{ borderRadius: 16, marginBottom: 16 }}
+                  styles={{ body: { padding: '16px 24px' } }}
+                >
                   {data.adminPlatform.crecimientoOrgs.map((item: any, i: number) => (
                     <BarChartRow
                       key={item.mes}
                       label={item.mes}
                       value={item.cantidad}
-                      maxValue={Math.max(...data.adminPlatform.crecimientoOrgs.map((r: any) => r.cantidad), 1)}
+                      maxValue={Math.max(
+                        ...data.adminPlatform.crecimientoOrgs.map((r: any) => r.cantidad),
+                        1,
+                      )}
                       color={tokens.chartPrimaryGradient}
                       subtext={`${item.cantidad} org${item.cantidad !== 1 ? 's' : ''}`}
                       index={i}
@@ -552,13 +922,24 @@ export default function DashboardPage() {
                 </Card>
               )}
               {data.adminPlatform.crecimientoUsuarios?.length > 0 && (
-                <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Crecimiento Usuarios (6 meses)</span>} style={{ borderRadius: 16 }} styles={{ body: { padding: '16px 24px' } }}>
+                <Card
+                  title={
+                    <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
+                      Crecimiento Usuarios (6 meses)
+                    </span>
+                  }
+                  style={{ borderRadius: 16 }}
+                  styles={{ body: { padding: '16px 24px' } }}
+                >
                   {data.adminPlatform.crecimientoUsuarios.map((item: any, i: number) => (
                     <BarChartRow
                       key={item.mes}
                       label={item.mes}
                       value={item.cantidad}
-                      maxValue={Math.max(...data.adminPlatform.crecimientoUsuarios.map((r: any) => r.cantidad), 1)}
+                      maxValue={Math.max(
+                        ...data.adminPlatform.crecimientoUsuarios.map((r: any) => r.cantidad),
+                        1,
+                      )}
                       color={tokens.chartSecondaryGradient}
                       subtext={`${item.cantidad} usuario${item.cantidad !== 1 ? 's' : ''}`}
                       index={i}
@@ -581,17 +962,37 @@ export default function DashboardPage() {
         <div style={{ marginBottom: 28 }}>
           {data.misSolicitudesPorEstado?.length > 0 && (
             <Card
-              title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Mis Solicitudes por Estado</span>}
+              title={
+                <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
+                  Mis Solicitudes por Estado
+                </span>
+              }
               style={{ borderRadius: 16, marginBottom: 16 }}
               styles={{ body: { padding: '12px 20px' } }}
             >
               <EstadoTags data={data.misSolicitudesPorEstado} />
             </Card>
           )}
-          <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Mis Solicitudes Recientes</span>} style={{ borderRadius: 16 }} styles={{ body: { padding: '16px 20px' } }}>
+          <Card
+            title={
+              <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
+                Mis Solicitudes Recientes
+              </span>
+            }
+            style={{ borderRadius: 16 }}
+            styles={{ body: { padding: '16px 20px' } }}
+          >
             {data.misSolicitudes.length === 0 ? (
               <div className="empty-state">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 48, height: 48, color: tokens.textMuted }}>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ width: 48, height: 48, color: tokens.textMuted }}
+                >
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                   <polyline points="14 2 14 8 20 8" />
                   <line x1="16" y1="13" x2="8" y2="13" />
@@ -602,17 +1003,36 @@ export default function DashboardPage() {
             ) : (
               <div>
                 {data.misSolicitudes.map((sol: any, i: number) => (
-                  <Link key={sol.id} href={`/solicitudes/${sol.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <Link
+                    key={sol.id}
+                    href={`/solicitudes/${sol.id}`}
+                    style={{ textDecoration: 'none', color: 'inherit' }}
+                  >
                     <div
                       className={`solicitud-card urgencia-${sol.urgencia}`}
                       style={{ animation: `staggerIn 0.3s ease-out ${i * 60}ms both` }}
                     >
                       <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                          <Text style={{ fontSize: 13, color: tokens.colorPrimary, fontWeight: 600 }}>{sol.numero}</Text>
-                          <Tag color={ESTADO_COLOR[sol.estado]} style={{ margin: 0 }}>{ESTADO_LABEL[sol.estado] ?? sol.estado}</Tag>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            marginBottom: 4,
+                          }}
+                        >
+                          <Text
+                            style={{ fontSize: 13, color: tokens.colorPrimary, fontWeight: 600 }}
+                          >
+                            {sol.numero}
+                          </Text>
+                          <Tag color={ESTADO_COLOR[sol.estado]} style={{ margin: 0 }}>
+                            {ESTADO_LABEL[sol.estado] ?? sol.estado}
+                          </Tag>
                         </div>
-                        <Text style={{ fontWeight: 500, color: tokens.textPrimary }}>{sol.titulo}</Text>
+                        <Text style={{ fontWeight: 500, color: tokens.textPrimary }}>
+                          {sol.titulo}
+                        </Text>
                       </div>
                       <ArrowRightOutlined style={{ color: tokens.textMuted, fontSize: 14 }} />
                     </div>
@@ -629,25 +1049,62 @@ export default function DashboardPage() {
         <div style={{ marginBottom: 28 }}>
           {data.solicitudesAreaPorEstado?.length > 0 && (
             <Card
-              title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Solicitudes del Área por Estado</span>}
+              title={
+                <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
+                  Solicitudes del Área por Estado
+                </span>
+              }
               style={{ borderRadius: 16, marginBottom: 16 }}
               styles={{ body: { padding: '12px 20px' } }}
             >
               <EstadoTags data={data.solicitudesAreaPorEstado} />
             </Card>
           )}
-          <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Solicitudes del Área</span>} style={{ borderRadius: 16 }}>
-            {data.solicitudesArea.length === 0 ? <Empty description="Sin solicitudes en el área" image={Empty.PRESENTED_IMAGE_SIMPLE} /> : (
+          <Card
+            title={
+              <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
+                Solicitudes del Área
+              </span>
+            }
+            style={{ borderRadius: 16 }}
+          >
+            {data.solicitudesArea.length === 0 ? (
+              <Empty
+                description="Sin solicitudes en el área"
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              />
+            ) : (
               <Table
                 dataSource={data.solicitudesArea}
                 rowKey="id"
                 pagination={false}
                 size="small"
                 columns={[
-                  { title: 'Número', dataIndex: 'numero', render: (v: string, r: any) => <Link href={`/solicitudes/${r.id}`} style={{ color: tokens.colorPrimary, fontWeight: 600 }}>{v}</Link> },
+                  {
+                    title: 'Número',
+                    dataIndex: 'numero',
+                    render: (v: string, r: any) => (
+                      <Link
+                        href={`/solicitudes/${r.id}`}
+                        style={{ color: tokens.colorPrimary, fontWeight: 600 }}
+                      >
+                        {v}
+                      </Link>
+                    ),
+                  },
                   { title: 'Título', dataIndex: 'titulo', ellipsis: true },
-                  { title: 'Estado', dataIndex: 'estado', render: (v: string) => <Tag color={ESTADO_COLOR[v]}>{ESTADO_LABEL[v] ?? v}</Tag> },
-                  { title: 'Urgencia', dataIndex: 'urgencia', render: (v: string) => <Tag color={URGENCIA_COLOR[v]}>{v}</Tag> },
+                  {
+                    title: 'Estado',
+                    dataIndex: 'estado',
+                    render: (v: string) => (
+                      <Tag color={ESTADO_COLOR[v]}>{ESTADO_LABEL[v] ?? v}</Tag>
+                    ),
+                  },
+                  {
+                    title: 'Urgencia',
+                    dataIndex: 'urgencia',
+                    render: (v: string) => <Tag color={URGENCIA_COLOR[v]}>{v}</Tag>,
+                  },
                 ]}
               />
             )}
@@ -658,9 +1115,15 @@ export default function DashboardPage() {
       {/* Compras: Pipeline */}
       {hasCompras && (
         <Card
-          title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Pipeline de Compras</span>}
+          title={
+            <span style={{ fontWeight: 700, color: tokens.textPrimary }}>Pipeline de Compras</span>
+          }
           style={{ borderRadius: 16, marginBottom: 28 }}
-          extra={<Link href="/gestion-compras" style={{ color: tokens.colorPrimary, fontWeight: 600 }}>Ver todo <ArrowRightOutlined /></Link>}
+          extra={
+            <Link href="/gestion-compras" style={{ color: tokens.colorPrimary, fontWeight: 600 }}>
+              Ver todo <ArrowRightOutlined />
+            </Link>
+          }
         >
           {data.pipeline?.length > 0 ? (
             <Table
@@ -669,31 +1132,85 @@ export default function DashboardPage() {
               pagination={false}
               size="small"
               columns={[
-                { title: 'N°', dataIndex: 'numero', width: 120, render: (v: string, r: any) => <Link href={`/solicitudes/${r.id}`} style={{ color: tokens.colorPrimary, fontWeight: 600 }}>{v}</Link> },
+                {
+                  title: 'N°',
+                  dataIndex: 'numero',
+                  width: 120,
+                  render: (v: string, r: any) => (
+                    <Link
+                      href={`/solicitudes/${r.id}`}
+                      style={{ color: tokens.colorPrimary, fontWeight: 600 }}
+                    >
+                      {v}
+                    </Link>
+                  ),
+                },
                 { title: 'Título', dataIndex: 'titulo', ellipsis: true },
-                { title: 'Estado', dataIndex: 'estado', width: 140, render: (v: string) => <Tag color={ESTADO_COLOR[v] ?? 'default'}>{ESTADO_LABEL[v] ?? v}</Tag> },
-                { title: 'Pago', dataIndex: 'dia_pago_programado', width: 110, render: (v: string | null) => v ? new Date(v).toLocaleDateString('es-AR') : '—' },
+                {
+                  title: 'Estado',
+                  dataIndex: 'estado',
+                  width: 140,
+                  render: (v: string) => (
+                    <Tag color={ESTADO_COLOR[v] ?? 'default'}>{ESTADO_LABEL[v] ?? v}</Tag>
+                  ),
+                },
+                {
+                  title: 'Pago',
+                  dataIndex: 'dia_pago_programado',
+                  width: 110,
+                  render: (v: string | null) => (v ? new Date(v).toLocaleDateString('es-AR') : '—'),
+                },
               ]}
             />
           ) : (
-            <Empty description="Sin solicitudes en el pipeline" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            <Empty
+              description="Sin solicitudes en el pipeline"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            />
           )}
         </Card>
       )}
 
       {/* Tesorería: Recent purchases */}
       {hasTesoreria && data.ultimasCompras?.length > 0 && (
-        <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Últimas Compras Registradas</span>} style={{ borderRadius: 16, marginBottom: 28 }}>
+        <Card
+          title={
+            <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
+              Últimas Compras Registradas
+            </span>
+          }
+          style={{ borderRadius: 16, marginBottom: 28 }}
+        >
           <Table
             dataSource={data.ultimasCompras}
             rowKey="id"
             pagination={false}
             size="small"
             columns={[
-              { title: 'Solicitud', dataIndex: ['solicitud', 'numero'], render: (v: string, r: any) => <Link href={`/solicitudes/${r.solicitud_id}`} style={{ color: tokens.colorPrimary, fontWeight: 600 }}>{v}</Link> },
+              {
+                title: 'Solicitud',
+                dataIndex: ['solicitud', 'numero'],
+                render: (v: string, r: any) => (
+                  <Link
+                    href={`/solicitudes/${r.solicitud_id}`}
+                    style={{ color: tokens.colorPrimary, fontWeight: 600 }}
+                  >
+                    {v}
+                  </Link>
+                ),
+              },
               { title: 'Proveedor', dataIndex: 'proveedor_nombre', ellipsis: true },
-              { title: 'Monto', dataIndex: 'monto_total', align: 'right' as const, render: (v: any) => <Text strong>{formatMoney(Number(v))}</Text> },
-              { title: 'Medio', dataIndex: 'medio_pago', render: (v: string) => MEDIO_PAGO_LABEL[v] ?? v },
+              {
+                title: 'Monto',
+                dataIndex: 'monto_total',
+                align: 'right' as const,
+                render: (v: any) => <Text strong>{formatMoney(Number(v))}</Text>,
+              },
+              {
+                title: 'Medio',
+                dataIndex: 'medio_pago',
+                render: (v: string) => MEDIO_PAGO_LABEL[v] ?? v,
+              },
             ]}
           />
         </Card>
@@ -709,8 +1226,18 @@ export default function DashboardPage() {
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
               {showGastoPorArea && (
                 <Col xs={24} lg={12}>
-                  <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Gasto por Área</span>} style={{ borderRadius: 16 }} styles={{ body: { padding: '16px 24px' } }}>
-                    {data.gastoPorArea.length === 0 ? <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} /> : (
+                  <Card
+                    title={
+                      <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
+                        Gasto por Área
+                      </span>
+                    }
+                    style={{ borderRadius: 16 }}
+                    styles={{ body: { padding: '16px 24px' } }}
+                  >
+                    {data.gastoPorArea.length === 0 ? (
+                      <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                    ) : (
                       <div>
                         {data.gastoPorArea.map((item: any, i: number) => (
                           <BarChartRow
@@ -730,8 +1257,18 @@ export default function DashboardPage() {
               )}
               {showTendenciaMensual && (
                 <Col xs={24} lg={12}>
-                  <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Tendencia Mensual (6 meses)</span>} style={{ borderRadius: 16 }} styles={{ body: { padding: '16px 24px' } }}>
-                    {data.tendenciaMensual.length === 0 ? <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} /> : (
+                  <Card
+                    title={
+                      <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
+                        Tendencia Mensual (6 meses)
+                      </span>
+                    }
+                    style={{ borderRadius: 16 }}
+                    styles={{ body: { padding: '16px 24px' } }}
+                  >
+                    {data.tendenciaMensual.length === 0 ? (
+                      <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                    ) : (
                       <div>
                         {data.tendenciaMensual.map((item: any, i: number) => (
                           <BarChartRow
@@ -757,16 +1294,34 @@ export default function DashboardPage() {
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
               {showGastoPorMedioPago && (
                 <Col xs={24} lg={12}>
-                  <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Gasto por Medio de Pago</span>} style={{ borderRadius: 16 }}>
-                    {data.gastoPorMedioPago.length === 0 ? <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} /> : (
+                  <Card
+                    title={
+                      <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
+                        Gasto por Medio de Pago
+                      </span>
+                    }
+                    style={{ borderRadius: 16 }}
+                  >
+                    {data.gastoPorMedioPago.length === 0 ? (
+                      <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                    ) : (
                       <Table
                         dataSource={data.gastoPorMedioPago}
                         rowKey="medioPago"
                         pagination={false}
                         size="small"
                         columns={[
-                          { title: 'Medio', dataIndex: 'medioPago', render: (v: string) => MEDIO_PAGO_LABEL[v] ?? v },
-                          { title: 'Total', dataIndex: 'total', align: 'right' as const, render: (v: number) => <Text strong>{formatMoney(v)}</Text> },
+                          {
+                            title: 'Medio',
+                            dataIndex: 'medioPago',
+                            render: (v: string) => MEDIO_PAGO_LABEL[v] ?? v,
+                          },
+                          {
+                            title: 'Total',
+                            dataIndex: 'total',
+                            align: 'right' as const,
+                            render: (v: number) => <Text strong>{formatMoney(v)}</Text>,
+                          },
                           { title: 'Compras', dataIndex: 'cantidad', align: 'center' as const },
                         ]}
                       />
@@ -776,25 +1331,70 @@ export default function DashboardPage() {
               )}
               {showTopProveedores && (
                 <Col xs={24} lg={12}>
-                  <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Top 5 Proveedores</span>} style={{ borderRadius: 16 }} styles={{ body: { padding: '16px 24px' } }}>
-                    {data.topProveedores.length === 0 ? <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} /> : (
+                  <Card
+                    title={
+                      <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
+                        Top 5 Proveedores
+                      </span>
+                    }
+                    style={{ borderRadius: 16 }}
+                    styles={{ body: { padding: '16px 24px' } }}
+                  >
+                    {data.topProveedores.length === 0 ? (
+                      <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                    ) : (
                       <div>
                         {data.topProveedores.map((item: any, idx: number) => (
-                          <div key={item.proveedor} style={{ padding: '12px 0', animation: `staggerIn 0.3s ease-out ${idx * 80}ms both` }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <div
+                            key={item.proveedor}
+                            style={{
+                              padding: '12px 0',
+                              animation: `staggerIn 0.3s ease-out ${idx * 80}ms both`,
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                marginBottom: 6,
+                              }}
+                            >
                               <Text>
-                                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 6, background: tokens.rankBg, fontSize: 11, fontWeight: 700, color: tokens.rankText, marginRight: 8 }}>{idx + 1}</span>
+                                <span
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: 22,
+                                    height: 22,
+                                    borderRadius: 6,
+                                    background: tokens.rankBg,
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    color: tokens.rankText,
+                                    marginRight: 8,
+                                  }}
+                                >
+                                  {idx + 1}
+                                </span>
                                 {item.proveedor}
                               </Text>
-                              <Text strong style={{ color: tokens.textPrimary }}>{formatMoney(item.total)}</Text>
+                              <Text strong style={{ color: tokens.textPrimary }}>
+                                {formatMoney(item.total)}
+                              </Text>
                             </div>
                             <Progress
                               percent={Math.round((item.total / maxProvTotal) * 100)}
                               showInfo={false}
                               size="small"
-                              strokeColor={{ from: tokens.progressStrokeFrom, to: tokens.progressStrokeTo }}
+                              strokeColor={{
+                                from: tokens.progressStrokeFrom,
+                                to: tokens.progressStrokeTo,
+                              }}
                             />
-                            <Text type="secondary" style={{ fontSize: 11 }}>{item.cantidad} compra{item.cantidad !== 1 ? 's' : ''}</Text>
+                            <Text type="secondary" style={{ fontSize: 11 }}>
+                              {item.cantidad} compra{item.cantidad !== 1 ? 's' : ''}
+                            </Text>
                           </div>
                         ))}
                       </div>
@@ -810,8 +1410,17 @@ export default function DashboardPage() {
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
               {showSolicitudesPorEstado && (
                 <Col xs={24} lg={showSolicitudesPorUrgencia ? 12 : 24}>
-                  <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Solicitudes por Estado</span>} style={{ borderRadius: 16 }}>
-                    {data.solicitudesPorEstado.length === 0 ? <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} /> : (
+                  <Card
+                    title={
+                      <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
+                        Solicitudes por Estado
+                      </span>
+                    }
+                    style={{ borderRadius: 16 }}
+                  >
+                    {data.solicitudesPorEstado.length === 0 ? (
+                      <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                    ) : (
                       <EstadoTags data={data.solicitudesPorEstado} />
                     )}
                   </Card>
@@ -819,12 +1428,26 @@ export default function DashboardPage() {
               )}
               {showSolicitudesPorUrgencia && (
                 <Col xs={24} lg={showSolicitudesPorEstado ? 12 : 24}>
-                  <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Solicitudes por Urgencia (año)</span>} style={{ borderRadius: 16 }}>
-                    {data.solicitudesPorUrgencia.length === 0 ? <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} /> : (
+                  <Card
+                    title={
+                      <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
+                        Solicitudes por Urgencia (año)
+                      </span>
+                    }
+                    style={{ borderRadius: 16 }}
+                  >
+                    {data.solicitudesPorUrgencia.length === 0 ? (
+                      <Empty description="Sin datos" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                    ) : (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '8px 0' }}>
                         {data.solicitudesPorUrgencia.map((item: any) => (
-                          <Tag key={item.urgencia} color={URGENCIA_COLOR[item.urgencia] ?? 'default'} style={{ fontSize: 13, padding: '4px 14px', margin: 0 }}>
-                            {item.urgencia.charAt(0).toUpperCase() + item.urgencia.slice(1)}: <strong>{item.cantidad}</strong>
+                          <Tag
+                            key={item.urgencia}
+                            color={URGENCIA_COLOR[item.urgencia] ?? 'default'}
+                            style={{ fontSize: 13, padding: '4px 14px', margin: 0 }}
+                          >
+                            {item.urgencia.charAt(0).toUpperCase() + item.urgencia.slice(1)}:{' '}
+                            <strong>{item.cantidad}</strong>
                           </Tag>
                         ))}
                       </div>
@@ -837,5 +1460,5 @@ export default function DashboardPage() {
         </>
       )}
     </div>
-  )
+  );
 }

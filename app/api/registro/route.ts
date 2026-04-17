@@ -16,7 +16,12 @@ export async function POST(request: NextRequest) {
     const rateLimit = await checkRateLimitDb(`registro:${ip}`, 3, 3_600_000);
     if (!rateLimit.allowed) {
       return Response.json(
-        { error: { code: 'RATE_LIMITED', message: 'Demasiados intentos. Intentá de nuevo más tarde.' } },
+        {
+          error: {
+            code: 'RATE_LIMITED',
+            message: 'Demasiados intentos. Intentá de nuevo más tarde.',
+          },
+        },
         { status: 429 },
       );
     }
@@ -25,7 +30,16 @@ export async function POST(request: NextRequest) {
     const result = registroSchema.safeParse(body);
     if (!result.success) {
       return Response.json(
-        { error: { code: 'VALIDATION_ERROR', message: 'Datos inválidos', details: result.error.issues.map(i => ({ field: i.path.join('.'), message: i.message })) } },
+        {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Datos inválidos',
+            details: result.error.issues.map((i) => ({
+              field: i.path.join('.'),
+              message: i.message,
+            })),
+          },
+        },
         { status: 400 },
       );
     }
@@ -47,7 +61,13 @@ export async function POST(request: NextRequest) {
     });
     if (existingPending) {
       return Response.json(
-        { error: { code: 'CONFLICT', message: 'Ya hay un registro pendiente de verificación para este email. Revisá tu bandeja de entrada.' } },
+        {
+          error: {
+            code: 'CONFLICT',
+            message:
+              'Ya hay un registro pendiente de verificación para este email. Revisá tu bandeja de entrada.',
+          },
+        },
         { status: 409 },
       );
     }
@@ -81,9 +101,15 @@ export async function POST(request: NextRequest) {
       `,
     });
 
-    return Response.json({ message: 'Te enviamos un email de verificación. Revisá tu bandeja de entrada.' }, { status: 201 });
+    return Response.json(
+      { message: 'Te enviamos un email de verificación. Revisá tu bandeja de entrada.' },
+      { status: 201 },
+    );
   } catch (error) {
     logApiError('/api/registro', 'POST', error);
-    return Response.json({ error: { code: 'INTERNAL', message: 'Error interno del servidor' } }, { status: 500 });
+    return Response.json(
+      { error: { code: 'INTERNAL', message: 'Error interno del servidor' } },
+      { status: 500 },
+    );
   }
 }

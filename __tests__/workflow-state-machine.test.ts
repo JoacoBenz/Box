@@ -53,7 +53,7 @@ const TRANSITIONS: Transition[] = [
   {
     action: 'aprobar',
     from: ['validada'], // also 'enviada' when skipValidacion=true
-    to: (ctx) => ctx.hasComprasUsers ? 'en_compras' : 'aprobada',
+    to: (ctx) => (ctx.hasComprasUsers ? 'en_compras' : 'aprobada'),
     requiredRoles: ['director'],
     segregation: 'aprobar',
     endpoint: '/api/solicitudes/[id]/aprobar',
@@ -136,16 +136,27 @@ const TRANSITIONS: Transition[] = [
 
 // ─── All possible states ──────────────────────────────────────────────────────
 const ALL_STATES: EstadoSolicitud[] = [
-  'borrador', 'enviada', 'devuelta_resp', 'validada', 'devuelta_dir',
-  'aprobada', 'rechazada', 'abonada', 'recibida', 'recibida_con_obs',
-  'en_compras', 'pago_programado', 'anulada', 'cerrada',
+  'borrador',
+  'enviada',
+  'devuelta_resp',
+  'validada',
+  'devuelta_dir',
+  'aprobada',
+  'rechazada',
+  'abonada',
+  'recibida',
+  'recibida_con_obs',
+  'en_compras',
+  'pago_programado',
+  'anulada',
+  'cerrada',
 ];
 
 // Terminal states (no outgoing transitions)
 const TERMINAL_STATES: EstadoSolicitud[] = ['rechazada', 'anulada', 'cerrada'];
 
 // States that should have outgoing transitions
-const NON_TERMINAL_STATES = ALL_STATES.filter(s => !TERMINAL_STATES.includes(s));
+const NON_TERMINAL_STATES = ALL_STATES.filter((s) => !TERMINAL_STATES.includes(s));
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
@@ -159,7 +170,7 @@ describe('Workflow State Machine - Transition Definitions', () => {
     }
 
     const statesWithoutTransitions = NON_TERMINAL_STATES.filter(
-      s => !statesWithTransitions.has(s)
+      (s) => !statesWithTransitions.has(s),
     );
 
     // DOCUMENTS A BUG: 'recibida' has no outgoing transition
@@ -177,8 +188,12 @@ describe('Workflow State Machine - Transition Definitions', () => {
 
   it('all transition target states are valid states', () => {
     const defaultCtx: TransitionContext = {
-      hasComprasUsers: false, skipValidacion: false,
-      conforme: true, hasItems: false, allItemsReceived: false, hasProblems: false,
+      hasComprasUsers: false,
+      skipValidacion: false,
+      conforme: true,
+      hasItems: false,
+      allItemsReceived: false,
+      hasProblems: false,
     };
     for (const t of TRANSITIONS) {
       const target = typeof t.to === 'function' ? t.to(defaultCtx) : t.to;
@@ -199,7 +214,7 @@ describe('Workflow State Machine - Happy Path (Flujo Normal)', () => {
     ];
 
     for (const step of steps) {
-      const transition = TRANSITIONS.find(t => t.action === step.action);
+      const transition = TRANSITIONS.find((t) => t.action === step.action);
       expect(transition, `Missing transition for action: ${step.action}`).toBeDefined();
       expect(transition!.from).toContain(step.state);
     }
@@ -216,7 +231,7 @@ describe('Workflow State Machine - Happy Path (Flujo Normal)', () => {
     ];
 
     for (const step of steps) {
-      const transition = TRANSITIONS.find(t => t.action === step.action);
+      const transition = TRANSITIONS.find((t) => t.action === step.action);
       expect(transition, `Missing transition for action: ${step.action}`).toBeDefined();
       expect(transition!.from).toContain(step.state);
     }
@@ -225,7 +240,7 @@ describe('Workflow State Machine - Happy Path (Flujo Normal)', () => {
   it('Path 3: Skip validación (enviada → aprobada directly by director)', () => {
     // When tenant config has requiere_validacion_responsable = false
     // The aprobar endpoint accepts 'enviada' state
-    const aprobar = TRANSITIONS.find(t => t.action === 'aprobar');
+    const aprobar = TRANSITIONS.find((t) => t.action === 'aprobar');
     expect(aprobar).toBeDefined();
     // Current code allows 'validada' and 'enviada' (when skipValidacion)
     // But the transition definition only has 'validada'
@@ -236,32 +251,32 @@ describe('Workflow State Machine - Happy Path (Flujo Normal)', () => {
 
 describe('Workflow State Machine - Devolución Paths', () => {
   it('devolver por responsable: enviada → devuelta_resp → (edit) → enviada', () => {
-    const devolver = TRANSITIONS.find(t => t.action === 'devolver (responsable)');
+    const devolver = TRANSITIONS.find((t) => t.action === 'devolver (responsable)');
     expect(devolver!.from).toContain('enviada');
     expect(devolver!.to).toBe('devuelta_resp');
 
-    const enviar = TRANSITIONS.find(t => t.action === 'enviar');
+    const enviar = TRANSITIONS.find((t) => t.action === 'enviar');
     expect(enviar!.from).toContain('devuelta_resp');
   });
 
   it('devolver por director: validada → devuelta_dir → (edit) → enviada', () => {
-    const devolver = TRANSITIONS.find(t => t.action === 'devolver (director)');
+    const devolver = TRANSITIONS.find((t) => t.action === 'devolver (director)');
     expect(devolver!.from).toContain('validada');
     expect(devolver!.to).toBe('devuelta_dir');
 
-    const enviar = TRANSITIONS.find(t => t.action === 'enviar');
+    const enviar = TRANSITIONS.find((t) => t.action === 'enviar');
     expect(enviar!.from).toContain('devuelta_dir');
   });
 
   it('devuelta_dir can be re-validated (skip re-sending)', () => {
-    const validar = TRANSITIONS.find(t => t.action === 'validar');
+    const validar = TRANSITIONS.find((t) => t.action === 'validar');
     expect(validar!.from).toContain('devuelta_dir');
   });
 });
 
 describe('Workflow State Machine - Rechazo y Anulación', () => {
   it('rechazar: validada → rechazada', () => {
-    const rechazar = TRANSITIONS.find(t => t.action === 'rechazar');
+    const rechazar = TRANSITIONS.find((t) => t.action === 'rechazar');
     expect(rechazar!.from).toContain('validada');
   });
 
@@ -269,29 +284,29 @@ describe('Workflow State Machine - Rechazo y Anulación', () => {
     // When validation is skipped, solicitudes go from enviada → aprobada
     // But they CANNOT go from enviada → rechazada
     // This is an asymmetry bug
-    const rechazar = TRANSITIONS.find(t => t.action === 'rechazar');
+    const rechazar = TRANSITIONS.find((t) => t.action === 'rechazar');
     expect(rechazar!.from).not.toContain('enviada');
   });
 
   it('anular accepts multiple states', () => {
-    const anular = TRANSITIONS.find(t => t.action === 'anular');
+    const anular = TRANSITIONS.find((t) => t.action === 'anular');
     expect(anular!.from).toEqual(
-      expect.arrayContaining(['enviada', 'validada', 'aprobada', 'en_compras', 'pago_programado'])
+      expect.arrayContaining(['enviada', 'validada', 'aprobada', 'en_compras', 'pago_programado']),
     );
   });
 
   it('anular does NOT accept borrador (correct: user should just delete)', () => {
-    const anular = TRANSITIONS.find(t => t.action === 'anular');
+    const anular = TRANSITIONS.find((t) => t.action === 'anular');
     expect(anular!.from).not.toContain('borrador');
   });
 
   it('anular does NOT accept abonada (correct: already purchased)', () => {
-    const anular = TRANSITIONS.find(t => t.action === 'anular');
+    const anular = TRANSITIONS.find((t) => t.action === 'anular');
     expect(anular!.from).not.toContain('abonada');
   });
 
   it('anular does NOT accept terminal states', () => {
-    const anular = TRANSITIONS.find(t => t.action === 'anular');
+    const anular = TRANSITIONS.find((t) => t.action === 'anular');
     expect(anular!.from).not.toContain('cerrada');
     expect(anular!.from).not.toContain('rechazada');
     expect(anular!.from).not.toContain('anulada');
@@ -300,10 +315,14 @@ describe('Workflow State Machine - Rechazo y Anulación', () => {
 
 describe('Workflow State Machine - Recepción', () => {
   it('recepción conforme sin items → cerrada', () => {
-    const recepcion = TRANSITIONS.find(t => t.action === 'registrar_recepcion');
+    const recepcion = TRANSITIONS.find((t) => t.action === 'registrar_recepcion');
     const ctx: TransitionContext = {
-      hasComprasUsers: false, skipValidacion: false,
-      conforme: true, hasItems: false, allItemsReceived: false, hasProblems: false,
+      hasComprasUsers: false,
+      skipValidacion: false,
+      conforme: true,
+      hasItems: false,
+      allItemsReceived: false,
+      hasProblems: false,
     };
     const target = (recepcion!.to as (ctx: TransitionContext) => EstadoSolicitud)(ctx);
     // Current code: conforme without items → 'cerrada' directly
@@ -312,40 +331,56 @@ describe('Workflow State Machine - Recepción', () => {
   });
 
   it('recepción no conforme sin items → recibida_con_obs', () => {
-    const recepcion = TRANSITIONS.find(t => t.action === 'registrar_recepcion');
+    const recepcion = TRANSITIONS.find((t) => t.action === 'registrar_recepcion');
     const ctx: TransitionContext = {
-      hasComprasUsers: false, skipValidacion: false,
-      conforme: false, hasItems: false, allItemsReceived: false, hasProblems: false,
+      hasComprasUsers: false,
+      skipValidacion: false,
+      conforme: false,
+      hasItems: false,
+      allItemsReceived: false,
+      hasProblems: false,
     };
     const target = (recepcion!.to as (ctx: TransitionContext) => EstadoSolicitud)(ctx);
     expect(target).toBe('recibida_con_obs');
   });
 
   it('recepción con items - todos recibidos sin problemas → recibida', () => {
-    const recepcion = TRANSITIONS.find(t => t.action === 'registrar_recepcion');
+    const recepcion = TRANSITIONS.find((t) => t.action === 'registrar_recepcion');
     const ctx: TransitionContext = {
-      hasComprasUsers: false, skipValidacion: false,
-      conforme: true, hasItems: true, allItemsReceived: true, hasProblems: false,
+      hasComprasUsers: false,
+      skipValidacion: false,
+      conforme: true,
+      hasItems: true,
+      allItemsReceived: true,
+      hasProblems: false,
     };
     const target = (recepcion!.to as (ctx: TransitionContext) => EstadoSolicitud)(ctx);
     expect(target).toBe('recibida');
   });
 
   it('recepción con items - todos recibidos con problemas → recibida_con_obs', () => {
-    const recepcion = TRANSITIONS.find(t => t.action === 'registrar_recepcion');
+    const recepcion = TRANSITIONS.find((t) => t.action === 'registrar_recepcion');
     const ctx: TransitionContext = {
-      hasComprasUsers: false, skipValidacion: false,
-      conforme: false, hasItems: true, allItemsReceived: true, hasProblems: true,
+      hasComprasUsers: false,
+      skipValidacion: false,
+      conforme: false,
+      hasItems: true,
+      allItemsReceived: true,
+      hasProblems: true,
     };
     const target = (recepcion!.to as (ctx: TransitionContext) => EstadoSolicitud)(ctx);
     expect(target).toBe('recibida_con_obs');
   });
 
   it('recepción parcial (no todos los items) → permanece abonada', () => {
-    const recepcion = TRANSITIONS.find(t => t.action === 'registrar_recepcion');
+    const recepcion = TRANSITIONS.find((t) => t.action === 'registrar_recepcion');
     const ctx: TransitionContext = {
-      hasComprasUsers: false, skipValidacion: false,
-      conforme: true, hasItems: true, allItemsReceived: false, hasProblems: false,
+      hasComprasUsers: false,
+      skipValidacion: false,
+      conforme: true,
+      hasItems: true,
+      allItemsReceived: false,
+      hasProblems: false,
     };
     const target = (recepcion!.to as (ctx: TransitionContext) => EstadoSolicitud)(ctx);
     expect(target).toBe('abonada');
@@ -354,100 +389,102 @@ describe('Workflow State Machine - Recepción', () => {
 
 describe('Workflow State Machine - Cierre', () => {
   it('cerrar: recibida_con_obs → cerrada', () => {
-    const cerrar = TRANSITIONS.find(t => t.action === 'cerrar');
+    const cerrar = TRANSITIONS.find((t) => t.action === 'cerrar');
     expect(cerrar!.from).toContain('recibida_con_obs');
   });
 
   it('BUG: cerrar does NOT accept recibida', () => {
     // A solicitud in 'recibida' state (clean reception with items) has NO way to move to 'cerrada'
     // The cerrar endpoint only accepts 'recibida_con_obs'
-    const cerrar = TRANSITIONS.find(t => t.action === 'cerrar');
+    const cerrar = TRANSITIONS.find((t) => t.action === 'cerrar');
     expect(cerrar!.from).not.toContain('recibida');
   });
 
   it('BUG: recibida is a dead-end state', () => {
     // No action can transition FROM 'recibida' to any other state
-    const transitionsFromRecibida = TRANSITIONS.filter(t => t.from.includes('recibida'));
+    const transitionsFromRecibida = TRANSITIONS.filter((t) => t.from.includes('recibida'));
     expect(transitionsFromRecibida).toHaveLength(0);
   });
 });
 
 describe('Workflow State Machine - Role Requirements', () => {
   it('enviar requires solicitante (owner)', () => {
-    const t = TRANSITIONS.find(t => t.action === 'enviar');
+    const t = TRANSITIONS.find((t) => t.action === 'enviar');
     expect(t!.requiredRoles).toContain('solicitante');
     expect(t!.requiresOwner).toBe(true);
   });
 
   it('validar requires responsable_area', () => {
-    const t = TRANSITIONS.find(t => t.action === 'validar');
+    const t = TRANSITIONS.find((t) => t.action === 'validar');
     expect(t!.requiredRoles).toContain('responsable_area');
   });
 
   it('aprobar requires director', () => {
-    const t = TRANSITIONS.find(t => t.action === 'aprobar');
+    const t = TRANSITIONS.find((t) => t.action === 'aprobar');
     expect(t!.requiredRoles).toContain('director');
   });
 
   it('rechazar requires director', () => {
-    const t = TRANSITIONS.find(t => t.action === 'rechazar');
+    const t = TRANSITIONS.find((t) => t.action === 'rechazar');
     expect(t!.requiredRoles).toContain('director');
   });
 
   it('procesar_compras requires compras role', () => {
-    const t = TRANSITIONS.find(t => t.action === 'procesar_compras');
+    const t = TRANSITIONS.find((t) => t.action === 'procesar_compras');
     expect(t!.requiredRoles).toContain('compras');
   });
 
   it('programar_pago requires compras role', () => {
-    const t = TRANSITIONS.find(t => t.action === 'programar_pago');
+    const t = TRANSITIONS.find((t) => t.action === 'programar_pago');
     expect(t!.requiredRoles).toContain('compras');
   });
 
   it('registrar_compra allows tesoreria, compras, and solicitante', () => {
-    const t = TRANSITIONS.find(t => t.action === 'registrar_compra');
-    expect(t!.requiredRoles).toEqual(expect.arrayContaining(['tesoreria', 'compras', 'solicitante']));
+    const t = TRANSITIONS.find((t) => t.action === 'registrar_compra');
+    expect(t!.requiredRoles).toEqual(
+      expect.arrayContaining(['tesoreria', 'compras', 'solicitante']),
+    );
   });
 
   it('registrar_recepcion allows solicitante and responsable_area', () => {
-    const t = TRANSITIONS.find(t => t.action === 'registrar_recepcion');
+    const t = TRANSITIONS.find((t) => t.action === 'registrar_recepcion');
     expect(t!.requiredRoles).toEqual(expect.arrayContaining(['solicitante', 'responsable_area']));
   });
 
   it('cerrar requires tesoreria or admin', () => {
-    const t = TRANSITIONS.find(t => t.action === 'cerrar');
+    const t = TRANSITIONS.find((t) => t.action === 'cerrar');
     expect(t!.requiredRoles).toEqual(expect.arrayContaining(['tesoreria', 'admin']));
   });
 
   it('anular requires director or admin (or owner)', () => {
-    const t = TRANSITIONS.find(t => t.action === 'anular');
+    const t = TRANSITIONS.find((t) => t.action === 'anular');
     expect(t!.requiredRoles).toEqual(expect.arrayContaining(['director', 'admin']));
   });
 });
 
 describe('Workflow State Machine - Segregation of Duties', () => {
   it('validar enforces segregation (cannot validate own)', () => {
-    const t = TRANSITIONS.find(t => t.action === 'validar');
+    const t = TRANSITIONS.find((t) => t.action === 'validar');
     expect(t!.segregation).toBe('validar');
   });
 
   it('aprobar enforces segregation (cannot approve own or if validated)', () => {
-    const t = TRANSITIONS.find(t => t.action === 'aprobar');
+    const t = TRANSITIONS.find((t) => t.action === 'aprobar');
     expect(t!.segregation).toBe('aprobar');
   });
 
   it('rechazar enforces same segregation as aprobar', () => {
-    const t = TRANSITIONS.find(t => t.action === 'rechazar');
+    const t = TRANSITIONS.find((t) => t.action === 'rechazar');
     expect(t!.segregation).toBe('aprobar');
   });
 
   it('registrar_compra enforces segregation (cannot buy if approved)', () => {
-    const t = TRANSITIONS.find(t => t.action === 'registrar_compra');
+    const t = TRANSITIONS.find((t) => t.action === 'registrar_compra');
     expect(t!.segregation).toBe('comprar');
   });
 
   it('procesar_compras enforces segregation (cannot process if approved)', () => {
-    const t = TRANSITIONS.find(t => t.action === 'procesar_compras');
+    const t = TRANSITIONS.find((t) => t.action === 'procesar_compras');
     expect(t!.segregation).toBe('procesar_compras');
   });
 });
@@ -488,35 +525,39 @@ describe('Workflow State Machine - Edición', () => {
 
 describe('Workflow State Machine - Known Bugs Summary', () => {
   it('BUG #1: rechazar only accepts validada, not enviada (when skipValidacion)', () => {
-    const rechazar = TRANSITIONS.find(t => t.action === 'rechazar');
+    const rechazar = TRANSITIONS.find((t) => t.action === 'rechazar');
     // If skipValidacion=true, director can approve from 'enviada' but CANNOT reject from 'enviada'
     expect(rechazar!.from).toEqual(['validada']);
     // Expected: should also include 'enviada' when validation is skipped
   });
 
   it('BUG #2: cerrar only accepts recibida_con_obs, not recibida', () => {
-    const cerrar = TRANSITIONS.find(t => t.action === 'cerrar');
+    const cerrar = TRANSITIONS.find((t) => t.action === 'cerrar');
     expect(cerrar!.from).toEqual(['recibida_con_obs']);
     // Expected: should also include 'recibida'
   });
 
   it('BUG #3: recibida is a dead-end state with no transitions out', () => {
-    const fromRecibida = TRANSITIONS.filter(t => t.from.includes('recibida'));
+    const fromRecibida = TRANSITIONS.filter((t) => t.from.includes('recibida'));
     expect(fromRecibida).toHaveLength(0);
     // Expected: cerrar should accept 'recibida' to transition to 'cerrada'
   });
 
   it('BUG #4: procesar_compras allows idempotent en_compras → en_compras', () => {
-    const procesar = TRANSITIONS.find(t => t.action === 'procesar_compras');
+    const procesar = TRANSITIONS.find((t) => t.action === 'procesar_compras');
     // Allows re-processing an already in-process solicitud
     expect(procesar!.from).toContain('en_compras');
   });
 
   it('BUG #5: conforme reception without items goes to cerrada, skipping recibida', () => {
-    const recepcion = TRANSITIONS.find(t => t.action === 'registrar_recepcion');
+    const recepcion = TRANSITIONS.find((t) => t.action === 'registrar_recepcion');
     const ctx: TransitionContext = {
-      hasComprasUsers: false, skipValidacion: false,
-      conforme: true, hasItems: false, allItemsReceived: false, hasProblems: false,
+      hasComprasUsers: false,
+      skipValidacion: false,
+      conforme: true,
+      hasItems: false,
+      allItemsReceived: false,
+      hasProblems: false,
     };
     const target = (recepcion!.to as (ctx: TransitionContext) => EstadoSolicitud)(ctx);
     // Goes directly to 'cerrada', inconsistent with item-level flow that goes to 'recibida'

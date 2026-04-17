@@ -102,16 +102,17 @@ export function buildEmailHtml(
   let montoTotal = 0;
   const now = new Date();
 
-  const rows = solicitudes.map((sol) => {
-    const monto = computeMonto(sol.items_solicitud);
-    montoTotal += monto;
+  const rows = solicitudes
+    .map((sol) => {
+      const monto = computeMonto(sol.items_solicitud);
+      montoTotal += monto;
 
-    const urg = URGENCIA_COLORS[sol.urgencia] ?? URGENCIA_COLORS.normal;
-    const dateRef = sol.fecha_validacion ?? sol.updated_at;
-    const diasHabiles = businessDaysBetween(dateRef, now);
-    const urgente = diasHabiles >= 3;
+      const urg = URGENCIA_COLORS[sol.urgencia] ?? URGENCIA_COLORS.normal;
+      const dateRef = sol.fecha_validacion ?? sol.updated_at;
+      const diasHabiles = businessDaysBetween(dateRef, now);
+      const urgente = diasHabiles >= 3;
 
-    return `
+      return `
       <tr style="border-bottom: 1px solid #e5e7eb;">
         <td style="padding: 12px 8px; font-weight: 600; color: #4f46e5; font-size: 13px; white-space: nowrap;">
           ${sol.numero}
@@ -133,7 +134,8 @@ export function buildEmailHtml(
         </td>
       </tr>
     `;
-  }).join('');
+    })
+    .join('');
 
   const count = solicitudes.length;
   const plural = count !== 1;

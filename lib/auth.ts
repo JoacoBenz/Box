@@ -88,7 +88,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           if (attempt.locked) logAccountLocked(email, 'unknown', 15 * 60 * 1000);
           // Use platform tenant + super_admin user for failed logins with unknown email
           const platformUser = await prisma.usuarios.findFirst({
-            where: { tenant: { slug: '__platform__' }, usuarios_roles: { some: { rol: { nombre: 'super_admin' } } } },
+            where: {
+              tenant: { slug: '__platform__' },
+              usuarios_roles: { some: { rol: { nombre: 'super_admin' } } },
+            },
             select: { id: true, tenant_id: true },
           });
           if (platformUser) {
@@ -175,7 +178,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         usuario = await loadUsuario({ email: { equals: email, mode: 'insensitive' } });
         if (usuario) {
           // Verify tenant has this SSO provider enabled
-          const providerKey = provider === 'google' ? 'sso_google_habilitado' : 'sso_microsoft_habilitado';
+          const providerKey =
+            provider === 'google' ? 'sso_google_habilitado' : 'sso_microsoft_habilitado';
           const ssoEnabled = await getTenantConfigBool(usuario.tenant_id, providerKey, false);
           const ssoDomain = await getTenantConfig(usuario.tenant_id, 'sso_dominio');
 
@@ -210,14 +214,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           });
 
           for (const tenant of tenants) {
-            const configs = Object.fromEntries(tenant.configuracion.map(c => [c.clave, c.valor]));
-            const providerKey = provider === 'google' ? 'sso_google_habilitado' : 'sso_microsoft_habilitado';
+            const configs = Object.fromEntries(tenant.configuracion.map((c) => [c.clave, c.valor]));
+            const providerKey =
+              provider === 'google' ? 'sso_google_habilitado' : 'sso_microsoft_habilitado';
             const ssoEnabled = configs[providerKey] === 'true' || configs[providerKey] === '1';
             const ssoDomain = configs['sso_dominio'];
 
             if (ssoEnabled && ssoDomain && domain.toLowerCase() === ssoDomain.toLowerCase()) {
               // Auto-create user with no area (pending onboarding)
-              const rolSolicitante = await prisma.roles.findFirst({ where: { nombre: 'solicitante' } });
+              const rolSolicitante = await prisma.roles.findFirst({
+                where: { nombre: 'solicitante' },
+              });
               const newUser = await prisma.usuarios.create({
                 data: {
                   tenant_id: tenant.id,
@@ -323,7 +330,7 @@ export async function getServerSession() {
   const { roles: rolesEfectivos, delegaciones } = await cached(
     `t:${user.tenantId}:roles:${user.id}`,
     5 * 60 * 1000,
-    () => getRolesEfectivos(user.tenantId, Number(user.id), baseRoles)
+    () => getRolesEfectivos(user.tenantId, Number(user.id), baseRoles),
   );
 
   return {

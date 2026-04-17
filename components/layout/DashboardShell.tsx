@@ -19,7 +19,13 @@ interface DashboardShellProps {
   children: React.ReactNode;
 }
 
-export function DashboardShell({ tenantNombre, userName, areaNombre, roles, children }: DashboardShellProps) {
+export function DashboardShell({
+  tenantNombre,
+  userName,
+  areaNombre,
+  roles,
+  children,
+}: DashboardShellProps) {
   const { tokens } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -36,14 +42,19 @@ export function DashboardShell({ tenantNombre, userName, areaNombre, roles, chil
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  const rolPrincipal = roles.includes('super_admin') ? 'super_admin'
-    : roles.includes('admin') ? 'admin'
-    : roles.includes('director') ? 'director'
-    : roles.includes('tesoreria') ? 'tesoreria'
-    : roles.includes('responsable_area') ? 'responsable_area'
-    : 'solicitante';
+  const rolPrincipal = roles.includes('super_admin')
+    ? 'super_admin'
+    : roles.includes('admin')
+      ? 'admin'
+      : roles.includes('director')
+        ? 'director'
+        : roles.includes('tesoreria')
+          ? 'tesoreria'
+          : roles.includes('responsable_area')
+            ? 'responsable_area'
+            : 'solicitante';
 
-  const siderWidth = isMobile ? 0 : (collapsed ? 80 : 240);
+  const siderWidth = isMobile ? 0 : collapsed ? 80 : 240;
 
   const handleToggle = () => {
     if (isMobile) {
@@ -63,7 +74,13 @@ export function DashboardShell({ tenantNombre, userName, areaNombre, roles, chil
           drawerOpen={drawerOpen}
           onDrawerClose={() => setDrawerOpen(false)}
         />
-        <Layout style={{ background: tokens.bgLayout, marginLeft: siderWidth, transition: 'margin-left 0.25s cubic-bezier(0.2, 0, 0, 1)' }}>
+        <Layout
+          style={{
+            background: tokens.bgLayout,
+            marginLeft: siderWidth,
+            transition: 'margin-left 0.25s cubic-bezier(0.2, 0, 0, 1)',
+          }}
+        >
           <AppHeader
             tenantNombre={tenantNombre}
             userName={userName}
@@ -74,7 +91,9 @@ export function DashboardShell({ tenantNombre, userName, areaNombre, roles, chil
             isMobile={isMobile}
             onToggle={handleToggle}
           />
-          <Content style={{ margin: isMobile ? '12px 12px 16px' : '20px 24px 24px', minHeight: 280 }}>
+          <Content
+            style={{ margin: isMobile ? '12px 12px 16px' : '20px 24px 24px', minHeight: 280 }}
+          >
             {children}
           </Content>
         </Layout>

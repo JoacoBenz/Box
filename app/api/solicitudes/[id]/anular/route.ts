@@ -26,7 +26,11 @@ export const POST = withAuth({}, async (request, { session, db, ip }, params) =>
   if (!solicitud) return apiError('NOT_FOUND', 'Solicitud no encontrada', 404);
 
   if (!ESTADOS_ANULABLES.includes(solicitud.estado)) {
-    return apiError('INVALID_STATE', `No se puede anular una solicitud en estado "${solicitud.estado}". Solo se pueden anular solicitudes enviadas, validadas, aprobadas, en compras o con pago programado.`, 400);
+    return apiError(
+      'INVALID_STATE',
+      `No se puede anular una solicitud en estado "${solicitud.estado}". Solo se pueden anular solicitudes enviadas, validadas, aprobadas, en compras o con pago programado.`,
+      400,
+    );
   }
 
   // Permission: solicitante can cancel their own, or director/admin can cancel any
@@ -42,7 +46,11 @@ export const POST = withAuth({}, async (request, { session, db, ip }, params) =>
   if (expectedUpdatedAt) {
     const current = solicitud.updated_at.toISOString();
     if (current !== expectedUpdatedAt) {
-      return apiError('CONFLICT', 'Esta solicitud fue modificada por otro usuario. Recargá la página.', 409);
+      return apiError(
+        'CONFLICT',
+        'Esta solicitud fue modificada por otro usuario. Recargá la página.',
+        409,
+      );
     }
   }
 
@@ -70,8 +78,15 @@ export const POST = withAuth({}, async (request, { session, db, ip }, params) =>
 
   // Notify responsable if solicitud was already validated/approved
   if (['validada', 'aprobada', 'en_compras', 'pago_programado'].includes(estadoAnterior)) {
-    const area = await prisma.areas.findFirst({ where: { id: solicitud.area_id, tenant_id: session.tenantId }, select: { responsable_id: true } });
-    if (area?.responsable_id && area.responsable_id !== session.userId && area.responsable_id !== solicitud.solicitante_id) {
+    const area = await prisma.areas.findFirst({
+      where: { id: solicitud.area_id, tenant_id: session.tenantId },
+      select: { responsable_id: true },
+    });
+    if (
+      area?.responsable_id &&
+      area.responsable_id !== session.userId &&
+      area.responsable_id !== solicitud.solicitante_id
+    ) {
       await crearNotificacion({
         tenantId: session.tenantId,
         destinatarioId: area.responsable_id,

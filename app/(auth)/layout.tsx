@@ -2,14 +2,17 @@ import { Suspense } from 'react';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'relative',
-      overflow: 'hidden',
-    }} className="auth-layout-bg">
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+      className="auth-layout-bg"
+    >
       <style>{`
         [data-theme="light"] .auth-layout-bg {
           background: linear-gradient(180deg, #f0fdff 0%, #e0f7fa 100%);
@@ -42,36 +45,45 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       `}</style>
 
       {/* Animated background circles */}
-      <div className="auth-circle" style={{
-        position: 'absolute',
-        width: 500,
-        height: 500,
-        borderRadius: '50%',
-        filter: 'blur(60px)',
-        top: '-10%',
-        left: '-5%',
-        animation: 'float1 25s ease-in-out infinite',
-      }} />
-      <div className="auth-circle-2" style={{
-        position: 'absolute',
-        width: 400,
-        height: 400,
-        borderRadius: '50%',
-        filter: 'blur(50px)',
-        bottom: '-8%',
-        right: '-3%',
-        animation: 'float2 20s ease-in-out infinite',
-      }} />
-      <div className="auth-circle-3" style={{
-        position: 'absolute',
-        width: 350,
-        height: 350,
-        borderRadius: '50%',
-        filter: 'blur(55px)',
-        top: '40%',
-        left: '50%',
-        animation: 'float3 30s ease-in-out infinite',
-      }} />
+      <div
+        className="auth-circle"
+        style={{
+          position: 'absolute',
+          width: 500,
+          height: 500,
+          borderRadius: '50%',
+          filter: 'blur(60px)',
+          top: '-10%',
+          left: '-5%',
+          animation: 'float1 25s ease-in-out infinite',
+        }}
+      />
+      <div
+        className="auth-circle-2"
+        style={{
+          position: 'absolute',
+          width: 400,
+          height: 400,
+          borderRadius: '50%',
+          filter: 'blur(50px)',
+          bottom: '-8%',
+          right: '-3%',
+          animation: 'float2 20s ease-in-out infinite',
+        }}
+      />
+      <div
+        className="auth-circle-3"
+        style={{
+          position: 'absolute',
+          width: 350,
+          height: 350,
+          borderRadius: '50%',
+          filter: 'blur(55px)',
+          top: '40%',
+          left: '50%',
+          animation: 'float3 30s ease-in-out infinite',
+        }}
+      />
 
       <div style={{ position: 'relative', zIndex: 1 }}>
         <Suspense>{children}</Suspense>

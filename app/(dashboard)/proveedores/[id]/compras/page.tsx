@@ -1,80 +1,89 @@
-'use client'
+'use client';
 
-import { useEffect, useState, useCallback } from 'react'
-import { Table, Tag, Typography, Space, Card, Statistic, Tabs, Button, Descriptions } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
-import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeftOutlined, ShoppingCartOutlined, FileTextOutlined, DollarOutlined } from '@ant-design/icons'
-import { URGENCIAS, ESTADOS_SOLICITUD } from '@/types'
-import type { UrgenciaSolicitud, EstadoSolicitud } from '@/types'
+import { useEffect, useState, useCallback } from 'react';
+import { Table, Tag, Typography, Space, Card, Statistic, Tabs, Button, Descriptions } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import { useRouter, useParams } from 'next/navigation';
+import {
+  ArrowLeftOutlined,
+  ShoppingCartOutlined,
+  FileTextOutlined,
+  DollarOutlined,
+} from '@ant-design/icons';
+import { URGENCIAS, ESTADOS_SOLICITUD } from '@/types';
+import type { UrgenciaSolicitud, EstadoSolicitud } from '@/types';
 
-const { Title, Text } = Typography
+const { Title, Text } = Typography;
 
 interface Proveedor {
-  id: number
-  nombre: string
-  cuit: string | null
-  email: string | null
-  telefono: string | null
+  id: number;
+  nombre: string;
+  cuit: string | null;
+  email: string | null;
+  telefono: string | null;
 }
 
 interface Solicitud {
-  id: number
-  numero: string
-  titulo: string
-  estado: string
-  urgencia: string
-  created_at: string
-  solicitante: { nombre: string }
-  area: { nombre: string }
+  id: number;
+  numero: string;
+  titulo: string;
+  estado: string;
+  urgencia: string;
+  created_at: string;
+  solicitante: { nombre: string };
+  area: { nombre: string };
 }
 
 interface Compra {
-  id: number
-  solicitud_id: number
-  proveedor_nombre: string
-  fecha_compra: string
-  monto_total: number
-  medio_pago: string
-  numero_factura: string | null
-  observaciones: string | null
-  solicitud: { numero: string; titulo: string }
-  ejecutado_por: { nombre: string }
+  id: number;
+  solicitud_id: number;
+  proveedor_nombre: string;
+  fecha_compra: string;
+  monto_total: number;
+  medio_pago: string;
+  numero_factura: string | null;
+  observaciones: string | null;
+  solicitud: { numero: string; titulo: string };
+  ejecutado_por: { nombre: string };
 }
 
 export default function ProveedorComprasPage() {
-  const router = useRouter()
-  const params = useParams()
-  const proveedorId = params.id as string
+  const router = useRouter();
+  const params = useParams();
+  const proveedorId = params.id as string;
 
-  const [proveedor, setProveedor] = useState<Proveedor | null>(null)
-  const [solicitudes, setSolicitudes] = useState<Solicitud[]>([])
-  const [compras, setCompras] = useState<Compra[]>([])
-  const [loading, setLoading] = useState(true)
+  const [proveedor, setProveedor] = useState<Proveedor | null>(null);
+  const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
+  const [compras, setCompras] = useState<Compra[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await fetch(`/api/proveedores/${proveedorId}/compras`)
-      if (!res.ok) return
-      const data = await res.json()
-      setProveedor(data.proveedor)
-      setSolicitudes(data.solicitudes)
-      setCompras(data.compras)
+      const res = await fetch(`/api/proveedores/${proveedorId}/compras`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setProveedor(data.proveedor);
+      setSolicitudes(data.solicitudes);
+      setCompras(data.compras);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [proveedorId])
-
-  useEffect(() => { fetchData() }, [fetchData])
+  }, [proveedorId]);
 
   useEffect(() => {
-    const handler = () => { fetchData() }
-    window.addEventListener('admin-tenant-change', handler)
-    return () => window.removeEventListener('admin-tenant-change', handler)
-  }, [fetchData])
+    fetchData();
+  }, [fetchData]);
 
-  const totalCompras = compras.reduce((sum, c) => sum + Number(c.monto_total), 0)
+  useEffect(() => {
+    const handler = () => {
+      fetchData();
+    };
+    window.addEventListener('admin-tenant-change', handler);
+    return () => window.removeEventListener('admin-tenant-change', handler);
+  }, [fetchData]);
+
+  const totalCompras = compras.reduce((sum, c) => sum + Number(c.monto_total), 0);
 
   const solicitudColumns: ColumnsType<Solicitud> = [
     {
@@ -83,7 +92,10 @@ export default function ProveedorComprasPage() {
       key: 'numero',
       width: 130,
       render: (num: string, record) => (
-        <a onClick={() => router.push(`/solicitudes/${record.id}`)} style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+        <a
+          onClick={() => router.push(`/solicitudes/${record.id}`)}
+          style={{ color: 'var(--color-primary)', fontWeight: 600 }}
+        >
           {num}
         </a>
       ),
@@ -95,8 +107,8 @@ export default function ProveedorComprasPage() {
       key: 'estado',
       width: 140,
       render: (estado: string) => {
-        const cfg = ESTADOS_SOLICITUD[estado as EstadoSolicitud]
-        return <Tag color={cfg?.color ?? 'default'}>{cfg?.label ?? estado}</Tag>
+        const cfg = ESTADOS_SOLICITUD[estado as EstadoSolicitud];
+        return <Tag color={cfg?.color ?? 'default'}>{cfg?.label ?? estado}</Tag>;
       },
     },
     {
@@ -105,8 +117,8 @@ export default function ProveedorComprasPage() {
       key: 'urgencia',
       width: 110,
       render: (u: string) => {
-        const cfg = URGENCIAS[u as UrgenciaSolicitud]
-        return <Tag color={cfg?.color ?? 'default'}>{cfg?.label ?? u}</Tag>
+        const cfg = URGENCIAS[u as UrgenciaSolicitud];
+        return <Tag color={cfg?.color ?? 'default'}>{cfg?.label ?? u}</Tag>;
       },
     },
     {
@@ -121,7 +133,7 @@ export default function ProveedorComprasPage() {
       width: 150,
       render: (_: unknown, r: Solicitud) => r.solicitante?.nombre ?? '—',
     },
-  ]
+  ];
 
   const compraColumns: ColumnsType<Compra> = [
     {
@@ -129,7 +141,10 @@ export default function ProveedorComprasPage() {
       key: 'solicitud',
       width: 130,
       render: (_: unknown, r: Compra) => (
-        <a onClick={() => router.push(`/solicitudes/${r.solicitud_id}`)} style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+        <a
+          onClick={() => router.push(`/solicitudes/${r.solicitud_id}`)}
+          style={{ color: 'var(--color-primary)', fontWeight: 600 }}
+        >
           {r.solicitud.numero}
         </a>
       ),
@@ -169,17 +184,25 @@ export default function ProveedorComprasPage() {
       width: 150,
       render: (_: unknown, r: Compra) => r.ejecutado_por?.nombre ?? '—',
     },
-  ]
+  ];
 
   const urgenciaClass = (record: Solicitud) => {
-    const u = record.urgencia as UrgenciaSolicitud
-    return `urgencia-row-${u || 'normal'}`
-  }
+    const u = record.urgencia as UrgenciaSolicitud;
+    return `urgencia-row-${u || 'normal'}`;
+  };
 
   return (
     <div className="page-content">
       <div style={{ marginBottom: 16, fontSize: 13 }}>
-        <a onClick={() => router.back()} style={{ color: 'var(--color-primary)', fontWeight: 500, cursor: 'pointer', textDecoration: 'none' }}>
+        <a
+          onClick={() => router.back()}
+          style={{
+            color: 'var(--color-primary)',
+            fontWeight: 500,
+            cursor: 'pointer',
+            textDecoration: 'none',
+          }}
+        >
           ← Volver
         </a>
       </div>
@@ -192,7 +215,8 @@ export default function ProveedorComprasPage() {
           </Title>
           {proveedor && (
             <Text type="secondary" style={{ fontSize: 13 }}>
-              {[proveedor.cuit, proveedor.email, proveedor.telefono].filter(Boolean).join(' · ') || 'Sin datos de contacto'}
+              {[proveedor.cuit, proveedor.email, proveedor.telefono].filter(Boolean).join(' · ') ||
+                'Sin datos de contacto'}
             </Text>
           )}
         </div>
@@ -201,21 +225,33 @@ export default function ProveedorComprasPage() {
       <Space size="large" style={{ marginBottom: 24 }}>
         <Card size="middle" style={{ minWidth: 160, borderColor: '#e2e8f0' }}>
           <Statistic
-            title={<Text type="secondary" style={{ fontSize: 12 }}>Solicitudes</Text>}
+            title={
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Solicitudes
+              </Text>
+            }
             value={solicitudes.length}
             prefix={<FileTextOutlined style={{ color: 'var(--color-primary)' }} />}
           />
         </Card>
         <Card size="middle" style={{ minWidth: 160, borderColor: '#e2e8f0' }}>
           <Statistic
-            title={<Text type="secondary" style={{ fontSize: 12 }}>Compras Registradas</Text>}
+            title={
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Compras Registradas
+              </Text>
+            }
             value={compras.length}
             prefix={<ShoppingCartOutlined style={{ color: '#22c55e' }} />}
           />
         </Card>
         <Card size="middle" style={{ minWidth: 180, borderColor: '#e2e8f0' }}>
           <Statistic
-            title={<Text type="secondary" style={{ fontSize: 12 }}>Total Comprado</Text>}
+            title={
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Total Comprado
+              </Text>
+            }
             value={totalCompras}
             precision={2}
             prefix={<DollarOutlined style={{ color: '#f59e0b' }} />}
@@ -259,5 +295,5 @@ export default function ProveedorComprasPage() {
         ]}
       />
     </div>
-  )
+  );
 }

@@ -113,7 +113,7 @@ export default function AuditoriaPage() {
   // Detect super_admin and fetch tenants
   useEffect(() => {
     fetch('/api/admin/tenants')
-      .then(r => {
+      .then((r) => {
         if (r.ok) {
           setIsSuperAdmin(true);
           return r.json();
@@ -121,7 +121,7 @@ export default function AuditoriaPage() {
         return null;
       })
       .then((data: any[] | null) => {
-        if (data) setTenants(data.map(t => ({ id: t.id, nombre: t.nombre })));
+        if (data) setTenants(data.map((t) => ({ id: t.id, nombre: t.nombre })));
       })
       .catch(() => {});
   }, []);
@@ -192,14 +192,16 @@ export default function AuditoriaPage() {
   };
 
   const filtersBar = (
-    <div style={{
-      display: 'flex',
-      flexWrap: 'wrap',
-      gap: 12,
-      marginBottom: 16,
-      flexDirection: isMobile ? 'column' : 'row',
-      alignItems: isMobile ? 'stretch' : 'center',
-    }}>
+    <div
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 12,
+        marginBottom: 16,
+        flexDirection: isMobile ? 'column' : 'row',
+        alignItems: isMobile ? 'stretch' : 'center',
+      }}
+    >
       <Select
         placeholder="Acción"
         allowClear
@@ -232,7 +234,7 @@ export default function AuditoriaPage() {
           value={orgId}
           onChange={setOrgId}
           style={{ minWidth: 180 }}
-          options={tenants.map(t => ({ value: t.id, label: t.nombre }))}
+          options={tenants.map((t) => ({ value: t.id, label: t.nombre }))}
           showSearch
           optionFilterProp="label"
         />
@@ -267,11 +269,13 @@ export default function AuditoriaPage() {
       width: 130,
     },
     ...(isSuperAdmin
-      ? [{
-          title: 'Org',
-          dataIndex: 'organizacion_nombre',
-          width: 140,
-        }]
+      ? [
+          {
+            title: 'Org',
+            dataIndex: 'organizacion_nombre',
+            width: 140,
+          },
+        ]
       : []),
   ];
 
@@ -285,18 +289,39 @@ export default function AuditoriaPage() {
     >
       {detailLog && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div><Text strong>Fecha:</Text> {formatDate(detailLog.created_at)}</div>
-          <div><Text strong>Usuario:</Text> {detailLog.usuario_nombre} (ID: {detailLog.usuario_id})</div>
-          <div><Text strong>Acción:</Text> {renderActionTag(detailLog.accion)}</div>
-          <div><Text strong>Entidad:</Text> {renderEntidad(detailLog.entidad, detailLog.entidad_id)}</div>
-          <div><Text strong>IP:</Text> {detailLog.ip}</div>
+          <div>
+            <Text strong>Fecha:</Text> {formatDate(detailLog.created_at)}
+          </div>
+          <div>
+            <Text strong>Usuario:</Text> {detailLog.usuario_nombre} (ID: {detailLog.usuario_id})
+          </div>
+          <div>
+            <Text strong>Acción:</Text> {renderActionTag(detailLog.accion)}
+          </div>
+          <div>
+            <Text strong>Entidad:</Text> {renderEntidad(detailLog.entidad, detailLog.entidad_id)}
+          </div>
+          <div>
+            <Text strong>IP:</Text> {detailLog.ip}
+          </div>
           {detailLog.organizacion_nombre && (
-            <div><Text strong>Organización:</Text> {detailLog.organizacion_nombre}</div>
+            <div>
+              <Text strong>Organización:</Text> {detailLog.organizacion_nombre}
+            </div>
           )}
           {detailLog.datos_anteriores && (
             <div>
               <Text strong>Datos anteriores:</Text>
-              <pre style={{ background: '#f5f5f5', padding: 12, borderRadius: 6, overflow: 'auto', maxHeight: 200, fontSize: 12 }}>
+              <pre
+                style={{
+                  background: '#f5f5f5',
+                  padding: 12,
+                  borderRadius: 6,
+                  overflow: 'auto',
+                  maxHeight: 200,
+                  fontSize: 12,
+                }}
+              >
                 {JSON.stringify(detailLog.datos_anteriores, null, 2)}
               </pre>
             </div>
@@ -304,7 +329,16 @@ export default function AuditoriaPage() {
           {detailLog.datos_nuevos && (
             <div>
               <Text strong>Datos nuevos:</Text>
-              <pre style={{ background: '#f5f5f5', padding: 12, borderRadius: 6, overflow: 'auto', maxHeight: 200, fontSize: 12 }}>
+              <pre
+                style={{
+                  background: '#f5f5f5',
+                  padding: 12,
+                  borderRadius: 6,
+                  overflow: 'auto',
+                  maxHeight: 200,
+                  fontSize: 12,
+                }}
+              >
                 {JSON.stringify(detailLog.datos_nuevos, null, 2)}
               </pre>
             </div>
@@ -316,18 +350,22 @@ export default function AuditoriaPage() {
 
   return (
     <div style={{ padding: isMobile ? 16 : 24 }}>
-      <Title level={3} style={{ marginBottom: 16 }}>Auditoría</Title>
+      <Title level={3} style={{ marginBottom: 16 }}>
+        Auditoría
+      </Title>
       {filtersBar}
 
       {loading ? (
         <Skeleton active paragraph={{ rows: 8 }} />
       ) : logs.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 48, color: '#999' }}>
-          <Text type="secondary">No se encontraron registros de auditoría con los filtros seleccionados.</Text>
+          <Text type="secondary">
+            No se encontraron registros de auditoría con los filtros seleccionados.
+          </Text>
         </div>
       ) : isMobile ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {logs.map(log => {
+          {logs.map((log) => {
             const cfg = ACTION_CONFIG[log.accion] || { label: log.accion, color: 'default' };
             return (
               <Card
@@ -338,12 +376,20 @@ export default function AuditoriaPage() {
                 style={{ cursor: 'pointer' }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>{formatDate(log.created_at)}</Text>
-                  {cfg.critical && <Tag color="red" style={{ fontSize: 10 }}>Crítico</Tag>}
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {formatDate(log.created_at)}
+                  </Text>
+                  {cfg.critical && (
+                    <Tag color="red" style={{ fontSize: 10 }}>
+                      Crítico
+                    </Tag>
+                  )}
                 </div>
                 <div style={{ marginBottom: 4 }}>{renderActionTag(log.accion)}</div>
                 <div style={{ fontSize: 13 }}>{log.usuario_nombre}</div>
-                <div style={{ fontSize: 12, color: '#888' }}>{renderEntidad(log.entidad, log.entidad_id)}</div>
+                <div style={{ fontSize: 12, color: '#888' }}>
+                  {renderEntidad(log.entidad, log.entidad_id)}
+                </div>
               </Card>
             );
           })}

@@ -31,7 +31,11 @@ export function tenantPrisma(tenantId: number) {
         async findUnique({ args, query }: any) {
           const result = await query(args);
           // Post-query tenant verification — return null if wrong tenant (don't throw/leak)
-          if (result && (result as any).tenant_id !== undefined && (result as any).tenant_id !== tenantId) {
+          if (
+            result &&
+            (result as any).tenant_id !== undefined &&
+            (result as any).tenant_id !== tenantId
+          ) {
             return null;
           }
           return result;

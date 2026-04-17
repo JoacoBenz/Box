@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
 
     return Response.json({ ok: true });
   } catch (error: any) {
-    if (error.message === 'No autenticado') return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (error.message === 'No autenticado')
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
     return Response.json({ error: 'Internal' }, { status: 500 });
   }
 }

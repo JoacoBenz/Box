@@ -1,63 +1,72 @@
-'use client'
+'use client';
 
-import { useEffect, useState, useCallback } from 'react'
-import { Table, Tag, Typography, App, Skeleton } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
-import { useRouter } from 'next/navigation'
-import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types'
-import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types'
-import { useIsMobile } from '@/hooks/useIsMobile'
+import { useEffect, useState, useCallback } from 'react';
+import { Table, Tag, Typography, App, Skeleton } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import { useRouter } from 'next/navigation';
+import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types';
+import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
-const { Title } = Typography
+const { Title } = Typography;
 
 interface Solicitud {
-  id: number
-  numero: string
-  titulo: string
-  urgencia: string
-  estado: string
-  fecha_envio: string | null
-  area: { nombre: string } | null
-  solicitante: { nombre: string }
+  id: number;
+  numero: string;
+  titulo: string;
+  urgencia: string;
+  estado: string;
+  fecha_envio: string | null;
+  area: { nombre: string } | null;
+  solicitante: { nombre: string };
 }
 
 export default function ValidacionesPage() {
-  const router = useRouter()
-  const { message } = App.useApp()
-  const isMobile = useIsMobile()
-  const [solicitudes, setSolicitudes] = useState<Solicitud[]>([])
-  const [loading, setLoading] = useState(true)
+  const router = useRouter();
+  const { message } = App.useApp();
+  const isMobile = useIsMobile();
+  const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await fetch('/api/solicitudes?estado=enviada&limit=100')
+      const res = await fetch('/api/solicitudes?estado=enviada&limit=100');
       if (res.ok) {
-        const data = await res.json()
-        setSolicitudes(data.data ?? [])
+        const data = await res.json();
+        setSolicitudes(data.data ?? []);
       } else {
-        message.error('Error al cargar solicitudes')
+        message.error('Error al cargar solicitudes');
       }
     } catch {
-      message.error('Error al cargar solicitudes')
+      message.error('Error al cargar solicitudes');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [message])
-
-  useEffect(() => { fetchData() }, [fetchData])
+  }, [message]);
 
   useEffect(() => {
-    const handler = () => { fetchData() }
-    window.addEventListener('admin-tenant-change', handler)
-    return () => window.removeEventListener('admin-tenant-change', handler)
-  }, [fetchData])
+    fetchData();
+  }, [fetchData]);
+
+  useEffect(() => {
+    const handler = () => {
+      fetchData();
+    };
+    window.addEventListener('admin-tenant-change', handler);
+    return () => window.removeEventListener('admin-tenant-change', handler);
+  }, [fetchData]);
 
   const columns: ColumnsType<Solicitud> = [
     {
-      title: 'Número', dataIndex: 'numero', key: 'numero', width: 130,
+      title: 'Número',
+      dataIndex: 'numero',
+      key: 'numero',
+      width: 130,
       render: (val: string, r: Solicitud) => (
-        <a onClick={() => router.push(`/solicitudes/${r.id}`)} style={{ cursor: 'pointer' }}>{val}</a>
+        <a onClick={() => router.push(`/solicitudes/${r.id}`)} style={{ cursor: 'pointer' }}>
+          {val}
+        </a>
       ),
     },
     { title: 'Título', dataIndex: 'titulo', key: 'titulo', ellipsis: true },
@@ -67,15 +76,20 @@ export default function ValidacionesPage() {
       render: (_, r) => r.area?.nombre ?? '—',
       width: 140,
     },
-    { title: 'Solicitante', key: 'solicitante', render: (_, r) => r.solicitante?.nombre ?? '—', width: 160 },
+    {
+      title: 'Solicitante',
+      key: 'solicitante',
+      render: (_, r) => r.solicitante?.nombre ?? '—',
+      width: 160,
+    },
     {
       title: 'Urgencia',
       dataIndex: 'urgencia',
       key: 'urgencia',
       width: 110,
       render: (val: string) => {
-        const u = URGENCIAS[val as UrgenciaSolicitud]
-        return u ? <Tag color={u.color}>{u.label}</Tag> : <Tag>{val}</Tag>
+        const u = URGENCIAS[val as UrgenciaSolicitud];
+        return u ? <Tag color={u.color}>{u.label}</Tag> : <Tag>{val}</Tag>;
       },
     },
     {
@@ -84,8 +98,8 @@ export default function ValidacionesPage() {
       key: 'estado',
       width: 140,
       render: (val: string) => {
-        const e = ESTADOS_SOLICITUD[val as EstadoSolicitud]
-        return e ? <Tag color={e.color}>{e.label}</Tag> : <Tag>{val}</Tag>
+        const e = ESTADOS_SOLICITUD[val as EstadoSolicitud];
+        return e ? <Tag color={e.color}>{e.label}</Tag> : <Tag>{val}</Tag>;
       },
     },
     {
@@ -93,14 +107,13 @@ export default function ValidacionesPage() {
       dataIndex: 'fecha_envio',
       key: 'fecha_envio',
       width: 130,
-      render: (val: string | null) =>
-        val ? new Date(val).toLocaleDateString('es-AR') : '—',
+      render: (val: string | null) => (val ? new Date(val).toLocaleDateString('es-AR') : '—'),
     },
-  ]
+  ];
 
   const renderMobileCard = (sol: Solicitud) => {
-    const urgencia = URGENCIAS[sol.urgencia as UrgenciaSolicitud]
-    const estado = ESTADOS_SOLICITUD[sol.estado as EstadoSolicitud]
+    const urgencia = URGENCIAS[sol.urgencia as UrgenciaSolicitud];
+    const estado = ESTADOS_SOLICITUD[sol.estado as EstadoSolicitud];
 
     return (
       <div
@@ -113,20 +126,38 @@ export default function ValidacionesPage() {
           marginBottom: 10,
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            marginBottom: 8,
+          }}
+        >
           <a
             onClick={() => router.push(`/solicitudes/${sol.id}`)}
-            style={{ cursor: 'pointer', color: 'var(--color-primary)', fontWeight: 600, fontSize: 15 }}
+            style={{
+              cursor: 'pointer',
+              color: 'var(--color-primary)',
+              fontWeight: 600,
+              fontSize: 15,
+            }}
           >
             {sol.numero}
           </a>
           <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-            {urgencia ? <Tag color={urgencia.color}>{urgencia.label}</Tag> : <Tag>{sol.urgencia}</Tag>}
+            {urgencia ? (
+              <Tag color={urgencia.color}>{urgencia.label}</Tag>
+            ) : (
+              <Tag>{sol.urgencia}</Tag>
+            )}
             {estado ? <Tag color={estado.color}>{estado.label}</Tag> : <Tag>{sol.estado}</Tag>}
           </div>
         </div>
 
-        <div style={{ color: 'var(--text-primary)', fontWeight: 500, marginBottom: 6, fontSize: 14 }}>
+        <div
+          style={{ color: 'var(--text-primary)', fontWeight: 500, marginBottom: 6, fontSize: 14 }}
+        >
           {sol.titulo}
         </div>
 
@@ -144,8 +175,8 @@ export default function ValidacionesPage() {
           )}
         </div>
       </div>
-    )
-  }
+    );
+  };
 
   const renderMobileLoading = () => (
     <div>
@@ -164,12 +195,24 @@ export default function ValidacionesPage() {
         </div>
       ))}
     </div>
-  )
+  );
 
   return (
     <div className="page-content">
-      <div style={isMobile ? { display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 } : {}}>
-        <Title level={3} style={{ margin: 0, marginBottom: isMobile ? 0 : 8, fontWeight: 700, color: 'var(--text-primary)' }}>
+      <div
+        style={
+          isMobile ? { display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 } : {}
+        }
+      >
+        <Title
+          level={3}
+          style={{
+            margin: 0,
+            marginBottom: isMobile ? 0 : 8,
+            fontWeight: 700,
+            color: 'var(--text-primary)',
+          }}
+        >
           Solicitudes Pendientes de Validación
         </Title>
         <p style={{ color: 'var(--text-muted)', marginBottom: isMobile ? 0 : 16 }}>
@@ -179,14 +222,14 @@ export default function ValidacionesPage() {
       </div>
 
       {isMobile ? (
-        loading ? renderMobileLoading() : (
-          solicitudes.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>
-              No hay solicitudes pendientes de validación
-            </div>
-          ) : (
-            <div>{solicitudes.map(renderMobileCard)}</div>
-          )
+        loading ? (
+          renderMobileLoading()
+        ) : solicitudes.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>
+            No hay solicitudes pendientes de validación
+          </div>
+        ) : (
+          <div>{solicitudes.map(renderMobileCard)}</div>
         )
       ) : (
         <Table
@@ -198,12 +241,14 @@ export default function ValidacionesPage() {
           size="middle"
           locale={{ emptyText: 'No hay solicitudes pendientes de validación' }}
           rowClassName={(record: any) =>
-            record.urgencia === 'critica' ? 'urgencia-row-critica' :
-            record.urgencia === 'urgente' ? 'urgencia-row-urgente' :
-            'urgencia-row-normal'
+            record.urgencia === 'critica'
+              ? 'urgencia-row-critica'
+              : record.urgencia === 'urgente'
+                ? 'urgencia-row-urgente'
+                : 'urgencia-row-normal'
           }
         />
       )}
     </div>
-  )
+  );
 }

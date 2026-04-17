@@ -42,7 +42,7 @@ describe('getRolesEfectivos', () => {
       { rol_delegado: 'solicitante', delegante: { nombre: 'Someone' } },
     ]);
     const result = await getRolesEfectivos(1, 1, ['solicitante']);
-    expect(result.roles.filter(r => r === 'solicitante')).toHaveLength(1);
+    expect(result.roles.filter((r) => r === 'solicitante')).toHaveLength(1);
   });
 
   it('handles multiple active delegations from different delegantes', async () => {

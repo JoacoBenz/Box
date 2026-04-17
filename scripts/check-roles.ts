@@ -7,4 +7,7 @@ async function main() {
   for (const r of roles) process.stderr.write(`  ID:${r.id} | ${r.nombre}\n`);
   await prisma.$disconnect();
 }
-main().catch(e => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

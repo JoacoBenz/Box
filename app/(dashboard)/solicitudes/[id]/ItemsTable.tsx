@@ -1,15 +1,15 @@
-'use client'
+'use client';
 
-import { Table } from 'antd'
-import { useIsMobile } from '@/hooks/useIsMobile'
+import { Table } from 'antd';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 export interface ItemRow {
-  id: number
-  descripcion: string
-  cantidad: number
-  unidad: string
-  precio_estimado: number | null
-  link_producto?: string | null
+  id: number;
+  descripcion: string;
+  cantidad: number;
+  unidad: string;
+  precio_estimado: number | null;
+  link_producto?: string | null;
 }
 
 const columns = [
@@ -20,7 +20,16 @@ const columns = [
     key: 'link_producto',
     width: 80,
     render: (v: string | null) =>
-      v ? <a href={v} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)' }}>Ver</a> : null,
+      v ? (
+        <a
+          href={v}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: 'var(--color-primary)' }}
+        >
+          Ver
+        </a>
+      ) : null,
   },
   { title: 'Cantidad', dataIndex: 'cantidad', key: 'cantidad', width: 100 },
   { title: 'Unidad', dataIndex: 'unidad', key: 'unidad', width: 110 },
@@ -36,29 +45,45 @@ const columns = [
     key: 'subtotal',
     width: 130,
     render: (_: unknown, r: ItemRow) =>
-      r.precio_estimado != null
-        ? `$${(r.precio_estimado * r.cantidad).toFixed(2)}`
-        : '—',
+      r.precio_estimado != null ? `$${(r.precio_estimado * r.cantidad).toFixed(2)}` : '—',
   },
-]
+];
 
 function ItemCard({ item }: { item: ItemRow }) {
-  const subtotal = item.precio_estimado != null ? item.precio_estimado * item.cantidad : null
+  const subtotal = item.precio_estimado != null ? item.precio_estimado * item.cantidad : null;
   return (
-    <div style={{
-      background: 'var(--bg-card)',
-      borderRadius: 10,
-      border: '1px solid var(--border-color)',
-      padding: 12,
-    }}>
+    <div
+      style={{
+        background: 'var(--bg-card)',
+        borderRadius: 10,
+        border: '1px solid var(--border-color)',
+        padding: 12,
+      }}
+    >
       <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', marginBottom: 6 }}>
         {item.descripcion}
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', fontSize: 13, color: 'var(--text-secondary)', marginBottom: subtotal != null ? 8 : 0 }}>
-        <span>{item.cantidad} {item.unidad}</span>
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '4px 16px',
+          fontSize: 13,
+          color: 'var(--text-secondary)',
+          marginBottom: subtotal != null ? 8 : 0,
+        }}
+      >
+        <span>
+          {item.cantidad} {item.unidad}
+        </span>
         {item.precio_estimado != null && <span>× ${item.precio_estimado.toFixed(2)}</span>}
         {item.link_producto && (
-          <a href={item.link_producto} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', fontWeight: 500 }}>
+          <a
+            href={item.link_producto}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'var(--color-primary)', fontWeight: 500 }}
+          >
             Ver producto ↗
           </a>
         )}
@@ -69,19 +94,21 @@ function ItemCard({ item }: { item: ItemRow }) {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 export default function ItemsTable({ items }: { items: ItemRow[] }) {
-  const isMobile = useIsMobile()
+  const isMobile = useIsMobile();
 
   if (isMobile) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {items.map(item => <ItemCard key={item.id} item={item} />)}
+        {items.map((item) => (
+          <ItemCard key={item.id} item={item} />
+        ))}
       </div>
-    )
+    );
   }
 
-  return <Table rowKey="id" columns={columns} dataSource={items} pagination={false} size="small" />
+  return <Table rowKey="id" columns={columns} dataSource={items} pagination={false} size="small" />;
 }

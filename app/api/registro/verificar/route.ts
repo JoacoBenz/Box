@@ -26,7 +26,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
-      return Response.json({ error: { code: 'VALIDATION_ERROR', message: 'Token inválido' } }, { status: 400 });
+      return Response.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'Token inválido' } },
+        { status: 400 },
+      );
     }
 
     const tokenHash = hashToken(parsed.data.token);
@@ -37,7 +40,12 @@ export async function POST(request: NextRequest) {
 
     if (!pending) {
       return Response.json(
-        { error: { code: 'INVALID_TOKEN', message: 'El enlace es inválido o expiró. Registrate de nuevo.' } },
+        {
+          error: {
+            code: 'INVALID_TOKEN',
+            message: 'El enlace es inválido o expiró. Registrate de nuevo.',
+          },
+        },
         { status: 400 },
       );
     }
@@ -45,7 +53,10 @@ export async function POST(request: NextRequest) {
     // Double-check email is still unique
     const existingUser = await prisma.usuarios.findFirst({ where: { email: pending.email } });
     if (existingUser) {
-      await prisma.registros_pendientes.update({ where: { id: pending.id }, data: { verificado: true } });
+      await prisma.registros_pendientes.update({
+        where: { id: pending.id },
+        data: { verificado: true },
+      });
       return Response.json(
         { error: { code: 'CONFLICT', message: 'Este email ya fue registrado.' } },
         { status: 409 },
@@ -54,10 +65,13 @@ export async function POST(request: NextRequest) {
 
     // Get roles
     const roles = await prisma.roles.findMany();
-    const directorRole = roles.find(r => r.nombre === 'director');
-    const solicitanteRole = roles.find(r => r.nombre === 'solicitante');
+    const directorRole = roles.find((r) => r.nombre === 'director');
+    const solicitanteRole = roles.find((r) => r.nombre === 'solicitante');
     if (!directorRole || !solicitanteRole) {
-      return Response.json({ error: { code: 'INTERNAL', message: 'Roles no encontrados. Ejecutá el seed.' } }, { status: 500 });
+      return Response.json(
+        { error: { code: 'INTERNAL', message: 'Roles no encontrados. Ejecutá el seed.' } },
+        { status: 500 },
+      );
     }
 
     // Generate unique slug
@@ -71,11 +85,19 @@ export async function POST(request: NextRequest) {
     // Create tenant + founder in transaction
     const txResult = await prisma.$transaction(async (tx) => {
       const newTenant = await tx.tenants.create({
-        data: { nombre: pending.nombre_organizacion, slug, email_contacto: pending.email, moneda: 'ARS', estado: 'pendiente' },
+        data: {
+          nombre: pending.nombre_organizacion,
+          slug,
+          email_contacto: pending.email,
+          moneda: 'ARS',
+          estado: 'pendiente',
+        },
       });
 
       const areas = await Promise.all(
-        AREAS_DEFAULT.map(nombre => tx.areas.create({ data: { tenant_id: newTenant.id, nombre } })),
+        AREAS_DEFAULT.map((nombre) =>
+          tx.areas.create({ data: { tenant_id: newTenant.id, nombre } }),
+        ),
       );
       const areaDireccion = areas[0];
 
@@ -114,7 +136,10 @@ export async function POST(request: NextRequest) {
       });
 
       // Mark pending registration as verified
-      await tx.registros_pendientes.update({ where: { id: pending.id }, data: { verificado: true } });
+      await tx.registros_pendientes.update({
+        where: { id: pending.id },
+        data: { verificado: true },
+      });
 
       return { tenant: newTenant, usuarioId: usuario.id };
     });
@@ -133,9 +158,17 @@ export async function POST(request: NextRequest) {
       `"${pending.nombre_organizacion}" se registró y requiere aprobación.`,
     );
 
-    return Response.json({ message: 'Email verificado. Tu organización fue registrada y está pendiente de aprobación.' }, { status: 201 });
+    return Response.json(
+      {
+        message: 'Email verificado. Tu organización fue registrada y está pendiente de aprobación.',
+      },
+      { status: 201 },
+    );
   } catch (error) {
     logApiError('/api/registro/verificar', 'POST', error);
-    return Response.json({ error: { code: 'INTERNAL', message: 'Error interno del servidor' } }, { status: 500 });
+    return Response.json(
+      { error: { code: 'INTERNAL', message: 'Error interno del servidor' } },
+      { status: 500 },
+    );
   }
 }

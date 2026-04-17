@@ -54,16 +54,78 @@ const SCREEN_DATA = {
     ],
   },
   solicitudes: [
-    { n: 'SC-0024', t: 'Resmas A4 x 500', monto: '$15.000', estado: 'Aprobada', color: '#16a34a', bg: '#f0fdf4' },
-    { n: 'SC-0023', t: 'Toner HP LaserJet', monto: '$45.000', estado: 'Validada', color: '#2563eb', bg: '#eff6ff' },
-    { n: 'SC-0022', t: 'Sillas ergonómicas x5', monto: '$120.000', estado: 'En compras', color: '#f59e0b', bg: '#fefce8' },
-    { n: 'SC-0021', t: 'Proyector Epson', monto: '$350.000', estado: 'Pendiente', color: '#888', bg: '#f5f5f5' },
-    { n: 'SC-0020', t: 'Notebooks x3', monto: '$1.200.000', estado: 'Cerrada', color: '#059669', bg: '#ecfdf5' },
+    {
+      n: 'SC-0024',
+      t: 'Resmas A4 x 500',
+      monto: '$15.000',
+      estado: 'Aprobada',
+      color: '#16a34a',
+      bg: '#f0fdf4',
+    },
+    {
+      n: 'SC-0023',
+      t: 'Toner HP LaserJet',
+      monto: '$45.000',
+      estado: 'Validada',
+      color: '#2563eb',
+      bg: '#eff6ff',
+    },
+    {
+      n: 'SC-0022',
+      t: 'Sillas ergonómicas x5',
+      monto: '$120.000',
+      estado: 'En compras',
+      color: '#f59e0b',
+      bg: '#fefce8',
+    },
+    {
+      n: 'SC-0021',
+      t: 'Proyector Epson',
+      monto: '$350.000',
+      estado: 'Pendiente',
+      color: '#888',
+      bg: '#f5f5f5',
+    },
+    {
+      n: 'SC-0020',
+      t: 'Notebooks x3',
+      monto: '$1.200.000',
+      estado: 'Cerrada',
+      color: '#059669',
+      bg: '#ecfdf5',
+    },
   ],
   aprobaciones: [
-    { n: 'SC-0024', t: 'Resmas A4 x 500 hojas', area: 'Administración', solicitante: 'María López', monto: '$15.000', urgencia: 'Media', urgColor: '#ca8a04', urgBg: '#fefce8' },
-    { n: 'SC-0023', t: 'Toner HP LaserJet Pro', area: 'Dirección', solicitante: 'Carlos García', monto: '$45.000', urgencia: 'Alta', urgColor: '#dc2626', urgBg: '#fef2f2' },
-    { n: 'SC-0022', t: 'Sillas ergonómicas x5', area: 'Contaduría', solicitante: 'Ana Pérez', monto: '$120.000', urgencia: 'Baja', urgColor: '#16a34a', urgBg: '#f0fdf4' },
+    {
+      n: 'SC-0024',
+      t: 'Resmas A4 x 500 hojas',
+      area: 'Administración',
+      solicitante: 'María López',
+      monto: '$15.000',
+      urgencia: 'Media',
+      urgColor: '#ca8a04',
+      urgBg: '#fefce8',
+    },
+    {
+      n: 'SC-0023',
+      t: 'Toner HP LaserJet Pro',
+      area: 'Dirección',
+      solicitante: 'Carlos García',
+      monto: '$45.000',
+      urgencia: 'Alta',
+      urgColor: '#dc2626',
+      urgBg: '#fef2f2',
+    },
+    {
+      n: 'SC-0022',
+      t: 'Sillas ergonómicas x5',
+      area: 'Contaduría',
+      solicitante: 'Ana Pérez',
+      monto: '$120.000',
+      urgencia: 'Baja',
+      urgColor: '#16a34a',
+      urgBg: '#f0fdf4',
+    },
   ],
   reportes: {
     totals: [
@@ -87,8 +149,12 @@ function ScreenDashboard() {
       <div className="sc-stats-grid">
         {d.stats.map((s, i) => (
           <div key={i} className="sc-stat-card" style={{ borderLeft: `3px solid ${s.color}` }}>
-            <div className="sc-stat-label">{s.icon} {s.label}</div>
-            <div className="sc-stat-value" style={{ color: s.color }}>{s.value}</div>
+            <div className="sc-stat-label">
+              {s.icon} {s.label}
+            </div>
+            <div className="sc-stat-value" style={{ color: s.color }}>
+              {s.value}
+            </div>
           </div>
         ))}
       </div>
@@ -108,8 +174,16 @@ function ScreenDashboard() {
           <div className="sc-card-title">Por área</div>
           {d.areas.map((a, i) => (
             <div key={i} className="sc-progress-row">
-              <div className="sc-progress-header"><span>{a.name}</span><span>{a.pct}%</span></div>
-              <div className="sc-progress-bg"><div className="sc-progress-fill" style={{ background: a.color, width: `${a.pct}%` }} /></div>
+              <div className="sc-progress-header">
+                <span>{a.name}</span>
+                <span>{a.pct}%</span>
+              </div>
+              <div className="sc-progress-bg">
+                <div
+                  className="sc-progress-fill"
+                  style={{ background: a.color, width: `${a.pct}%` }}
+                />
+              </div>
             </div>
           ))}
         </div>
@@ -134,7 +208,9 @@ function ScreenSolicitudes() {
             </div>
             <div className="sc-sol-right">
               <span className="sc-sol-monto">{r.monto}</span>
-              <span className="sc-badge" style={{ background: r.bg, color: r.color }}>{r.estado}</span>
+              <span className="sc-badge" style={{ background: r.bg, color: r.color }}>
+                {r.estado}
+              </span>
             </div>
           </div>
         ))}
@@ -146,17 +222,23 @@ function ScreenSolicitudes() {
 function ScreenAprobaciones() {
   return (
     <div className="sc-pad">
-      <div className="sc-card-title" style={{ marginBottom: 12 }}>3 solicitudes pendientes</div>
+      <div className="sc-card-title" style={{ marginBottom: 12 }}>
+        3 solicitudes pendientes
+      </div>
       {SCREEN_DATA.aprobaciones.map((r, i) => (
         <div key={i} className="sc-aprob-card">
           <div className="sc-aprob-header">
             <div>
               <div className="sc-aprob-meta">
                 <span className="sc-sol-num">{r.n}</span>
-                <span className="sc-badge" style={{ background: r.urgBg, color: r.urgColor }}>{r.urgencia}</span>
+                <span className="sc-badge" style={{ background: r.urgBg, color: r.urgColor }}>
+                  {r.urgencia}
+                </span>
               </div>
               <div className="sc-aprob-title">{r.t}</div>
-              <div className="sc-aprob-sub">{r.area} · {r.solicitante}</div>
+              <div className="sc-aprob-sub">
+                {r.area} · {r.solicitante}
+              </div>
             </div>
             <div className="sc-aprob-monto">{r.monto}</div>
           </div>
@@ -185,7 +267,9 @@ function ScreenReportes() {
         {d.totals.map((s, i) => (
           <div key={i} className="sc-total-card">
             <div className="sc-stat-label">{s.label}</div>
-            <div className="sc-total-value" style={{ color: s.color }}>{s.value}</div>
+            <div className="sc-total-value" style={{ color: s.color }}>
+              {s.value}
+            </div>
           </div>
         ))}
       </div>
@@ -194,7 +278,12 @@ function ScreenReportes() {
           <div key={i} className="sc-report-row">
             <span className="sc-report-area">{r.area}</span>
             <span className="sc-report-gastado">{r.gastado}</span>
-            <span className="sc-report-pct" style={{ color: r.pct > 85 ? '#dc2626' : r.pct > 75 ? '#f59e0b' : '#16a34a' }}>{r.pct}%</span>
+            <span
+              className="sc-report-pct"
+              style={{ color: r.pct > 85 ? '#dc2626' : r.pct > 75 ? '#f59e0b' : '#16a34a' }}
+            >
+              {r.pct}%
+            </span>
           </div>
         ))}
       </div>
@@ -203,16 +292,44 @@ function ScreenReportes() {
 }
 
 const SCREENS = [
-  { title: 'Dashboard', caption: 'Métricas en tiempo real de tu organización', content: <ScreenDashboard /> },
-  { title: 'Solicitudes', caption: 'Seguí el estado de cada pedido en tiempo real', content: <ScreenSolicitudes /> },
-  { title: 'Aprobaciones', caption: 'Aprobá o rechazá solicitudes con un click', content: <ScreenAprobaciones /> },
-  { title: 'Reportes', caption: 'Exportá reportes detallados a Excel en un click', content: <ScreenReportes /> },
+  {
+    title: 'Dashboard',
+    caption: 'Métricas en tiempo real de tu organización',
+    content: <ScreenDashboard />,
+  },
+  {
+    title: 'Solicitudes',
+    caption: 'Seguí el estado de cada pedido en tiempo real',
+    content: <ScreenSolicitudes />,
+  },
+  {
+    title: 'Aprobaciones',
+    caption: 'Aprobá o rechazá solicitudes con un click',
+    content: <ScreenAprobaciones />,
+  },
+  {
+    title: 'Reportes',
+    caption: 'Exportá reportes detallados a Excel en un click',
+    content: <ScreenReportes />,
+  },
 ];
 
 const STEPS = [
-  { num: '1', title: 'Registrá tu organización', desc: 'Creá tu cuenta y configurá áreas, roles y centros de costo.' },
-  { num: '2', title: 'Invitá a tu equipo', desc: 'Compartí un código o habilitá el ingreso por dominio institucional.' },
-  { num: '3', title: 'Gestioná las compras', desc: 'Solicitudes, aprobaciones, compras y recepciones. Todo en un solo lugar.' },
+  {
+    num: '1',
+    title: 'Registrá tu organización',
+    desc: 'Creá tu cuenta y configurá áreas, roles y centros de costo.',
+  },
+  {
+    num: '2',
+    title: 'Invitá a tu equipo',
+    desc: 'Compartí un código o habilitá el ingreso por dominio institucional.',
+  },
+  {
+    num: '3',
+    title: 'Gestioná las compras',
+    desc: 'Solicitudes, aprobaciones, compras y recepciones. Todo en un solo lugar.',
+  },
 ];
 
 function useInView(threshold = 0.15) {
@@ -221,7 +338,12 @@ function useInView(threshold = 0.15) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold });
+    const obs = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) setVisible(true);
+      },
+      { threshold },
+    );
     obs.observe(el);
     return () => obs.disconnect();
   }, [threshold]);
@@ -234,15 +356,20 @@ function AppShowcase() {
 
   const startTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => setActive(p => (p + 1) % SCREENS.length), 5000);
+    timerRef.current = setInterval(() => setActive((p) => (p + 1) % SCREENS.length), 5000);
   }, []);
 
   useEffect(() => {
     startTimer();
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, [startTimer]);
 
-  const goTo = (i: number) => { setActive(i); startTimer(); };
+  const goTo = (i: number) => {
+    setActive(i);
+    startTimer();
+  };
 
   return (
     <div className="lp-showcase">
@@ -269,14 +396,33 @@ function AppShowcase() {
           </div>
           <div className="lp-app-tabs">
             {SCREENS.map((s, i) => (
-              <button key={i} onClick={() => goTo(i)} className={`lp-app-tab ${active === i ? 'active' : ''}`}>
+              <button
+                key={i}
+                onClick={() => goTo(i)}
+                className={`lp-app-tab ${active === i ? 'active' : ''}`}
+              >
                 {s.title}
               </button>
             ))}
           </div>
           <div className="lp-app-avatar">
             <span style={{ fontSize: 14 }}>🔔</span>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 11 }}>JB</div>
+            <div
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: 11,
+              }}
+            >
+              JB
+            </div>
           </div>
         </div>
         {/* Screen content — only render active to avoid absolute positioning issues */}
@@ -291,14 +437,26 @@ function AppShowcase() {
       {/* Dots */}
       <div className="lp-showcase-dots">
         {SCREENS.map((_, i) => (
-          <button key={i} onClick={() => goTo(i)} className={`lp-dot ${active === i ? 'active' : ''}`} />
+          <button
+            key={i}
+            onClick={() => goTo(i)}
+            className={`lp-dot ${active === i ? 'active' : ''}`}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function AnimatedSection({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
+function AnimatedSection({
+  children,
+  delay = 0,
+  className = '',
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}) {
   const { ref, visible } = useInView();
   return (
     <div
@@ -703,16 +861,29 @@ export default function LandingPage() {
       <nav className={`lp-nav ${scrollY > 20 ? 'scrolled' : ''}`}>
         <div className="lp-nav-logo">📦 Box</div>
         <div className="lp-nav-links">
-          <Link href="/login" className="lp-nav-links lp-btn-ghost">Ingresar</Link>
-          <Link href="/registro" className="lp-nav-links lp-btn-primary">Registrarse</Link>
+          <Link href="/login" className="lp-nav-links lp-btn-ghost">
+            Ingresar
+          </Link>
+          <Link href="/registro" className="lp-nav-links lp-btn-primary">
+            Registrarse
+          </Link>
         </div>
       </nav>
 
       {/* HERO */}
       <section className="lp-hero">
-        <div className="lp-hero-orb lp-hero-orb-1" style={{ transform: `translate(0, ${scrollY * 0.15}px)` }} />
-        <div className="lp-hero-orb lp-hero-orb-2" style={{ transform: `translate(0, ${scrollY * -0.1}px)` }} />
-        <div className="lp-hero-orb lp-hero-orb-3" style={{ transform: `translate(0, ${scrollY * 0.08}px)` }} />
+        <div
+          className="lp-hero-orb lp-hero-orb-1"
+          style={{ transform: `translate(0, ${scrollY * 0.15}px)` }}
+        />
+        <div
+          className="lp-hero-orb lp-hero-orb-2"
+          style={{ transform: `translate(0, ${scrollY * -0.1}px)` }}
+        />
+        <div
+          className="lp-hero-orb lp-hero-orb-3"
+          style={{ transform: `translate(0, ${scrollY * 0.08}px)` }}
+        />
 
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div className="lp-hero-badge">
@@ -720,16 +891,21 @@ export default function LandingPage() {
             Plataforma de gestión de compras
           </div>
           <h1>
-            Las compras de tu empresa,<br />
+            Las compras de tu empresa,
+            <br />
             <span>ordenadas y bajo control</span>
           </h1>
           <p className="lp-hero-sub">
-            Digitalizá el proceso completo de compras: desde la solicitud hasta la recepción.
-            Sin papeles, con aprobaciones automáticas y reportes al instante.
+            Digitalizá el proceso completo de compras: desde la solicitud hasta la recepción. Sin
+            papeles, con aprobaciones automáticas y reportes al instante.
           </p>
           <div className="lp-hero-ctas">
-            <Link href="/registro" className="lp-cta-main">Empezar ahora</Link>
-            <Link href="/login" className="lp-cta-secondary">Ya tengo cuenta</Link>
+            <Link href="/registro" className="lp-cta-main">
+              Empezar ahora
+            </Link>
+            <Link href="/login" className="lp-cta-secondary">
+              Ya tengo cuenta
+            </Link>
           </div>
 
           <div className="lp-float-cards">
@@ -756,7 +932,9 @@ export default function LandingPage() {
       <section className="lp-features">
         <AnimatedSection>
           <h2 className="lp-section-title">Todo lo que necesitás</h2>
-          <p className="lp-section-sub">Un sistema completo para gestionar las compras de tu organización.</p>
+          <p className="lp-section-sub">
+            Un sistema completo para gestionar las compras de tu organización.
+          </p>
         </AnimatedSection>
         <div className="lp-features-grid">
           {FEATURES.map((f, i) => (
@@ -776,7 +954,9 @@ export default function LandingPage() {
         <div className="lp-steps-inner">
           <AnimatedSection>
             <h2 className="lp-section-title">Arrancá en 3 pasos</h2>
-            <p className="lp-section-sub">Ponelo en marcha en minutos, sin configuraciones complicadas.</p>
+            <p className="lp-section-sub">
+              Ponelo en marcha en minutos, sin configuraciones complicadas.
+            </p>
           </AnimatedSection>
           <div className="lp-steps-list">
             {STEPS.map((s, i) => (
@@ -802,8 +982,20 @@ export default function LandingPage() {
           <h2>Transformá la gestión de compras de tu empresa</h2>
           <p>Registrate y empezá a digitalizar hoy mismo.</p>
           <div className="lp-hero-ctas">
-            <Link href="/registro" className="lp-cta-main">Crear mi cuenta</Link>
-            <Link href="/login" className="lp-cta-secondary" style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#fff', background: 'transparent' }}>Ya tengo cuenta</Link>
+            <Link href="/registro" className="lp-cta-main">
+              Crear mi cuenta
+            </Link>
+            <Link
+              href="/login"
+              className="lp-cta-secondary"
+              style={{
+                borderColor: 'rgba(255,255,255,0.3)',
+                color: '#fff',
+                background: 'transparent',
+              }}
+            >
+              Ya tengo cuenta
+            </Link>
           </div>
         </AnimatedSection>
       </section>
@@ -822,7 +1014,7 @@ export default function LandingPage() {
         aria-label="Contactar por WhatsApp"
       >
         <svg viewBox="0 0 32 32" width="28" height="28" fill="#fff">
-          <path d="M16.004 2.003C8.27 2.003 2 8.27 2 16.003c0 2.48.648 4.9 1.88 7.036L2 30l7.167-1.88A13.94 13.94 0 0016.004 30C23.738 30 30 23.737 30 16.003S23.738 2.003 16.004 2.003zm0 25.53a11.49 11.49 0 01-5.87-1.608l-.42-.25-4.35 1.14 1.16-4.244-.274-.436a11.46 11.46 0 01-1.763-6.132c0-6.357 5.175-11.53 11.537-11.53 6.36 0 11.533 5.173 11.533 11.53-.003 6.36-5.176 11.53-11.553 11.53zm6.33-8.64c-.347-.174-2.053-1.013-2.372-1.13-.32-.114-.553-.173-.786.175-.232.347-.9 1.13-1.104 1.363-.203.232-.406.26-.753.087-.347-.174-1.465-.54-2.79-1.72-1.032-.918-1.728-2.053-1.93-2.4-.203-.347-.022-.534.153-.707.157-.156.347-.406.52-.608.174-.203.232-.348.348-.58.116-.232.058-.435-.03-.608-.087-.174-.785-1.893-1.075-2.593-.283-.68-.57-.588-.786-.6-.203-.01-.435-.012-.667-.012-.232 0-.608.087-.926.435-.32.347-1.217 1.188-1.217 2.9 0 1.71 1.246 3.363 1.42 3.595.173.232 2.45 3.742 5.94 5.248.83.36 1.48.574 1.985.735.834.265 1.593.228 2.193.138.67-.1 2.053-.84 2.342-1.65.29-.81.29-1.506.203-1.65-.087-.146-.32-.232-.667-.406z"/>
+          <path d="M16.004 2.003C8.27 2.003 2 8.27 2 16.003c0 2.48.648 4.9 1.88 7.036L2 30l7.167-1.88A13.94 13.94 0 0016.004 30C23.738 30 30 23.737 30 16.003S23.738 2.003 16.004 2.003zm0 25.53a11.49 11.49 0 01-5.87-1.608l-.42-.25-4.35 1.14 1.16-4.244-.274-.436a11.46 11.46 0 01-1.763-6.132c0-6.357 5.175-11.53 11.537-11.53 6.36 0 11.533 5.173 11.533 11.53-.003 6.36-5.176 11.53-11.553 11.53zm6.33-8.64c-.347-.174-2.053-1.013-2.372-1.13-.32-.114-.553-.173-.786.175-.232.347-.9 1.13-1.104 1.363-.203.232-.406.26-.753.087-.347-.174-1.465-.54-2.79-1.72-1.032-.918-1.728-2.053-1.93-2.4-.203-.347-.022-.534.153-.707.157-.156.347-.406.52-.608.174-.203.232-.348.348-.58.116-.232.058-.435-.03-.608-.087-.174-.785-1.893-1.075-2.593-.283-.68-.57-.588-.786-.6-.203-.01-.435-.012-.667-.012-.232 0-.608.087-.926.435-.32.347-1.217 1.188-1.217 2.9 0 1.71 1.246 3.363 1.42 3.595.173.232 2.45 3.742 5.94 5.248.83.36 1.48.574 1.985.735.834.265 1.593.228 2.193.138.67-.1 2.053-.84 2.342-1.65.29-.81.29-1.506.203-1.65-.087-.146-.32-.232-.667-.406z" />
         </svg>
       </a>
     </div>

@@ -43,18 +43,40 @@ export default function RecuperarPage() {
           status="success"
           title="Revisá tu email"
           subTitle="Si el email está registrado, te enviamos un enlace para restablecer tu contraseña. Revisá también la carpeta de spam."
-          extra={<Link href="/login"><Button type="primary">Volver al login</Button></Link>}
+          extra={
+            <Link href="/login">
+              <Button type="primary">Volver al login</Button>
+            </Link>
+          }
         />
       ) : (
         <>
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <Title level={3} style={{ marginBottom: 4, fontWeight: 700 }}>Recuperar contraseña</Title>
-            <Text type="secondary" style={{ fontSize: 14 }}>Ingresá tu email y te enviaremos un enlace</Text>
+            <Title level={3} style={{ marginBottom: 4, fontWeight: 700 }}>
+              Recuperar contraseña
+            </Title>
+            <Text type="secondary" style={{ fontSize: 14 }}>
+              Ingresá tu email y te enviaremos un enlace
+            </Text>
           </div>
 
-          <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off" size="large" {...formProps}>
-            <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email', message: 'Ingresá un email válido' }]}>
-              <Input prefix={<MailOutlined style={{ color: '#a0aec0' }} />} placeholder="tu@empresa.com" />
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={onFinish}
+            autoComplete="off"
+            size="large"
+            {...formProps}
+          >
+            <Form.Item
+              name="email"
+              label="Email"
+              rules={[{ required: true, type: 'email', message: 'Ingresá un email válido' }]}
+            >
+              <Input
+                prefix={<MailOutlined style={{ color: '#a0aec0' }} />}
+                placeholder="tu@empresa.com"
+              />
             </Form.Item>
 
             <Form.Item style={{ marginBottom: 16 }}>
@@ -81,7 +103,9 @@ export default function RecuperarPage() {
           </Form>
 
           <div style={{ textAlign: 'center' }}>
-            <Link href="/login" style={{ fontSize: 13, fontWeight: 600 }}>Volver al login</Link>
+            <Link href="/login" style={{ fontSize: 13, fontWeight: 600 }}>
+              Volver al login
+            </Link>
           </div>
         </>
       )}

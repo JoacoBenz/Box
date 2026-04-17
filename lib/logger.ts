@@ -73,7 +73,13 @@ export function logLoginSuccess(email: string, ip: string, userId: number): void
 
 // ── API errors ──
 
-export function logApiError(endpoint: string, method: string, error: unknown, userId?: number, tenantId?: number): void {
+export function logApiError(
+  endpoint: string,
+  method: string,
+  error: unknown,
+  userId?: number,
+  tenantId?: number,
+): void {
   log({
     level: 'error',
     category: 'api',
@@ -89,7 +95,12 @@ export function logApiError(endpoint: string, method: string, error: unknown, us
 
 // ── Notification errors ──
 
-export function logNotificationError(action: string, error: unknown, targetUserId?: number, solicitudId?: number): void {
+export function logNotificationError(
+  action: string,
+  error: unknown,
+  targetUserId?: number,
+  solicitudId?: number,
+): void {
   log({
     level: 'error',
     category: 'notification',

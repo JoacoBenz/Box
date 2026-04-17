@@ -33,7 +33,9 @@ export function isAccountLocked(email: string): { locked: boolean; remainingMs: 
   return { locked: true, remainingMs: entry.lockedUntil - now };
 }
 
-export async function isAccountLockedDb(email: string): Promise<{ locked: boolean; remainingMs: number }> {
+export async function isAccountLockedDb(
+  email: string,
+): Promise<{ locked: boolean; remainingMs: number }> {
   try {
     const key = email.toLowerCase();
     const result = await prisma.$queryRaw<{ locked_until: Date | null }[]>`
@@ -87,5 +89,7 @@ export function recordFailedLogin(email: string): { locked: boolean; attemptsRem
 
 export function clearFailedAttempts(email: string): void {
   memoryAttempts.delete(email.toLowerCase());
-  prisma.$queryRaw`DELETE FROM account_lockouts WHERE email = ${email.toLowerCase()}`.catch(() => {});
+  prisma.$queryRaw`DELETE FROM account_lockouts WHERE email = ${email.toLowerCase()}`.catch(
+    () => {},
+  );
 }

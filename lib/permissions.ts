@@ -12,7 +12,7 @@ export function verificarSegregacion(
     aprobado_por_id?: number | null;
   },
   usuarioId: number,
-  accion: 'validar' | 'aprobar' | 'comprar' | 'procesar_compras'
+  accion: 'validar' | 'aprobar' | 'comprar' | 'procesar_compras',
 ): { permitido: boolean; motivo?: string } {
   switch (accion) {
     case 'validar':
@@ -25,7 +25,10 @@ export function verificarSegregacion(
         return { permitido: false, motivo: 'No podés aprobar tu propia solicitud' };
       }
       if (solicitud.validado_por_id != null && solicitud.validado_por_id === usuarioId) {
-        return { permitido: false, motivo: 'No podés aprobar una solicitud que vos mismo validaste' };
+        return {
+          permitido: false,
+          motivo: 'No podés aprobar una solicitud que vos mismo validaste',
+        };
       }
       break;
     case 'procesar_compras':
@@ -38,7 +41,10 @@ export function verificarSegregacion(
         return { permitido: false, motivo: 'No podés registrar la compra de tu propia solicitud' };
       }
       if (solicitud.aprobado_por_id != null && solicitud.aprobado_por_id === usuarioId) {
-        return { permitido: false, motivo: 'No podés registrar la compra de una solicitud que vos aprobaste' };
+        return {
+          permitido: false,
+          motivo: 'No podés registrar la compra de una solicitud que vos aprobaste',
+        };
       }
       break;
   }
@@ -48,7 +54,7 @@ export function verificarSegregacion(
 export async function verificarResponsableDeArea(
   tenantId: number,
   usuarioId: number,
-  areaId: number
+  areaId: number,
 ): Promise<boolean> {
   const area = await prisma.areas.findFirst({
     where: { id: areaId, tenant_id: tenantId, responsable_id: usuarioId },
@@ -58,9 +64,16 @@ export async function verificarResponsableDeArea(
 
 /** True when the caller is responsable_area but NOT admin or director */
 export function isOnlyResponsable(roles: string[]): boolean {
-  return roles.includes('responsable_area') && !roles.includes('admin') && !roles.includes('director');
+  return (
+    roles.includes('responsable_area') && !roles.includes('admin') && !roles.includes('director')
+  );
 }
 
-export function apiError(code: string, message: string | undefined, status: number, details?: { field: string; message: string }[]) {
+export function apiError(
+  code: string,
+  message: string | undefined,
+  status: number,
+  details?: { field: string; message: string }[],
+) {
   return Response.json({ error: { code, message: message ?? 'Error', details } }, { status });
 }

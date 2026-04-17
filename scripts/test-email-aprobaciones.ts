@@ -18,11 +18,22 @@ const URGENCIA_COLORS: Record<string, { bg: string; text: string; label: string 
 };
 
 interface MockSol {
-  numero: string; titulo: string; area: string; solicitante: string; urgencia: string; monto: number; diasHabiles: number;
+  numero: string;
+  titulo: string;
+  area: string;
+  solicitante: string;
+  urgencia: string;
+  monto: number;
+  diasHabiles: number;
 }
 
 interface RoleConfig {
-  roleName: string; heading: string; ctaPath: string; ctaLabel: string; recipientName: string; solicitudes: MockSol[];
+  roleName: string;
+  heading: string;
+  ctaPath: string;
+  ctaLabel: string;
+  recipientName: string;
+  solicitudes: MockSol[];
 }
 
 const ROLES: RoleConfig[] = [
@@ -33,8 +44,24 @@ const ROLES: RoleConfig[] = [
     ctaLabel: 'Ir a Solicitudes',
     recipientName: 'María',
     solicitudes: [
-      { numero: 'SC-0032', titulo: 'Resmas A4 x 500 hojas', area: 'Administración', solicitante: 'Juan Pérez', urgencia: 'media', monto: 15000, diasHabiles: 1 },
-      { numero: 'SC-0035', titulo: 'Marcadores pizarra x20', area: 'Administración', solicitante: 'Laura Gómez', urgencia: 'alta', monto: 8500, diasHabiles: 5 },
+      {
+        numero: 'SC-0032',
+        titulo: 'Resmas A4 x 500 hojas',
+        area: 'Administración',
+        solicitante: 'Juan Pérez',
+        urgencia: 'media',
+        monto: 15000,
+        diasHabiles: 1,
+      },
+      {
+        numero: 'SC-0035',
+        titulo: 'Marcadores pizarra x20',
+        area: 'Administración',
+        solicitante: 'Laura Gómez',
+        urgencia: 'alta',
+        monto: 8500,
+        diasHabiles: 5,
+      },
     ],
   },
   {
@@ -44,10 +71,42 @@ const ROLES: RoleConfig[] = [
     ctaLabel: 'Ir a Aprobaciones',
     recipientName: 'Joaquín',
     solicitudes: [
-      { numero: 'SC-0012', titulo: 'Resmas A4 x 500 hojas', area: 'Administración', solicitante: 'María López', urgencia: 'media', monto: 15000, diasHabiles: 1 },
-      { numero: 'SC-0015', titulo: 'Toner HP LaserJet', area: 'Dirección', solicitante: 'Carlos García', urgencia: 'alta', monto: 45000, diasHabiles: 4 },
-      { numero: 'SC-0018', titulo: 'Sillas ergonómicas x5', area: 'Contaduría', solicitante: 'Ana Pérez', urgencia: 'baja', monto: 120000, diasHabiles: 0 },
-      { numero: 'SC-0021', titulo: 'Proyector Epson', area: 'Sala de reuniones', solicitante: 'Luis Fernández', urgencia: 'normal', monto: 350000, diasHabiles: 2 },
+      {
+        numero: 'SC-0012',
+        titulo: 'Resmas A4 x 500 hojas',
+        area: 'Administración',
+        solicitante: 'María López',
+        urgencia: 'media',
+        monto: 15000,
+        diasHabiles: 1,
+      },
+      {
+        numero: 'SC-0015',
+        titulo: 'Toner HP LaserJet',
+        area: 'Dirección',
+        solicitante: 'Carlos García',
+        urgencia: 'alta',
+        monto: 45000,
+        diasHabiles: 4,
+      },
+      {
+        numero: 'SC-0018',
+        titulo: 'Sillas ergonómicas x5',
+        area: 'Contaduría',
+        solicitante: 'Ana Pérez',
+        urgencia: 'baja',
+        monto: 120000,
+        diasHabiles: 0,
+      },
+      {
+        numero: 'SC-0021',
+        titulo: 'Proyector Epson',
+        area: 'Sala de reuniones',
+        solicitante: 'Luis Fernández',
+        urgencia: 'normal',
+        monto: 350000,
+        diasHabiles: 2,
+      },
     ],
   },
   {
@@ -57,9 +116,33 @@ const ROLES: RoleConfig[] = [
     ctaLabel: 'Ir a Compras',
     recipientName: 'Carolina',
     solicitudes: [
-      { numero: 'SC-0010', titulo: 'Notebooks Lenovo x3', area: 'Sistemas', solicitante: 'Pedro Ruiz', urgencia: 'alta', monto: 1200000, diasHabiles: 2 },
-      { numero: 'SC-0014', titulo: 'Escritorios regulables x2', area: 'Dirección', solicitante: 'Ana Pérez', urgencia: 'normal', monto: 280000, diasHabiles: 0 },
-      { numero: 'SC-0019', titulo: 'Papel higiénico x100', area: 'Mantenimiento', solicitante: 'Roberto Díaz', urgencia: 'baja', monto: 35000, diasHabiles: 6 },
+      {
+        numero: 'SC-0010',
+        titulo: 'Notebooks Lenovo x3',
+        area: 'Sistemas',
+        solicitante: 'Pedro Ruiz',
+        urgencia: 'alta',
+        monto: 1200000,
+        diasHabiles: 2,
+      },
+      {
+        numero: 'SC-0014',
+        titulo: 'Escritorios regulables x2',
+        area: 'Dirección',
+        solicitante: 'Ana Pérez',
+        urgencia: 'normal',
+        monto: 280000,
+        diasHabiles: 0,
+      },
+      {
+        numero: 'SC-0019',
+        titulo: 'Papel higiénico x100',
+        area: 'Mantenimiento',
+        solicitante: 'Roberto Díaz',
+        urgencia: 'baja',
+        monto: 35000,
+        diasHabiles: 6,
+      },
     ],
   },
   {
@@ -69,19 +152,36 @@ const ROLES: RoleConfig[] = [
     ctaLabel: 'Ir a Tesorería',
     recipientName: 'Silvia',
     solicitudes: [
-      { numero: 'SC-0008', titulo: 'Aire acondicionado Samsung', area: 'Sala de reuniones', solicitante: 'Luis Fernández', urgencia: 'critica', monto: 650000, diasHabiles: 4 },
-      { numero: 'SC-0011', titulo: 'Licencias Microsoft 365', area: 'Sistemas', solicitante: 'Pedro Ruiz', urgencia: 'normal', monto: 180000, diasHabiles: 1 },
+      {
+        numero: 'SC-0008',
+        titulo: 'Aire acondicionado Samsung',
+        area: 'Sala de reuniones',
+        solicitante: 'Luis Fernández',
+        urgencia: 'critica',
+        monto: 650000,
+        diasHabiles: 4,
+      },
+      {
+        numero: 'SC-0011',
+        titulo: 'Licencias Microsoft 365',
+        area: 'Sistemas',
+        solicitante: 'Pedro Ruiz',
+        urgencia: 'normal',
+        monto: 180000,
+        diasHabiles: 1,
+      },
     ],
   },
 ];
 
 function buildHtml(config: RoleConfig): string {
   let montoTotal = 0;
-  const rows = config.solicitudes.map((sol) => {
-    montoTotal += sol.monto;
-    const urg = URGENCIA_COLORS[sol.urgencia] ?? URGENCIA_COLORS.normal;
-    const urgente = sol.diasHabiles >= 3;
-    return `
+  const rows = config.solicitudes
+    .map((sol) => {
+      montoTotal += sol.monto;
+      const urg = URGENCIA_COLORS[sol.urgencia] ?? URGENCIA_COLORS.normal;
+      const urgente = sol.diasHabiles >= 3;
+      return `
       <tr style="border-bottom: 1px solid #e5e7eb;">
         <td style="padding: 12px 8px; font-weight: 600; color: #4f46e5; font-size: 13px; white-space: nowrap;">
           ${sol.numero}
@@ -96,7 +196,8 @@ function buildHtml(config: RoleConfig): string {
         </td>
         <td style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 14px; color: #1f2937; white-space: nowrap;">${formatMonto(sol.monto)}</td>
       </tr>`;
-  }).join('');
+    })
+    .join('');
 
   const count = config.solicitudes.length;
   const plural = count !== 1;
@@ -155,7 +256,7 @@ async function main() {
   });
 
   for (const config of ROLES) {
-    const hasUrgent = config.solicitudes.some(s => s.diasHabiles >= 3);
+    const hasUrgent = config.solicitudes.some((s) => s.diasHabiles >= 3);
     const count = config.solicitudes.length;
     const plural = count !== 1;
     const subject = hasUrgent

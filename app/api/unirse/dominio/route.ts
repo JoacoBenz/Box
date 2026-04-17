@@ -8,12 +8,18 @@ export async function GET(request: NextRequest) {
     const ip = getClientIp(request);
     const rateLimit = await checkRateLimitDb(`unirse-dominio:${ip}`, 10, 60_000);
     if (!rateLimit.allowed) {
-      return Response.json({ error: { code: 'RATE_LIMITED', message: 'Demasiados intentos' } }, { status: 429 });
+      return Response.json(
+        { error: { code: 'RATE_LIMITED', message: 'Demasiados intentos' } },
+        { status: 429 },
+      );
     }
 
     const email = request.nextUrl.searchParams.get('email');
     if (!email || !email.includes('@')) {
-      return Response.json({ error: { code: 'VALIDATION_ERROR', message: 'Email inválido' } }, { status: 400 });
+      return Response.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'Email inválido' } },
+        { status: 400 },
+      );
     }
 
     const domain = email.split('@')[1].toLowerCase();
@@ -52,6 +58,9 @@ export async function GET(request: NextRequest) {
 
     return Response.json({ match: false });
   } catch {
-    return Response.json({ error: { code: 'INTERNAL', message: 'Error interno' } }, { status: 500 });
+    return Response.json(
+      { error: { code: 'INTERNAL', message: 'Error interno' } },
+      { status: 500 },
+    );
   }
 }

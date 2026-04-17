@@ -7,7 +7,10 @@ async function main() {
 
   const tenantName = 'Natalia Lust SRL';
   const tenant = await prisma.tenants.findFirst({ where: { nombre: tenantName } });
-  if (!tenant) { process.stderr.write(`Tenant "${tenantName}" not found\n`); return; }
+  if (!tenant) {
+    process.stderr.write(`Tenant "${tenantName}" not found\n`);
+    return;
+  }
 
   const tid = tenant.id;
   process.stderr.write(`Deleting tenant "${tenantName}" (ID: ${tid})...\n`);
@@ -28,4 +31,7 @@ async function main() {
   process.stderr.write(`✅ Tenant "${tenantName}" and related data deleted\n`);
   await prisma.$disconnect();
 }
-main().catch(e => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

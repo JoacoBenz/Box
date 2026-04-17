@@ -47,8 +47,12 @@ export async function PUT(request: NextRequest) {
     // All keys below are org-level config (safe for director access).
     // If platform-level keys are added in the future, restrict them to admin-only.
     const allowedKeys = [
-      'sso_dominio', 'sso_google_habilitado', 'sso_microsoft_habilitado',
-      'moneda', 'umbral_aprobacion_responsable', 'umbral_aprobacion_director',
+      'sso_dominio',
+      'sso_google_habilitado',
+      'sso_microsoft_habilitado',
+      'moneda',
+      'umbral_aprobacion_responsable',
+      'umbral_aprobacion_director',
     ];
     if (!allowedKeys.includes(clave)) {
       return apiError('VALIDATION_ERROR', `Clave no permitida: ${clave}`, 400);
@@ -61,8 +65,10 @@ export async function PUT(request: NextRequest) {
     });
 
     await registrarAuditoria({
-      tenantId: tid, usuarioId: session.userId,
-      accion: 'actualizar_configuracion', entidad: 'configuracion',
+      tenantId: tid,
+      usuarioId: session.userId,
+      accion: 'actualizar_configuracion',
+      entidad: 'configuracion',
       datosNuevos: { clave, valor: String(valor ?? '') },
       ipAddress: getClientIp(request),
     });

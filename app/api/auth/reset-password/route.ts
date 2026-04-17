@@ -19,7 +19,12 @@ export async function POST(request: NextRequest) {
     const rateLimit = await checkRateLimitDb(`reset:${ip}`, 10, 3_600_000);
     if (!rateLimit.allowed) {
       return Response.json(
-        { error: { code: 'RATE_LIMITED', message: 'Demasiados intentos. Intentá de nuevo más tarde.' } },
+        {
+          error: {
+            code: 'RATE_LIMITED',
+            message: 'Demasiados intentos. Intentá de nuevo más tarde.',
+          },
+        },
         { status: 429 },
       );
     }
@@ -28,7 +33,16 @@ export async function POST(request: NextRequest) {
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
       return Response.json(
-        { error: { code: 'VALIDATION_ERROR', message: 'Datos inválidos', details: parsed.error.issues.map(i => ({ field: i.path.join('.'), message: i.message })) } },
+        {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Datos inválidos',
+            details: parsed.error.issues.map((i) => ({
+              field: i.path.join('.'),
+              message: i.message,
+            })),
+          },
+        },
         { status: 400 },
       );
     }
@@ -51,7 +65,12 @@ export async function POST(request: NextRequest) {
 
     if (consumed.length === 0) {
       return Response.json(
-        { error: { code: 'INVALID_TOKEN', message: 'El enlace es inválido o expiró. Solicitá uno nuevo.' } },
+        {
+          error: {
+            code: 'INVALID_TOKEN',
+            message: 'El enlace es inválido o expiró. Solicitá uno nuevo.',
+          },
+        },
         { status: 400 },
       );
     }
@@ -64,6 +83,9 @@ export async function POST(request: NextRequest) {
     return Response.json({ message: 'Tu contraseña fue restablecida. Ya podés iniciar sesión.' });
   } catch (error) {
     logApiError('/api/auth/reset-password', 'POST', error);
-    return Response.json({ error: { code: 'INTERNAL', message: 'Error interno del servidor' } }, { status: 500 });
+    return Response.json(
+      { error: { code: 'INTERNAL', message: 'Error interno del servidor' } },
+      { status: 500 },
+    );
   }
 }

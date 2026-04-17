@@ -15,11 +15,13 @@ async function main() {
   }
 
   for (const p of pending) {
-    console.log(`  ID: ${p.id} | Email: ${p.email} | Org: ${p.nombre_organizacion} | Verified: ${p.verificado}`);
+    console.log(
+      `  ID: ${p.id} | Email: ${p.email} | Org: ${p.nombre_organizacion} | Verified: ${p.verificado}`,
+    );
   }
 
   // Get the most recent unverified one
-  const latest = pending.filter(p => !p.verificado).sort((a, b) => b.id - a.id)[0];
+  const latest = pending.filter((p) => !p.verificado).sort((a, b) => b.id - a.id)[0];
   if (!latest) {
     console.log('All registrations are already verified.');
     return;
@@ -31,7 +33,12 @@ async function main() {
   // Instead, we just mark it verified and create the tenant manually
   const bcrypt = await import('bcryptjs');
 
-  const slug = latest.nombre_organizacion.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const slug = latest.nombre_organizacion
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 
   await prisma.$transaction(async (tx: any) => {
     // Create tenant
@@ -95,4 +102,9 @@ async function main() {
   console.log('\n✅ Done! You can now login with:', latest.email);
 }
 
-main().then(() => prisma.$disconnect()).catch(e => { console.error(e); process.exit(1); });
+main()
+  .then(() => prisma.$disconnect())
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
