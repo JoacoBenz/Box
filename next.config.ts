@@ -20,7 +20,6 @@ export default shouldWrapWithSentry
       authToken: process.env.SENTRY_AUTH_TOKEN,
       silent: !process.env.CI,
       widenClientFileUpload: true,
-      hideSourceMaps: true,
       disableLogger: true,
       tunnelRoute: '/monitoring',
     })
