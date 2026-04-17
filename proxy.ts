@@ -13,6 +13,7 @@ const PUBLIC_ROUTES = [
   '/api/auth',
   '/api/registro',
   '/api/unirse',
+  '/api/health',
 ];
 
 // NextAuth v5 (authjs) uses different cookie names than v4

@@ -1,0 +1,31 @@
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    open-pull-requests-limit: 5
+    groups:
+      next-ecosystem:
+        patterns:
+          - 'next'
+          - 'eslint-config-next'
+          - '@next/*'
+      prisma:
+        patterns:
+          - 'prisma'
+          - '@prisma/*'
+      sentry:
+        patterns:
+          - '@sentry/*'
+      dev-dependencies:
+        dependency-type: 'development'
+    ignore:
+      - dependency-name: 'next-auth'
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'monthly'
