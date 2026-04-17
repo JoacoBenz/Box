@@ -1,3 +1,5 @@
+import * as Sentry from '@sentry/nextjs';
+
 type LogLevel = 'info' | 'warn' | 'error';
 
 interface LogEntry {
@@ -20,6 +22,25 @@ function log(entry: LogEntry): void {
     default:
       console.log(output);
   }
+}
+
+function captureToSentry(error: unknown, entry: LogEntry): void {
+  // No-op when Sentry SDK isn't initialized (missing DSN).
+  const { level, category, event, timestamp: _timestamp, ...context } = entry;
+  Sentry.withScope((scope) => {
+    scope.setLevel(level === 'warn' ? 'warning' : level);
+    scope.setTag('category', category);
+    scope.setTag('event', event);
+    scope.setContext('log', context);
+    if (error instanceof Error) {
+      Sentry.captureException(error);
+    } else {
+      Sentry.captureMessage(
+        typeof error === 'string' ? error : event,
+        level === 'warn' ? 'warning' : level,
+      );
+    }
+  });
 }
 
 // ── Security events ──
@@ -80,7 +101,7 @@ export function logApiError(
   userId?: number,
   tenantId?: number,
 ): void {
-  log({
+  const entry: LogEntry = {
     level: 'error',
     category: 'api',
     event: 'unhandled_error',
@@ -90,7 +111,9 @@ export function logApiError(
     userId,
     tenantId,
     error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error),
-  });
+  };
+  log(entry);
+  captureToSentry(error, entry);
 }
 
 // ── Notification errors ──
@@ -101,7 +124,7 @@ export function logNotificationError(
   targetUserId?: number,
   solicitudId?: number,
 ): void {
-  log({
+  const entry: LogEntry = {
     level: 'error',
     category: 'notification',
     event: 'notification_failed',
@@ -110,5 +133,7 @@ export function logNotificationError(
     targetUserId,
     solicitudId,
     error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error),
-  });
+  };
+  log(entry);
+  captureToSentry(error, entry);
 }
