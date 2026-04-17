@@ -23,8 +23,7 @@ jobs:
       - run: npm ci
       - run: npx prisma generate
       - run: npm run lint
-      # format:check disabled until bulk `npm run format` is run against the codebase
-      # - run: npm run format:check
+      - run: npm run format:check
 
   test:
     name: Test

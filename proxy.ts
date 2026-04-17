@@ -43,6 +43,15 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/inicio', request.url));
   }
 
+  // Session without tenantId means a stale/corrupted JWT (e.g. post-migration,
+  // or a user whose tenant was deleted). Force re-auth rather than letting
+  // handlers run with missing multi-tenant context.
+  if (typeof token.tenantId !== 'number' || token.tenantId <= 0) {
+    const url = new URL('/inicio', request.url);
+    url.searchParams.set('reason', 'invalid_session');
+    return NextResponse.redirect(url);
+  }
+
   for (const [route, allowedRoles] of Object.entries(ROLE_ROUTES)) {
     if (pathname.startsWith(route)) {
       const userRoles = (token.roles as string[]) || [];
