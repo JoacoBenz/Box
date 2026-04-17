@@ -34,7 +34,9 @@ export function NotificationBell() {
         const data = await res.json();
         setCount(data.count);
       }
-    } catch {}
+    } catch (err) {
+      console.error('[NotificationBell] Failed to fetch notification count', err);
+    }
   }, []);
 
   const fetchNotificaciones = useCallback(async () => {
@@ -58,13 +60,13 @@ export function NotificationBell() {
 
   async function marcarLeida(id: number) {
     await fetch(`/api/notificaciones/${id}`, { method: 'PATCH' });
-    setNotificaciones(prev => prev.map(n => n.id === id ? { ...n, leida: true } : n));
-    setCount(prev => Math.max(0, prev - 1));
+    setNotificaciones((prev) => prev.map((n) => (n.id === id ? { ...n, leida: true } : n)));
+    setCount((prev) => Math.max(0, prev - 1));
   }
 
   async function marcarTodas() {
     await fetch('/api/notificaciones/marcar-todas', { method: 'PATCH' });
-    setNotificaciones(prev => prev.map(n => ({ ...n, leida: true })));
+    setNotificaciones((prev) => prev.map((n) => ({ ...n, leida: true })));
     setCount(0);
     setOpen(false);
   }
@@ -76,8 +78,24 @@ export function NotificationBell() {
   }
 
   const dropdownContent = (
-    <div style={{ width: 360, background: tokens.notifBg, borderRadius: 8, boxShadow: '0 6px 16px rgba(0,0,0,0.12)', border: `1px solid ${tokens.headerBorder}` }}>
-      <div style={{ padding: '12px 16px', borderBottom: `1px solid ${tokens.borderSubtle}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div
+      style={{
+        width: 360,
+        background: tokens.notifBg,
+        borderRadius: 8,
+        boxShadow: '0 6px 16px rgba(0,0,0,0.12)',
+        border: `1px solid ${tokens.headerBorder}`,
+      }}
+    >
+      <div
+        style={{
+          padding: '12px 16px',
+          borderBottom: `1px solid ${tokens.borderSubtle}`,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <Text strong>Notificaciones</Text>
         {count > 0 && (
           <Button type="link" size="small" icon={<CheckOutlined />} onClick={marcarTodas}>
@@ -86,7 +104,9 @@ export function NotificationBell() {
         )}
       </div>
       {loading ? (
-        <div style={{ padding: 24, textAlign: 'center' }}><Spin /></div>
+        <div style={{ padding: 24, textAlign: 'center' }}>
+          <Spin />
+        </div>
       ) : notificaciones.length === 0 ? (
         <Empty description="Sin notificaciones" style={{ padding: 24 }} />
       ) : (
@@ -94,12 +114,24 @@ export function NotificationBell() {
           {notificaciones.map((notif) => (
             <div
               key={notif.id}
-              style={{ padding: '10px 16px', cursor: 'pointer', background: notif.leida ? tokens.bgCard : tokens.notifUnreadBg, borderLeft: notif.leida ? 'none' : `3px solid ${tokens.notifAccent}`, borderBottom: `1px solid ${tokens.borderSubtle}` }}
+              style={{
+                padding: '10px 16px',
+                cursor: 'pointer',
+                background: notif.leida ? tokens.bgCard : tokens.notifUnreadBg,
+                borderLeft: notif.leida ? 'none' : `3px solid ${tokens.notifAccent}`,
+                borderBottom: `1px solid ${tokens.borderSubtle}`,
+              }}
               onClick={() => handleClickNotif(notif)}
             >
               <Space orientation="vertical" size={2} style={{ width: '100%' }}>
-                <Text strong={!notif.leida} style={{ fontSize: 13 }}>{notif.titulo}</Text>
-                {notif.mensaje && <Text type="secondary" style={{ fontSize: 12 }}>{notif.mensaje}</Text>}
+                <Text strong={!notif.leida} style={{ fontSize: 13 }}>
+                  {notif.titulo}
+                </Text>
+                {notif.mensaje && (
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {notif.mensaje}
+                  </Text>
+                )}
                 <Text type="secondary" style={{ fontSize: 11 }}>
                   {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true, locale: es })}
                 </Text>
@@ -114,13 +146,21 @@ export function NotificationBell() {
   return (
     <Dropdown
       open={open}
-      onOpenChange={(v) => { setOpen(v); if (v) fetchNotificaciones(); }}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (v) fetchNotificaciones();
+      }}
       popupRender={() => dropdownContent}
       trigger={['click']}
       placement="bottomRight"
     >
       <Badge count={count} size="small" overflowCount={99}>
-        <Button type="text" icon={<BellOutlined style={{ fontSize: 18 }} />} style={{ height: 40, width: 40 }} aria-label={`Notificaciones${count > 0 ? ` (${count} sin leer)` : ''}`} />
+        <Button
+          type="text"
+          icon={<BellOutlined style={{ fontSize: 18 }} />}
+          style={{ height: 40, width: 40 }}
+          aria-label={`Notificaciones${count > 0 ? ` (${count} sin leer)` : ''}`}
+        />
       </Badge>
     </Dropdown>
   );
