@@ -1,6 +1,8 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { DashboardShell } from '@/components/layout/DashboardShell';
+import { SubscriptionBanner } from '@/components/SubscriptionBanner';
+import { getSubscriptionStatus } from '@/lib/subscription';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -17,10 +19,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/seleccionar-area');
   }
 
+  const isSuperAdmin = (user.roles ?? []).includes('super_admin');
+  const subscription = isSuperAdmin ? null : await getSubscriptionStatus(user.tenantId);
+
   return (
     <DashboardShell
       tenantNombre={
-        (user.roles ?? []).includes('super_admin')
+        isSuperAdmin
           ? 'Plataforma Box'
           : (user.tenantName ?? user.tenantNombre ?? 'Mi Organización')
       }
@@ -28,6 +33,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
       areaNombre={user.areaNombre ?? null}
       roles={user.roles ?? []}
     >
+      {subscription && (
+        <SubscriptionBanner
+          estado={subscription.estado}
+          trialDaysLeft={subscription.trialDaysLeft}
+          cancelAtPeriodEnd={subscription.cancelAtPeriodEnd}
+        />
+      )}
       {children}
     </DashboardShell>
   );
