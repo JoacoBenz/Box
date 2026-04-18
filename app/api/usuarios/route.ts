@@ -4,6 +4,7 @@ import { tenantPrisma, prisma } from '@/lib/prisma';
 import { registrarAuditoria } from '@/lib/audit';
 import { usuarioSchema } from '@/lib/validators';
 import { isOnlyResponsable } from '@/lib/permissions';
+import { canAssignRole } from '@/lib/plan-limits';
 
 export const GET = withAdminOverride(
   { roles: ['admin', 'director', 'responsable_area'] },
@@ -120,6 +121,17 @@ export const POST = withAdminOverride(
         { error: { code: 'VALIDATION_ERROR', message: 'Uno o más roles son inválidos' } },
         { status: 400 },
       );
+    }
+
+    // Enforce plan limits per role
+    for (const rolNombre of roleNames) {
+      const check = await canAssignRole(effectiveTenantId, rolNombre, area_id);
+      if (!check.allowed) {
+        return Response.json(
+          { error: { code: check.code, message: check.message } },
+          { status: 403 },
+        );
+      }
     }
 
     const passwordHash = await bcrypt.hash(password, 12);

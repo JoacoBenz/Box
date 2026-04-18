@@ -64,6 +64,11 @@ vi.mock('@/lib/tenant-config', () => ({
   getTenantConfigNumber: vi.fn().mockResolvedValue(0),
 }));
 vi.mock('@/lib/validators', async () => await vi.importActual('@/lib/validators'));
+vi.mock('@/lib/plan-limits', () => ({
+  canAssignRole: vi
+    .fn()
+    .mockResolvedValue({ allowed: true, count: 0, limit: 1, code: 'OK', message: '' }),
+}));
 vi.mock('@/types', () => ({ default: {} }));
 vi.mock('bcryptjs', () => ({ default: { hash: vi.fn().mockResolvedValue('hashed_pw') } }));
 

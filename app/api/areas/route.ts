@@ -2,6 +2,7 @@ import { withAdminOverride, validateBody } from '@/lib/api-handler';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
 import { areaSchema } from '@/lib/validators';
 import { tenantPrisma } from '@/lib/prisma';
+import { canCreateArea } from '@/lib/plan-limits';
 
 export const GET = withAdminOverride({}, async (request, { db, effectiveTenantId }) => {
   const areas = await db.areas.findMany({
@@ -31,6 +32,15 @@ export const POST = withAdminOverride(
 
     const { nombre, responsable_id, presupuesto_anual, presupuesto_mensual } = validation.data;
     const db = tenantPrisma(effectiveTenantId);
+
+    // Enforce plan limit
+    const limit = await canCreateArea(effectiveTenantId);
+    if (!limit.allowed) {
+      return Response.json(
+        { error: { code: limit.code, message: limit.message } },
+        { status: 403 },
+      );
+    }
 
     // Check name uniqueness
     const existing = await db.areas.findFirst({ where: { nombre } });

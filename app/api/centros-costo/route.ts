@@ -2,6 +2,7 @@ import { withAdminOverride, validateBody } from '@/lib/api-handler';
 import { registrarAuditoria } from '@/lib/audit';
 import { centroCostoSchema } from '@/lib/validators';
 import { tenantPrisma } from '@/lib/prisma';
+import { canCreateCentroCosto } from '@/lib/plan-limits';
 
 export const GET = withAdminOverride({}, async (request, { db, effectiveTenantId }) => {
   const url = new URL(request.url);
@@ -37,6 +38,15 @@ export const POST = withAdminOverride(
 
     const { nombre, codigo, presupuesto_anual, presupuesto_mensual, area_id } = validation.data;
     const db = tenantPrisma(effectiveTenantId);
+
+    // Enforce plan limit (CCs per area)
+    const limit = await canCreateCentroCosto(effectiveTenantId, area_id);
+    if (!limit.allowed) {
+      return Response.json(
+        { error: { code: limit.code, message: limit.message } },
+        { status: 403 },
+      );
+    }
 
     const codigoUpper = codigo.toUpperCase();
     const [byCode, byName] = await Promise.all([

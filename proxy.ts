@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { getSubscriptionStatus } from '@/lib/subscription';
+
+// Next.js 16 proxy (middleware) always runs on Node.js runtime, so Prisma
+// is safe to call for the subscription check below.
 
 const PUBLIC_ROUTES = [
   '/inicio',
@@ -16,6 +20,19 @@ const PUBLIC_ROUTES = [
   '/api/health',
 ];
 
+/**
+ * Routes that remain reachable even when the tenant's subscription is
+ * canceled/unpaid. Admins must still be able to reach billing to upgrade,
+ * and Stripe callbacks must be able to notify the app.
+ */
+const SUBSCRIPTION_EXEMPT_ROUTES = [
+  '/facturacion',
+  '/api/stripe',
+  '/api/auth',
+  '/api/health',
+  '/logout',
+];
+
 // NextAuth v5 (authjs) uses different cookie names than v4
 const AUTH_COOKIE =
   process.env.NODE_ENV === 'production' ? '__Secure-authjs.session-token' : 'authjs.session-token';
@@ -26,6 +43,9 @@ const ROLE_ROUTES: Record<string, string[]> = {
   '/compras': ['tesoreria', 'super_admin'],
   '/admin': ['admin', 'super_admin'],
 };
+
+/** Super-admins manage the platform tenant and don't have a billing sub. */
+const PLATFORM_TENANT_ROLE = 'super_admin';
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -60,6 +80,20 @@ export async function proxy(request: NextRequest) {
       if (!hasAccess) {
         return NextResponse.redirect(new URL('/', request.url));
       }
+    }
+  }
+
+  // Subscription check — gate everything except exempt routes and platform staff.
+  const userRoles = (token.roles as string[]) || [];
+  const isSubscriptionExempt =
+    SUBSCRIPTION_EXEMPT_ROUTES.some((r) => pathname.startsWith(r)) ||
+    userRoles.includes(PLATFORM_TENANT_ROLE);
+  if (!isSubscriptionExempt) {
+    const subscription = await getSubscriptionStatus(token.tenantId);
+    if (!subscription || !subscription.hasAccess) {
+      const url = new URL('/facturacion', request.url);
+      url.searchParams.set('reason', subscription ? subscription.estado : 'no_subscription');
+      return NextResponse.redirect(url);
     }
   }
 

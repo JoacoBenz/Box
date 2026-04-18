@@ -74,6 +74,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get default billing plan for the trial subscription
+    const defaultPlan = await prisma.planes.findUnique({ where: { nombre: 'box-principal' } });
+    if (!defaultPlan) {
+      return Response.json(
+        {
+          error: {
+            code: 'INTERNAL',
+            message: 'Plan por defecto no encontrado. Ejecutá el seed.',
+          },
+        },
+        { status: 500 },
+      );
+    }
+
     // Generate unique slug
     let slug = slugify(pending.nombre_organizacion);
     const existingSlug = await prisma.tenants.findUnique({ where: { slug } });
@@ -133,6 +147,21 @@ export async function POST(request: NextRequest) {
           { tenant_id: newTenant.id, clave: 'sso_google_habilitado', valor: 'true' },
           { tenant_id: newTenant.id, clave: 'sso_microsoft_habilitado', valor: 'true' },
         ],
+      });
+
+      // Start a 14-day trial subscription tied to the default plan
+      const trialStart = new Date();
+      const trialEnd = new Date(
+        trialStart.getTime() + defaultPlan.trial_dias * 24 * 60 * 60 * 1000,
+      );
+      await tx.suscripciones.create({
+        data: {
+          tenant_id: newTenant.id,
+          plan_id: defaultPlan.id,
+          estado: 'trialing',
+          trial_starts_at: trialStart,
+          trial_ends_at: trialEnd,
+        },
       });
 
       // Mark pending registration as verified
