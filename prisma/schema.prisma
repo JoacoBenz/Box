@@ -34,6 +34,54 @@ model tenants {
   comentarios          comentarios[]
   codigos_invitacion   codigos_invitacion[]
   productos            productos[]
+  suscripcion          suscripciones?
+}
+
+// ── Billing ──
+
+model planes {
+  id                      Int      @id @default(autoincrement())
+  nombre                  String   @unique @db.VarChar(100)
+  precio_ars              Int // pesos enteros (152000 = 152k ARS)
+  trial_dias              Int      @default(14)
+  limite_areas            Int      @default(3)
+  limite_cc_por_area      Int      @default(2)
+  limite_responsable_area Int      @default(1) // por área
+  limite_director         Int      @default(1) // por tenant
+  limite_tesoreria        Int      @default(1)
+  limite_admin            Int      @default(1)
+  limite_compras          Int      @default(1)
+  // solicitante: sin límite (no hay columna)
+  stripe_price_id         String?  @db.VarChar(255)
+  activo                  Boolean  @default(true)
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
+
+  suscripciones suscripciones[]
+}
+
+model suscripciones {
+  id                     Int       @id @default(autoincrement())
+  tenant_id              Int       @unique
+  plan_id                Int
+  estado                 String    @db.VarChar(20) // 'trialing' | 'active' | 'past_due' | 'canceled' | 'unpaid'
+  stripe_customer_id     String?   @unique @db.VarChar(255)
+  stripe_subscription_id String?   @unique @db.VarChar(255)
+  trial_starts_at        DateTime?
+  trial_ends_at          DateTime?
+  current_period_start   DateTime?
+  current_period_end     DateTime?
+  cancel_at_period_end   Boolean   @default(false)
+  canceled_at            DateTime?
+  created_at             DateTime  @default(now())
+  updated_at             DateTime  @updatedAt
+
+  tenant tenants @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  plan   planes  @relation(fields: [plan_id], references: [id])
+
+  @@index([estado])
+  @@index([trial_ends_at])
+  @@index([current_period_end])
 }
 
 model roles {

@@ -27,6 +27,35 @@ async function main() {
 
   console.log('Roles seeded successfully');
 
+  // --- Seed default billing plan ---
+  await prisma.planes.upsert({
+    where: { nombre: 'box-principal' },
+    update: {
+      precio_ars: 152000,
+      trial_dias: 14,
+      limite_areas: 3,
+      limite_cc_por_area: 2,
+      limite_responsable_area: 1,
+      limite_director: 1,
+      limite_tesoreria: 1,
+      limite_admin: 1,
+      limite_compras: 1,
+    },
+    create: {
+      nombre: 'box-principal',
+      precio_ars: 152000,
+      trial_dias: 14,
+      limite_areas: 3,
+      limite_cc_por_area: 2,
+      limite_responsable_area: 1,
+      limite_director: 1,
+      limite_tesoreria: 1,
+      limite_admin: 1,
+      limite_compras: 1,
+    },
+  });
+  console.log('Default plan (box-principal) seeded');
+
   // --- Platform tenant (hidden, for super admin only) ---
   const platformTenant = await prisma.tenants.upsert({
     where: { slug: '__platform__' },
