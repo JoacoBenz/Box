@@ -1,71 +1,93 @@
-'use client'
+'use client';
 
-import { useEffect, useState, useCallback } from 'react'
-import { Table, Tag, Button, Typography, Modal, Form, Select, Input, DatePicker, Space } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
-import Link from 'next/link'
-import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types'
-import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types'
-import dayjs from 'dayjs'
-import { useFormValid } from '@/hooks/useFormValid'
-import { useTheme } from '@/components/ThemeProvider'
+import { useEffect, useState, useCallback } from 'react';
+import {
+  Table,
+  Tag,
+  Button,
+  Typography,
+  Modal,
+  Form,
+  Select,
+  Input,
+  DatePicker,
+  Space,
+} from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import Link from 'next/link';
+import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types';
+import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types';
+import dayjs from 'dayjs';
+import { useFormValid } from '@/hooks/useFormValid';
+import { useTheme } from '@/components/ThemeProvider';
 
-const { Title, Text } = Typography
-const { TextArea } = Input
+const { Title, Text } = Typography;
+const { TextArea } = Input;
 
 interface Solicitud {
-  id: number
-  numero: string
-  titulo: string
-  urgencia: string
-  estado: string
-  tipo: string
-  prioridad_compra: string | null
-  dia_pago_programado: string | null
-  area: { nombre: string } | null
-  solicitante: { nombre: string }
+  id: number;
+  numero: string;
+  titulo: string;
+  urgencia: string;
+  estado: string;
+  tipo: string;
+  prioridad_compra: string | null;
+  dia_pago_programado: string | null;
+  area: { nombre: string } | null;
+  solicitante: { nombre: string };
 }
 
-const ALL_ESTADOS = Object.entries(ESTADOS_SOLICITUD).map(([value, { label }]) => ({ value, label }))
+const ALL_ESTADOS = Object.entries(ESTADOS_SOLICITUD).map(([value, { label }]) => ({
+  value,
+  label,
+}));
 
 export default function GestionComprasPage() {
-  const { tokens } = useTheme()
-  const [solicitudes, setSolicitudes] = useState<Solicitud[]>([])
-  const [loading, setLoading] = useState(true)
-  const [estadoFilter, setEstadoFilter] = useState<string>('en_compras')
+  const { tokens } = useTheme();
+  const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [estadoFilter, setEstadoFilter] = useState<string>('en_compras');
 
-  const [programarOpen, setProgramarOpen] = useState(false)
-  const [selectedId, setSelectedId] = useState<number | null>(null)
-  const [actionLoading, setActionLoading] = useState(false)
+  const [programarOpen, setProgramarOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  const [programarForm] = Form.useForm()
-  const { hasErrors, formProps } = useFormValid(programarForm)
+  const [programarForm] = Form.useForm();
+  const { hasErrors, formProps } = useFormValid(programarForm);
 
   const fetchData = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const params = estadoFilter ? `estado=${estadoFilter}` : ''
-      const res = await fetch(`/api/solicitudes?${params}&limit=100`)
+      const params = estadoFilter ? `estado=${estadoFilter}` : '';
+      const res = await fetch(`/api/solicitudes?${params}&limit=100`);
       if (res.ok) {
-        const data = await res.json()
-        setSolicitudes(data.data ?? [])
+        const data = await res.json();
+        setSolicitudes(data.data ?? []);
       }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [estadoFilter])
-
-  useEffect(() => { fetchData() }, [fetchData])
+  }, [estadoFilter]);
 
   useEffect(() => {
-    const handler = () => { fetchData() }
-    window.addEventListener('admin-tenant-change', handler)
-    return () => window.removeEventListener('admin-tenant-change', handler)
-  }, [fetchData])
+    fetchData();
+  }, [fetchData]);
 
-  async function handleProgramarPago(values: { prioridad_compra: string; dia_pago_programado: any; observaciones?: string }) {
-    if (!selectedId) return
-    setActionLoading(true)
+  useEffect(() => {
+    const handler = () => {
+      fetchData();
+    };
+    window.addEventListener('admin-tenant-change', handler);
+    return () => window.removeEventListener('admin-tenant-change', handler);
+  }, [fetchData]);
+
+  async function handleProgramarPago(values: {
+    prioridad_compra: string;
+    dia_pago_programado: any;
+    observaciones?: string;
+  }) {
+    if (!selectedId) return;
+    setActionLoading(true);
     try {
       const res = await fetch(`/api/solicitudes/${selectedId}/procesar-compras`, {
         method: 'POST',
@@ -75,17 +97,17 @@ export default function GestionComprasPage() {
           dia_pago_programado: values.dia_pago_programado.toISOString(),
           observaciones: values.observaciones || null,
         }),
-      })
+      });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        Modal.error({ title: 'Error', content: data?.error?.message ?? `Error ${res.status}` })
+        const data = await res.json().catch(() => ({}));
+        Modal.error({ title: 'Error', content: data?.error?.message ?? `Error ${res.status}` });
       } else {
-        setProgramarOpen(false)
-        programarForm.resetFields()
-        fetchData()
+        setProgramarOpen(false);
+        programarForm.resetFields();
+        fetchData();
       }
     } finally {
-      setActionLoading(false)
+      setActionLoading(false);
     }
   }
 
@@ -93,7 +115,7 @@ export default function GestionComprasPage() {
     urgente: 'red',
     normal: 'blue',
     programado: 'default',
-  }
+  };
 
   const columns: ColumnsType<Solicitud> = [
     {
@@ -107,8 +129,12 @@ export default function GestionComprasPage() {
       dataIndex: 'titulo',
       render: (val, row) => (
         <Space orientation="vertical" size={2}>
-          <Link href={`/solicitudes/${row.id}`} style={{ fontWeight: 500 }}>{val}</Link>
-          <Text type="secondary" style={{ fontSize: 12 }}>{row.area?.nombre ?? '—'} · {row.solicitante.nombre}</Text>
+          <Link href={`/solicitudes/${row.id}`} style={{ fontWeight: 500 }}>
+            {val}
+          </Link>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {row.area?.nombre ?? '—'} · {row.solicitante.nombre}
+          </Text>
         </Space>
       ),
     },
@@ -117,8 +143,8 @@ export default function GestionComprasPage() {
       dataIndex: 'urgencia',
       width: 100,
       render: (val: UrgenciaSolicitud) => {
-        const info = URGENCIAS[val]
-        return info ? <Tag color={info.color}>{info.label}</Tag> : <Tag>{val}</Tag>
+        const info = URGENCIAS[val];
+        return info ? <Tag color={info.color}>{info.label}</Tag> : <Tag>{val}</Tag>;
       },
     },
     {
@@ -126,8 +152,8 @@ export default function GestionComprasPage() {
       dataIndex: 'estado',
       width: 140,
       render: (val: EstadoSolicitud) => {
-        const info = ESTADOS_SOLICITUD[val]
-        return info ? <Tag color={info.color}>{info.label}</Tag> : <Tag>{val}</Tag>
+        const info = ESTADOS_SOLICITUD[val];
+        return info ? <Tag color={info.color}>{info.label}</Tag> : <Tag>{val}</Tag>;
       },
     },
     {
@@ -135,7 +161,13 @@ export default function GestionComprasPage() {
       dataIndex: 'prioridad_compra',
       width: 100,
       render: (val: string | null) =>
-        val ? <Tag color={PRIORIDAD_COLORS[val] ?? 'default'}>{val.charAt(0).toUpperCase() + val.slice(1)}</Tag> : <Text type="secondary">—</Text>,
+        val ? (
+          <Tag color={PRIORIDAD_COLORS[val] ?? 'default'}>
+            {val.charAt(0).toUpperCase() + val.slice(1)}
+          </Tag>
+        ) : (
+          <Text type="secondary">—</Text>
+        ),
     },
     {
       title: 'Día de pago',
@@ -155,7 +187,10 @@ export default function GestionComprasPage() {
               size="small"
               type="primary"
               style={{ background: tokens.colorPrimary, borderColor: tokens.colorPrimary }}
-              onClick={() => { setSelectedId(row.id); setProgramarOpen(true) }}
+              onClick={() => {
+                setSelectedId(row.id);
+                setProgramarOpen(true);
+              }}
             >
               Programar Pago
             </Button>
@@ -163,13 +198,17 @@ export default function GestionComprasPage() {
         </Space>
       ),
     },
-  ]
+  ];
 
   return (
     <div className="page-content">
       <div style={{ marginBottom: 24 }}>
-        <Title level={3} style={{ margin: 0, fontWeight: 700, color: tokens.textPrimary }}>Gestión de Compras</Title>
-        <Text type="secondary" style={{ marginTop: 4, display: 'block' }}>Pipeline de solicitudes para programar pagos</Text>
+        <Title level={3} style={{ margin: 0, fontWeight: 700, color: tokens.textPrimary }}>
+          Gestión de Compras
+        </Title>
+        <Text type="secondary" style={{ marginTop: 4, display: 'block' }}>
+          Pipeline de solicitudes para programar pagos
+        </Text>
       </div>
 
       <div style={{ marginBottom: 16 }}>
@@ -195,9 +234,11 @@ export default function GestionComprasPage() {
         size="middle"
         locale={{ emptyText: 'No hay solicitudes para mostrar' }}
         rowClassName={(record: any) =>
-          record.urgencia === 'critica' ? 'urgencia-row-critica' :
-          record.urgencia === 'urgente' ? 'urgencia-row-urgente' :
-          'urgencia-row-normal'
+          record.urgencia === 'critica'
+            ? 'urgencia-row-critica'
+            : record.urgencia === 'urgente'
+              ? 'urgencia-row-urgente'
+              : 'urgencia-row-normal'
         }
       />
 
@@ -205,19 +246,29 @@ export default function GestionComprasPage() {
       <Modal
         title="Programar Pago"
         open={programarOpen}
-        onCancel={() => { setProgramarOpen(false); programarForm.resetFields() }}
+        onCancel={() => {
+          setProgramarOpen(false);
+          programarForm.resetFields();
+        }}
         onOk={() => programarForm.submit()}
         okText="Programar Pago"
         okButtonProps={{ loading: actionLoading, disabled: hasErrors }}
         cancelText="Cancelar"
       >
         <Form form={programarForm} layout="vertical" onFinish={handleProgramarPago} {...formProps}>
-          <Form.Item name="prioridad_compra" label="Prioridad" rules={[{ required: true, message: 'Seleccioná la prioridad' }]}>
-            <Select placeholder="Seleccionar prioridad" options={[
-              { value: 'urgente', label: 'Urgente' },
-              { value: 'normal', label: 'Normal' },
-              { value: 'programado', label: 'Programado' },
-            ]} />
+          <Form.Item
+            name="prioridad_compra"
+            label="Prioridad"
+            rules={[{ required: true, message: 'Seleccioná la prioridad' }]}
+          >
+            <Select
+              placeholder="Seleccionar prioridad"
+              options={[
+                { value: 'urgente', label: 'Urgente' },
+                { value: 'normal', label: 'Normal' },
+                { value: 'programado', label: 'Programado' },
+              ]}
+            />
           </Form.Item>
           <Form.Item
             name="dia_pago_programado"
@@ -232,10 +283,15 @@ export default function GestionComprasPage() {
             />
           </Form.Item>
           <Form.Item name="observaciones" label="Observaciones">
-            <TextArea rows={3} placeholder="Notas internas de Compras..." maxLength={500} showCount />
+            <TextArea
+              rows={3}
+              placeholder="Notas internas de Compras..."
+              maxLength={500}
+              showCount
+            />
           </Form.Item>
         </Form>
       </Modal>
     </div>
-  )
+  );
 }

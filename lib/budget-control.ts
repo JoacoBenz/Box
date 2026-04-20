@@ -17,7 +17,7 @@ export interface AreaBudgetStatus {
 export async function verificarPresupuestoArea(
   tenantId: number,
   areaId: number,
-  montoNuevo: number
+  montoNuevo: number,
 ): Promise<{ permitido: boolean; status: AreaBudgetStatus; mensaje?: string }> {
   const db = tenantPrisma(tenantId);
 
@@ -25,11 +25,23 @@ export async function verificarPresupuestoArea(
   if (!area) return { permitido: true, status: {} as AreaBudgetStatus };
 
   const presupuestoAnual = area.presupuesto_anual != null ? Number(area.presupuesto_anual) : null;
-  const presupuestoMensual = area.presupuesto_mensual != null ? Number(area.presupuesto_mensual) : null;
+  const presupuestoMensual =
+    area.presupuesto_mensual != null ? Number(area.presupuesto_mensual) : null;
 
   // No budgets configured → allow
   if (presupuestoAnual === null && presupuestoMensual === null) {
-    return { permitido: true, status: { area: area.nombre, presupuestoAnual, presupuestoMensual, gastoAnual: 0, gastoMensual: 0, excedidoAnual: false, excedidoMensual: false } };
+    return {
+      permitido: true,
+      status: {
+        area: area.nombre,
+        presupuestoAnual,
+        presupuestoMensual,
+        gastoAnual: 0,
+        gastoMensual: 0,
+        excedidoAnual: false,
+        excedidoMensual: false,
+      },
+    };
   }
 
   const now = new Date();
@@ -51,19 +63,40 @@ export async function verificarPresupuestoArea(
   const gastoAnual = Number(gastos[0]?.gasto_anual ?? 0);
   const gastoMensual = Number(gastos[0]?.gasto_mensual ?? 0);
 
-  const excedidoAnual = presupuestoAnual !== null && (gastoAnual + montoNuevo) > presupuestoAnual;
-  const excedidoMensual = presupuestoMensual !== null && (gastoMensual + montoNuevo) > presupuestoMensual;
+  const excedidoAnual = presupuestoAnual !== null && gastoAnual + montoNuevo > presupuestoAnual;
+  const excedidoMensual =
+    presupuestoMensual !== null && gastoMensual + montoNuevo > presupuestoMensual;
 
-  const status: AreaBudgetStatus = { area: area.nombre, presupuestoAnual, presupuestoMensual, gastoAnual, gastoMensual, excedidoAnual, excedidoMensual };
+  const status: AreaBudgetStatus = {
+    area: area.nombre,
+    presupuestoAnual,
+    presupuestoMensual,
+    gastoAnual,
+    gastoMensual,
+    excedidoAnual,
+    excedidoMensual,
+  };
 
   if (excedidoMensual && excedidoAnual) {
-    return { permitido: false, status, mensaje: `El área "${area.nombre}" excede el presupuesto mensual ($${gastoMensual.toLocaleString('es-AR')} + $${montoNuevo.toLocaleString('es-AR')} > $${presupuestoMensual!.toLocaleString('es-AR')}) y anual ($${gastoAnual.toLocaleString('es-AR')} + $${montoNuevo.toLocaleString('es-AR')} > $${presupuestoAnual!.toLocaleString('es-AR')})` };
+    return {
+      permitido: false,
+      status,
+      mensaje: `El área "${area.nombre}" excede el presupuesto mensual ($${gastoMensual.toLocaleString('es-AR')} + $${montoNuevo.toLocaleString('es-AR')} > $${presupuestoMensual!.toLocaleString('es-AR')}) y anual ($${gastoAnual.toLocaleString('es-AR')} + $${montoNuevo.toLocaleString('es-AR')} > $${presupuestoAnual!.toLocaleString('es-AR')})`,
+    };
   }
   if (excedidoMensual) {
-    return { permitido: false, status, mensaje: `El área "${area.nombre}" excede el presupuesto mensual: gasto actual $${gastoMensual.toLocaleString('es-AR')} + $${montoNuevo.toLocaleString('es-AR')} supera el límite de $${presupuestoMensual!.toLocaleString('es-AR')}` };
+    return {
+      permitido: false,
+      status,
+      mensaje: `El área "${area.nombre}" excede el presupuesto mensual: gasto actual $${gastoMensual.toLocaleString('es-AR')} + $${montoNuevo.toLocaleString('es-AR')} supera el límite de $${presupuestoMensual!.toLocaleString('es-AR')}`,
+    };
   }
   if (excedidoAnual) {
-    return { permitido: false, status, mensaje: `El área "${area.nombre}" excede el presupuesto anual: gasto actual $${gastoAnual.toLocaleString('es-AR')} + $${montoNuevo.toLocaleString('es-AR')} supera el límite de $${presupuestoAnual!.toLocaleString('es-AR')}` };
+    return {
+      permitido: false,
+      status,
+      mensaje: `El área "${area.nombre}" excede el presupuesto anual: gasto actual $${gastoAnual.toLocaleString('es-AR')} + $${montoNuevo.toLocaleString('es-AR')} supera el límite de $${presupuestoAnual!.toLocaleString('es-AR')}`,
+    };
   }
 
   return { permitido: true, status };
@@ -84,7 +117,7 @@ export interface BudgetStatus {
 export async function verificarPresupuesto(
   tenantId: number,
   centroCostoId: number,
-  montoNuevo: number
+  montoNuevo: number,
 ): Promise<{ permitido: boolean; status: BudgetStatus }> {
   const db = tenantPrisma(tenantId);
 
@@ -116,15 +149,18 @@ export async function verificarPresupuesto(
   const gastoAnual = Number(gastos[0]?.gasto_anual ?? 0);
   const gastoMensual = Number(gastos[0]?.gasto_mensual ?? 0);
 
-  const presupuestoAnual = centroCosto.presupuesto_anual != null ? Number(centroCosto.presupuesto_anual) : null;
-  const presupuestoMensual = centroCosto.presupuesto_mensual != null ? Number(centroCosto.presupuesto_mensual) : null;
+  const presupuestoAnual =
+    centroCosto.presupuesto_anual != null ? Number(centroCosto.presupuesto_anual) : null;
+  const presupuestoMensual =
+    centroCosto.presupuesto_mensual != null ? Number(centroCosto.presupuesto_mensual) : null;
 
   const disponibleAnual = presupuestoAnual !== null ? presupuestoAnual - gastoAnual : null;
   const disponibleMensual = presupuestoMensual !== null ? presupuestoMensual - gastoMensual : null;
 
   // Check if new amount would exceed budget
-  const excederiaAnual = disponibleAnual !== null && (gastoAnual + montoNuevo) > presupuestoAnual!;
-  const excederiaMensual = disponibleMensual !== null && (gastoMensual + montoNuevo) > presupuestoMensual!;
+  const excederiaAnual = disponibleAnual !== null && gastoAnual + montoNuevo > presupuestoAnual!;
+  const excederiaMensual =
+    disponibleMensual !== null && gastoMensual + montoNuevo > presupuestoMensual!;
 
   const excedido = excederiaAnual || excederiaMensual;
   const alertaPorcentaje = presupuestoAnual

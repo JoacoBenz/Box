@@ -14,4 +14,7 @@ async function main() {
   for (const r of all) process.stderr.write('  ID:' + r.id + ' | ' + r.nombre + '\n');
   await prisma.$disconnect();
 }
-main().catch(e => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

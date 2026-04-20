@@ -1,31 +1,79 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Cursograma - Proceso de Solicitud de Compra</title>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; background: #f8f9fa; margin: 0; padding: 20px; }
-    h1 { text-align: center; color: #1e293b; }
-    .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
-    .legend { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin: 20px 0; font-size: 14px; }
-    .legend-item { display: flex; align-items: center; gap: 6px; }
-    .legend-color { width: 16px; height: 16px; border-radius: 4px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>Cursograma - Proceso de Solicitud de Compra</h1>
-    <div class="legend">
-      <div class="legend-item"><div class="legend-color" style="background:#3b82f6"></div> Solicitante</div>
-      <div class="legend-item"><div class="legend-color" style="background:#8b5cf6"></div> Responsable de Área</div>
-      <div class="legend-item"><div class="legend-color" style="background:#f59e0b"></div> Director</div>
-      <div class="legend-item"><div class="legend-color" style="background:#10b981"></div> Compras</div>
-      <div class="legend-item"><div class="legend-color" style="background:#06b6d4"></div> Tesorería</div>
-      <div class="legend-item"><div class="legend-color" style="background:#ef4444"></div> Estados terminales</div>
-    </div>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cursograma - Proceso de Solicitud de Compra</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f8f9fa;
+        margin: 0;
+        padding: 20px;
+      }
+      h1 {
+        text-align: center;
+        color: #1e293b;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        justify-content: center;
+        margin: 20px 0;
+        font-size: 14px;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .legend-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Cursograma - Proceso de Solicitud de Compra</h1>
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-color" style="background: #3b82f6"></div>
+          Solicitante
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #8b5cf6"></div>
+          Responsable de Área
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #f59e0b"></div>
+          Director
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #10b981"></div>
+          Compras
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #06b6d4"></div>
+          Tesorería
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #ef4444"></div>
+          Estados terminales
+        </div>
+      </div>
 
-    <pre class="mermaid">
+      <pre class="mermaid">
 flowchart TD
     %% ── INICIO ──
     START(("🟢 Inicio")) --> CREATE
@@ -150,27 +198,28 @@ flowchart TD
     class ENVIADA,VALIDADA,EN_COMPRAS,PAGO_PROG,ABONADA,RECIB_OBS estado
     class DEV_RESP,DEV_DIR devuelto
     class AUTO_VAL estado
-    </pre>
-  </div>
+    </pre
+      >
+    </div>
 
-  <script>
-    mermaid.initialize({
-      startOnLoad: true,
-      theme: 'base',
-      themeVariables: {
-        primaryColor: '#e2e8f0',
-        primaryTextColor: '#1e293b',
-        lineColor: '#64748b',
-        fontSize: '14px',
-      },
-      flowchart: {
-        useMaxWidth: true,
-        htmlLabels: true,
-        curve: 'basis',
-        rankSpacing: 60,
-        nodeSpacing: 40,
-      },
-    });
-  </script>
-</body>
+    <script>
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: 'base',
+        themeVariables: {
+          primaryColor: '#e2e8f0',
+          primaryTextColor: '#1e293b',
+          lineColor: '#64748b',
+          fontSize: '14px',
+        },
+        flowchart: {
+          useMaxWidth: true,
+          htmlLabels: true,
+          curve: 'basis',
+          rankSpacing: 60,
+          nodeSpacing: 40,
+        },
+      });
+    </script>
+  </body>
 </html>

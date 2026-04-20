@@ -1,112 +1,112 @@
 export interface ThemeTokens {
   // Backgrounds
-  bgLayout: string
-  bgCard: string
-  bgInput: string
-  bgCardHover: string
+  bgLayout: string;
+  bgCard: string;
+  bgInput: string;
+  bgCardHover: string;
 
   // Accent
-  colorPrimary: string
-  colorSecondary: string
-  primaryGlow: string // for box-shadows
+  colorPrimary: string;
+  colorSecondary: string;
+  primaryGlow: string; // for box-shadows
 
   // Text
-  textPrimary: string
-  textSecondary: string
-  textMuted: string
+  textPrimary: string;
+  textSecondary: string;
+  textMuted: string;
 
   // Borders
-  borderColor: string
-  borderSubtle: string
+  borderColor: string;
+  borderSubtle: string;
 
   // Specific
-  authGradient: string
-  authCircle1: string
-  authCircle2: string
-  authCircle3: string
-  sidebarBg: string
-  sidebarBorder: string
-  logoGradient: string
-  headerBg: string
-  headerBorder: string
-  headerShadow: string
-  searchBgActive: string
-  searchBgInactive: string
-  searchShadow: string
-  avatarGradient: string
-  notifBg: string
-  notifUnreadBg: string
-  notifAccent: string
+  authGradient: string;
+  authCircle1: string;
+  authCircle2: string;
+  authCircle3: string;
+  sidebarBg: string;
+  sidebarBorder: string;
+  logoGradient: string;
+  headerBg: string;
+  headerBorder: string;
+  headerShadow: string;
+  searchBgActive: string;
+  searchBgInactive: string;
+  searchShadow: string;
+  avatarGradient: string;
+  notifBg: string;
+  notifUnreadBg: string;
+  notifAccent: string;
 
   // Cards & surfaces
-  glassBg: string
-  glassBorder: string
-  glassHoverShadow: string
-  solicitudCardBg: string
-  solicitudCardBorder: string
+  glassBg: string;
+  glassBorder: string;
+  glassHoverShadow: string;
+  solicitudCardBg: string;
+  solicitudCardBorder: string;
 
   // Status backgrounds (for detail page hero)
-  statusBgBorrador: string
-  statusBgEnviada: string
-  statusBgDevuelta: string
-  statusBgValidada: string
-  statusBgAprobada: string
-  statusBgRechazada: string
-  statusBgAbonada: string
-  statusBgRecibida: string
-  statusBgRecibidaObs: string
-  statusBgCerrada: string
+  statusBgBorrador: string;
+  statusBgEnviada: string;
+  statusBgDevuelta: string;
+  statusBgValidada: string;
+  statusBgAprobada: string;
+  statusBgRechazada: string;
+  statusBgAbonada: string;
+  statusBgRecibida: string;
+  statusBgRecibidaObs: string;
+  statusBgCerrada: string;
 
   // Urgencia row bg
-  urgenciaRowUrgente: string
-  urgenciaRowCritica: string
+  urgenciaRowUrgente: string;
+  urgenciaRowCritica: string;
 
   // Error
-  colorError: string
+  colorError: string;
 
   // Observation/rejection text
-  colorObservation: string
-  colorRejection: string
+  colorObservation: string;
+  colorRejection: string;
 
   // Estimated total
-  totalEstimatedBg: string
-  totalEstimatedBorder: string
-  totalEstimatedText: string
+  totalEstimatedBg: string;
+  totalEstimatedBorder: string;
+  totalEstimatedText: string;
 
   // Archivo groups
-  archivoSolicitudBg: string
-  archivoCompraColor: string
-  archivoCompraBg: string
-  archivoRecepcionColor: string
-  archivoRecepcionBg: string
+  archivoSolicitudBg: string;
+  archivoCompraColor: string;
+  archivoCompraBg: string;
+  archivoRecepcionColor: string;
+  archivoRecepcionBg: string;
 
   // Skeleton
-  skeletonBg: string
+  skeletonBg: string;
 
   // Admin banner
-  adminBannerBg: string
-  adminBannerBorder: string
-  adminBannerText: string
-  adminBannerBtn: string
+  adminBannerBg: string;
+  adminBannerBorder: string;
+  adminBannerText: string;
+  adminBannerBtn: string;
 
   // Charts
-  chartPrimaryGradient: string
-  chartSecondaryGradient: string
-  progressStrokeFrom: string
-  progressStrokeTo: string
+  chartPrimaryGradient: string;
+  chartSecondaryGradient: string;
+  progressStrokeFrom: string;
+  progressStrokeTo: string;
 
   // Misc
-  rankBg: string
-  rankText: string
-  loginCardBg: string
-  loginDivider: string
-  loginContinueBg: string
-  forgotPasswordColor: string
-  loginBtnTextColor: string
+  rankBg: string;
+  rankText: string;
+  loginCardBg: string;
+  loginDivider: string;
+  loginContinueBg: string;
+  forgotPasswordColor: string;
+  loginBtnTextColor: string;
 
   // TenantSelector
-  tenantSelectorBg: string
-  tenantSelectorBorder: string
+  tenantSelectorBg: string;
+  tenantSelectorBorder: string;
 }
 
 export const lightTokens: ThemeTokens = {
@@ -201,7 +201,7 @@ export const lightTokens: ThemeTokens = {
 
   tenantSelectorBg: 'linear-gradient(135deg, #f0f0ff, #e8e5ff)',
   tenantSelectorBorder: '#d9d6fe',
-}
+};
 
 export const darkTokens: ThemeTokens = {
   bgLayout: '#0D1B2A',
@@ -295,4 +295,4 @@ export const darkTokens: ThemeTokens = {
 
   tenantSelectorBg: 'rgba(0, 194, 203, 0.08)',
   tenantSelectorBorder: 'rgba(0, 194, 203, 0.2)',
-}
+};

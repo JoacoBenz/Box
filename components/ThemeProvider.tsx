@@ -56,7 +56,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     overlay.classList.add('active');
 
     setTimeout(() => {
-      setMode(prev => prev === 'light' ? 'dark' : 'light');
+      setMode((prev) => (prev === 'light' ? 'dark' : 'light'));
       // Wait a frame for React to re-render, then fade out
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -114,11 +114,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         Menu: {
           itemBorderRadius: 8,
           itemMarginInline: 8,
-          ...(isDark ? {
-            darkItemBg: 'transparent',
-            darkItemSelectedBg: 'rgba(0, 194, 203, 0.15)',
-            darkItemHoverBg: 'rgba(0, 194, 203, 0.08)',
-          } : {}),
+          ...(isDark
+            ? {
+                darkItemBg: 'transparent',
+                darkItemSelectedBg: 'rgba(0, 194, 203, 0.15)',
+                darkItemHoverBg: 'rgba(0, 194, 203, 0.08)',
+              }
+            : {}),
         },
         Tag: {
           borderRadiusSM: 6,

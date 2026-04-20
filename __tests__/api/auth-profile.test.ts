@@ -1,7 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { mockSession, mockPrisma } = vi.hoisted(() => {
-  const mockSession = { userId: 1, tenantId: 1, roles: ['solicitante'], nombre: 'Test', email: 'test@test.com', areaId: 1 };
+  const mockSession = {
+    userId: 1,
+    tenantId: 1,
+    roles: ['solicitante'],
+    nombre: 'Test',
+    email: 'test@test.com',
+    areaId: 1,
+  };
   const mockPrisma = {
     usuarios: { findUnique: vi.fn(), update: vi.fn() },
   };
@@ -14,27 +21,50 @@ vi.mock('@/lib/permissions', () => ({
   verificarRol: vi.fn().mockReturnValue(true),
   verificarSegregacion: vi.fn().mockReturnValue({ permitido: true }),
   verificarResponsableDeArea: vi.fn().mockResolvedValue(true),
-  apiError: vi.fn((code: string, msg: string, status: number) => new Response(JSON.stringify({ error: { code, message: msg } }), { status })),
+  apiError: vi.fn(
+    (code: string, msg: string, status: number) =>
+      new Response(JSON.stringify({ error: { code, message: msg } }), { status }),
+  ),
   isOnlyResponsable: vi.fn().mockReturnValue(false),
 }));
-vi.mock('@/lib/audit', () => ({ registrarAuditoria: vi.fn(), getClientIp: vi.fn(() => '1.2.3.4') }));
-vi.mock('@/lib/notifications', () => ({ crearNotificacion: vi.fn(), notificarPorRol: vi.fn(), notificarAdmins: vi.fn() }));
+vi.mock('@/lib/audit', () => ({
+  registrarAuditoria: vi.fn(),
+  getClientIp: vi.fn(() => '1.2.3.4'),
+}));
+vi.mock('@/lib/notifications', () => ({
+  crearNotificacion: vi.fn(),
+  notificarPorRol: vi.fn(),
+  notificarAdmins: vi.fn(),
+}));
 vi.mock('@/lib/logger', () => ({ logApiError: vi.fn() }));
-vi.mock('@/lib/tenant-override', () => ({ getEffectiveTenantId: vi.fn().mockResolvedValue({ session: mockSession, effectiveTenantId: 1 }) }));
-vi.mock('@/lib/tenant-config', () => ({ getTenantConfigBool: vi.fn().mockResolvedValue(true), getTenantConfigNumber: vi.fn().mockResolvedValue(0) }));
+vi.mock('@/lib/tenant-override', () => ({
+  getEffectiveTenantId: vi.fn().mockResolvedValue({ session: mockSession, effectiveTenantId: 1 }),
+}));
+vi.mock('@/lib/tenant-config', () => ({
+  getTenantConfigBool: vi.fn().mockResolvedValue(true),
+  getTenantConfigNumber: vi.fn().mockResolvedValue(0),
+}));
 vi.mock('@/lib/validators', async () => await vi.importActual('@/lib/validators'));
 vi.mock('@/types', () => ({ default: {} }));
-vi.mock('bcryptjs', () => ({ default: { compare: vi.fn().mockResolvedValue(true), hash: vi.fn().mockResolvedValue('hashed') } }));
+vi.mock('bcryptjs', () => ({
+  default: { compare: vi.fn().mockResolvedValue(true), hash: vi.fn().mockResolvedValue('hashed') },
+}));
 
 import { GET, PATCH } from '@/app/api/auth/profile/route';
 
 describe('GET /api/auth/profile', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('returns user profile', async () => {
     mockPrisma.usuarios.findUnique.mockResolvedValue({
-      id: 1, nombre: 'Test', email: 'test@test.com', password_hash: 'hash',
-      area: { nombre: 'Area 1' }, tenant: { nombre: 'Org 1' },
+      id: 1,
+      nombre: 'Test',
+      email: 'test@test.com',
+      password_hash: 'hash',
+      area: { nombre: 'Area 1' },
+      tenant: { nombre: 'Org 1' },
       usuarios_roles: [{ rol: { nombre: 'solicitante' } }],
     });
     const res = await GET();
@@ -46,7 +76,9 @@ describe('GET /api/auth/profile', () => {
 });
 
 describe('PATCH /api/auth/profile', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('updates nombre', async () => {
     mockPrisma.usuarios.update.mockResolvedValue({});
@@ -57,12 +89,15 @@ describe('PATCH /api/auth/profile', () => {
     });
     const res = await PATCH(req as any);
     expect(res.status).toBe(200);
-    expect(mockPrisma.usuarios.update).toHaveBeenCalledWith(expect.objectContaining({ data: { nombre: 'Nuevo Nombre' } }));
+    expect(mockPrisma.usuarios.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { nombre: 'Nuevo Nombre' } }),
+    );
   });
 
   it('rejects password change for SSO user (no password_hash, not admin)', async () => {
     mockPrisma.usuarios.findUnique.mockResolvedValue({
-      id: 1, password_hash: null,
+      id: 1,
+      password_hash: null,
       usuarios_roles: [{ rol: { nombre: 'solicitante' } }],
     });
     const req = new Request('http://localhost/api/auth/profile', {

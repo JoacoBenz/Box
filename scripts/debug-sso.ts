@@ -10,8 +10,10 @@ async function main() {
     include: { configuracion: true },
   });
   for (const t of tenants) {
-    const configs = Object.fromEntries(t.configuracion.map(c => [c.clave, c.valor]));
-    console.log(`Tenant ${t.id} "${t.nombre}": sso_google=${configs['sso_google_habilitado']}, domain=${configs['sso_dominio']}`);
+    const configs = Object.fromEntries(t.configuracion.map((c) => [c.clave, c.valor]));
+    console.log(
+      `Tenant ${t.id} "${t.nombre}": sso_google=${configs['sso_google_habilitado']}, domain=${configs['sso_dominio']}`,
+    );
   }
 
   // Check user
@@ -19,4 +21,6 @@ async function main() {
   console.log('User joakobenz@gmail.com:', u ? `exists id=${u.id} area=${u.area_id}` : 'NOT FOUND');
 }
 
-main().catch(e => console.error('Error:', e)).finally(() => p.$disconnect());
+main()
+  .catch((e) => console.error('Error:', e))
+  .finally(() => p.$disconnect());

@@ -20,8 +20,8 @@ export default function SeleccionarAreaPage() {
   useEffect(() => {
     // Check if user already has area
     fetch('/api/auth/session')
-      .then(r => r.json())
-      .then(s => {
+      .then((r) => r.json())
+      .then((s) => {
         if (s?.user?.areaId) {
           router.replace('/solicitudes');
           return;
@@ -32,9 +32,9 @@ export default function SeleccionarAreaPage() {
 
     // Load areas for user's tenant
     fetch('/api/areas')
-      .then(r => r.ok ? r.json() : [])
-      .then(data => {
-        setAreas(Array.isArray(data) ? data : data.data ?? []);
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        setAreas(Array.isArray(data) ? data : (data.data ?? []));
         setLoadingAreas(false);
       })
       .catch(() => setLoadingAreas(false));
@@ -67,14 +67,16 @@ export default function SeleccionarAreaPage() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'var(--bg-layout)',
-      padding: 24,
-    }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--bg-layout)',
+        padding: 24,
+      }}
+    >
       <Card
         style={{
           width: '100%',
@@ -106,7 +108,7 @@ export default function SeleccionarAreaPage() {
               size="large"
               value={selectedArea}
               onChange={setSelectedArea}
-              options={areas.map(a => ({ value: a.id, label: a.nombre }))}
+              options={areas.map((a) => ({ value: a.id, label: a.nombre }))}
             />
 
             <Button

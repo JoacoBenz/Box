@@ -20,20 +20,16 @@ interface AdminHandlerContext extends HandlerContext {
   db: ReturnType<typeof tenantPrisma>;
 }
 
-type ApiHandler = (
-  request: Request,
-  context: HandlerContext,
-  params?: any
-) => Promise<Response>;
+type ApiHandler = (request: Request, context: HandlerContext, params?: any) => Promise<Response>;
 
 type AdminApiHandler = (
   request: Request,
   context: AdminHandlerContext,
-  params?: any
+  params?: any,
 ) => Promise<Response>;
 
 interface ApiHandlerOptions {
-  roles?: RolNombre[];  // Required roles (any of these). Empty = authenticated only.
+  roles?: RolNombre[]; // Required roles (any of these). Empty = authenticated only.
   /** Rate limit for write operations (POST/PATCH/PUT/DELETE). Defaults to 30/min per user. Set false to disable. */
   rateLimit?: { max: number; windowMs: number } | false;
 }
@@ -71,7 +67,11 @@ export function withAuth(options: ApiHandlerOptions, handler: ApiHandler) {
       if (isWrite && options.rateLimit !== false) {
         const rl = options.rateLimit ?? { max: 30, windowMs: 60_000 };
         const url = new URL(request.url);
-        const rlResult = await checkRateLimitDb(`api:${session.userId}:${url.pathname}`, rl.max, rl.windowMs);
+        const rlResult = await checkRateLimitDb(
+          `api:${session.userId}:${url.pathname}`,
+          rl.max,
+          rl.windowMs,
+        );
         if (!rlResult.allowed) {
           return apiError('RATE_LIMITED', 'Demasiados intentos. Intentá de nuevo más tarde.', 429);
         }
@@ -110,7 +110,7 @@ export function withTenant(handler: ApiHandler) {
  */
 export function withAdminOverride(
   options: ApiHandlerOptions & { allowGlobalWrites?: boolean },
-  handler: AdminApiHandler
+  handler: AdminApiHandler,
 ) {
   return async (request: Request, routeParams?: any) => {
     try {
@@ -128,7 +128,11 @@ export function withAdminOverride(
       if (isWrite && options.rateLimit !== false) {
         const rl = (options as any).rateLimit ?? { max: 30, windowMs: 60_000 };
         const url = new URL(request.url);
-        const rlResult = await checkRateLimitDb(`api:${session.userId}:${url.pathname}`, rl.max, rl.windowMs);
+        const rlResult = await checkRateLimitDb(
+          `api:${session.userId}:${url.pathname}`,
+          rl.max,
+          rl.windowMs,
+        );
         if (!rlResult.allowed) {
           return apiError('RATE_LIMITED', 'Demasiados intentos. Intentá de nuevo más tarde.', 429);
         }
@@ -136,10 +140,14 @@ export function withAdminOverride(
 
       // Block write operations without a specific tenant (prevents cross-tenant mutations)
       if (isWrite && !effectiveTenantId && !options.allowGlobalWrites) {
-        return apiError('BAD_REQUEST', 'Seleccioná una organización antes de realizar esta acción', 400);
+        return apiError(
+          'BAD_REQUEST',
+          'Seleccioná una organización antes de realizar esta acción',
+          400,
+        );
       }
 
-      const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : prisma as any;
+      const db = effectiveTenantId ? tenantPrisma(effectiveTenantId) : (prisma as any);
       const ip = getClientIp(request);
       const params = routeParams?.params ? await routeParams.params : undefined;
 
@@ -153,7 +161,10 @@ export function withAdminOverride(
 /**
  * Validates a Zod schema and returns a typed error response on failure.
  */
-export function validateBody<T>(schema: { safeParse: (data: unknown) => { success: boolean; data?: T; error?: any } }, body: unknown): { success: true; data: T } | { success: false; response: Response } {
+export function validateBody<T>(
+  schema: { safeParse: (data: unknown) => { success: boolean; data?: T; error?: any } },
+  body: unknown,
+): { success: true; data: T } | { success: false; response: Response } {
   const result = schema.safeParse(body);
   if (!result.success) {
     return {
@@ -162,7 +173,7 @@ export function validateBody<T>(schema: { safeParse: (data: unknown) => { succes
         'VALIDATION_ERROR',
         'Datos inválidos',
         400,
-        result.error.issues.map((i: any) => ({ field: i.path.join('.'), message: i.message }))
+        result.error.issues.map((i: any) => ({ field: i.path.join('.'), message: i.message })),
       ),
     };
   }

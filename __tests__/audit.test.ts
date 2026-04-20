@@ -55,7 +55,11 @@ describe('registrarAuditoria', () => {
 
   it('creates audit log entry with all fields', async () => {
     mockCreate.mockResolvedValue({});
-    await registrarAuditoria({ ...baseEntry, datosAnteriores: { old: 1 }, datosNuevos: { new: 2 } });
+    await registrarAuditoria({
+      ...baseEntry,
+      datosAnteriores: { old: 1 },
+      datosNuevos: { new: 2 },
+    });
     expect(mockCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
         tenant_id: 1,
@@ -85,21 +89,29 @@ describe('registrarAuditoria', () => {
 
   it('throws error for critical action aprobar_solicitud', async () => {
     mockCreate.mockRejectedValue(new Error('DB error'));
-    await expect(registrarAuditoria({ ...baseEntry, accion: 'aprobar_solicitud' })).rejects.toThrow('critical action');
+    await expect(registrarAuditoria({ ...baseEntry, accion: 'aprobar_solicitud' })).rejects.toThrow(
+      'critical action',
+    );
   });
 
   it('throws error for critical action registrar_compra', async () => {
     mockCreate.mockRejectedValue(new Error('DB error'));
-    await expect(registrarAuditoria({ ...baseEntry, accion: 'registrar_compra' })).rejects.toThrow('critical action');
+    await expect(registrarAuditoria({ ...baseEntry, accion: 'registrar_compra' })).rejects.toThrow(
+      'critical action',
+    );
   });
 
   it('throws error for critical action confirmar_recepcion', async () => {
     mockCreate.mockRejectedValue(new Error('DB error'));
-    await expect(registrarAuditoria({ ...baseEntry, accion: 'confirmar_recepcion' })).rejects.toThrow('critical action');
+    await expect(
+      registrarAuditoria({ ...baseEntry, accion: 'confirmar_recepcion' }),
+    ).rejects.toThrow('critical action');
   });
 
   it('throws error for critical action anular_solicitud', async () => {
     mockCreate.mockRejectedValue(new Error('DB error'));
-    await expect(registrarAuditoria({ ...baseEntry, accion: 'anular_solicitud' })).rejects.toThrow('critical action');
+    await expect(registrarAuditoria({ ...baseEntry, accion: 'anular_solicitud' })).rejects.toThrow(
+      'critical action',
+    );
   });
 });

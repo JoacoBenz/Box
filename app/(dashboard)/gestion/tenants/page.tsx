@@ -1,8 +1,25 @@
-'use client'
+'use client';
 
-import { useEffect, useState, useCallback } from 'react'
-import { Table, Tag, Typography, Card, Statistic, Row, Col, Space, Badge, Button, Modal, Form, Input, Select, Popconfirm, message } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
+import { useEffect, useState, useCallback } from 'react';
+import {
+  Table,
+  Tag,
+  Typography,
+  Card,
+  Statistic,
+  Row,
+  Col,
+  Space,
+  Badge,
+  Button,
+  Modal,
+  Form,
+  Input,
+  Select,
+  Popconfirm,
+  message,
+} from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import {
   TeamOutlined,
   ApartmentOutlined,
@@ -15,147 +32,157 @@ import {
   DeleteOutlined,
   StopOutlined,
   CheckCircleOutlined,
-} from '@ant-design/icons'
-import { useFormValid } from '@/hooks/useFormValid'
-import { useTheme } from '@/components/ThemeProvider'
+} from '@ant-design/icons';
+import { useFormValid } from '@/hooks/useFormValid';
+import { useTheme } from '@/components/ThemeProvider';
 
-const { Title, Text } = Typography
+const { Title, Text } = Typography;
 
 interface TenantStats {
-  usuarios: number
-  areas: number
-  solicitudes: number
-  compras: number
-  proveedores: number
+  usuarios: number;
+  areas: number;
+  solicitudes: number;
+  compras: number;
+  proveedores: number;
 }
 
 interface Tenant {
-  id: number
-  nombre: string
-  slug: string
-  estado: string
-  email_contacto: string
-  moneda: string
-  fecha_registro: string
-  desactivado: boolean
-  stats: TenantStats
+  id: number;
+  nombre: string;
+  slug: string;
+  estado: string;
+  email_contacto: string;
+  moneda: string;
+  fecha_registro: string;
+  desactivado: boolean;
+  stats: TenantStats;
 }
 
 export default function AdminTenantsPage() {
-  const { tokens } = useTheme()
-  const [tenants, setTenants] = useState<Tenant[]>([])
-  const [loading, setLoading] = useState(true)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editing, setEditing] = useState<Tenant | null>(null)
-  const [saving, setSaving] = useState(false)
-  const [form] = Form.useForm()
-  const { hasErrors, formProps } = useFormValid(form)
-  const [msg, contextHolder] = message.useMessage()
+  const { tokens } = useTheme();
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<Tenant | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [form] = Form.useForm();
+  const { hasErrors, formProps } = useFormValid(form);
+  const [msg, contextHolder] = message.useMessage();
 
   const fetchData = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await fetch('/api/admin/tenants')
-      if (res.ok) setTenants(await res.json())
+      const res = await fetch('/api/admin/tenants');
+      if (res.ok) setTenants(await res.json());
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
-  useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-  const [initialValues, setInitialValues] = useState<Record<string, unknown>>({ moneda: 'ARS' })
+  const [initialValues, setInitialValues] = useState<Record<string, unknown>>({ moneda: 'ARS' });
 
   const openCreate = () => {
-    setEditing(null)
-    setInitialValues({ moneda: 'ARS' })
-    setModalOpen(true)
-  }
+    setEditing(null);
+    setInitialValues({ moneda: 'ARS' });
+    setModalOpen(true);
+  };
 
   const openEdit = (t: Tenant) => {
-    setEditing(t)
+    setEditing(t);
     setInitialValues({
       nombre: t.nombre,
       email_contacto: t.email_contacto,
       moneda: t.moneda,
-    })
-    setModalOpen(true)
-  }
+    });
+    setModalOpen(true);
+  };
 
   const handleSave = async () => {
     try {
-      const values = await form.validateFields()
-      setSaving(true)
+      const values = await form.validateFields();
+      setSaving(true);
 
-      const url = editing ? `/api/admin/tenants/${editing.id}` : '/api/admin/tenants'
-      const method = editing ? 'PATCH' : 'POST'
+      const url = editing ? `/api/admin/tenants/${editing.id}` : '/api/admin/tenants';
+      const method = editing ? 'PATCH' : 'POST';
 
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
-      })
+      });
 
       if (!res.ok) {
-        const err = await res.json()
-        msg.error(err.error?.message || 'Error al guardar')
-        return
+        const err = await res.json();
+        msg.error(err.error?.message || 'Error al guardar');
+        return;
       }
 
-      msg.success(editing ? 'Organización actualizada' : 'Organización creada')
-      setModalOpen(false)
-      fetchData()
+      msg.success(editing ? 'Organización actualizada' : 'Organización creada');
+      setModalOpen(false);
+      fetchData();
     } catch (err: any) {
-      if (!err?.errorFields) msg.error(err?.message || 'Error al guardar')
+      if (!err?.errorFields) msg.error(err?.message || 'Error al guardar');
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handleToggleActive = async (t: Tenant) => {
     const res = await fetch(`/api/admin/tenants/${t.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ desactivado: !t.desactivado }),
-    })
+    });
     if (res.ok) {
-      msg.success(t.desactivado ? 'Organización activada' : 'Organización desactivada')
-      fetchData()
+      msg.success(t.desactivado ? 'Organización activada' : 'Organización desactivada');
+      fetchData();
     } else {
-      const err = await res.json()
-      msg.error(err.error?.message || 'Error')
+      const err = await res.json();
+      msg.error(err.error?.message || 'Error');
     }
-  }
+  };
 
   const handleDelete = async (t: Tenant) => {
-    const res = await fetch(`/api/admin/tenants/${t.id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/admin/tenants/${t.id}`, { method: 'DELETE' });
     if (res.ok) {
-      msg.success('Organización eliminada')
-      fetchData()
+      msg.success('Organización eliminada');
+      fetchData();
     } else {
-      const err = await res.json()
-      msg.error(err.error?.message || 'Error al eliminar')
+      const err = await res.json();
+      msg.error(err.error?.message || 'Error al eliminar');
     }
-  }
+  };
 
-  const totalUsuarios = tenants.reduce((sum, t) => sum + t.stats.usuarios, 0)
-  const totalSolicitudes = tenants.reduce((sum, t) => sum + t.stats.solicitudes, 0)
+  const totalUsuarios = tenants.reduce((sum, t) => sum + t.stats.usuarios, 0);
+  const totalSolicitudes = tenants.reduce((sum, t) => sum + t.stats.solicitudes, 0);
 
   const columns: ColumnsType<Tenant> = [
     {
       title: '#',
       key: 'index',
       width: 50,
-      render: (_: unknown, __: Tenant, index: number) => <Text strong style={{ color: tokens.colorPrimary }}>#{index + 1}</Text>,
+      render: (_: unknown, __: Tenant, index: number) => (
+        <Text strong style={{ color: tokens.colorPrimary }}>
+          #{index + 1}
+        </Text>
+      ),
     },
     {
       title: 'Organización',
       key: 'nombre',
       render: (_, t) => (
         <div>
-          <Text strong style={{ fontSize: 14 }}>{t.nombre}</Text>
+          <Text strong style={{ fontSize: 14 }}>
+            {t.nombre}
+          </Text>
           <br />
-          <Text type="secondary" style={{ fontSize: 12 }}>{t.slug} · {t.email_contacto}</Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {t.slug} · {t.email_contacto}
+          </Text>
         </div>
       ),
     },
@@ -164,9 +191,18 @@ export default function AdminTenantsPage() {
       key: 'estado',
       width: 130,
       render: (_, t) => {
-        if (t.desactivado) return <Tag color="default">Inactivo</Tag>
-        const colors: Record<string, string> = { pendiente: 'orange', activo: 'green', rechazado: 'red', suspendido: 'default' }
-        return <Tag color={colors[t.estado] ?? 'default'}>{t.estado.charAt(0).toUpperCase() + t.estado.slice(1)}</Tag>
+        if (t.desactivado) return <Tag color="default">Inactivo</Tag>;
+        const colors: Record<string, string> = {
+          pendiente: 'orange',
+          activo: 'green',
+          rechazado: 'red',
+          suspendido: 'default',
+        };
+        return (
+          <Tag color={colors[t.estado] ?? 'default'}>
+            {t.estado.charAt(0).toUpperCase() + t.estado.slice(1)}
+          </Tag>
+        );
       },
     },
     {
@@ -252,7 +288,13 @@ export default function AdminTenantsPage() {
           <Button
             type="text"
             size="small"
-            icon={t.desactivado ? <CheckCircleOutlined style={{ color: '#16a34a' }} /> : <StopOutlined style={{ color: '#f59e0b' }} />}
+            icon={
+              t.desactivado ? (
+                <CheckCircleOutlined style={{ color: '#16a34a' }} />
+              ) : (
+                <StopOutlined style={{ color: '#f59e0b' }} />
+              )
+            }
             onClick={() => handleToggleActive(t)}
             title={t.desactivado ? 'Activar' : 'Desactivar'}
           />
@@ -264,23 +306,24 @@ export default function AdminTenantsPage() {
             cancelText="Cancelar"
             okButtonProps={{ danger: true }}
           >
-            <Button
-              type="text"
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-              title="Eliminar"
-            />
+            <Button type="text" size="small" danger icon={<DeleteOutlined />} title="Eliminar" />
           </Popconfirm>
         </Space>
       ),
     },
-  ]
+  ];
 
   return (
     <div className="page-content">
       {contextHolder}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 24,
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <GlobalOutlined style={{ fontSize: 24, color: tokens.colorPrimary }} />
           <Title level={3} style={{ margin: 0, fontWeight: 700, color: tokens.textPrimary }}>
@@ -294,18 +337,32 @@ export default function AdminTenantsPage() {
 
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={8}>
-          <Card size="small" style={{ borderRadius: 16, borderLeft: `4px solid ${tokens.colorPrimary}` }}>
+          <Card
+            size="small"
+            style={{ borderRadius: 16, borderLeft: `4px solid ${tokens.colorPrimary}` }}
+          >
             <Statistic
-              title={<Text type="secondary" style={{ fontSize: 12 }}>Total Organizaciones</Text>}
+              title={
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Total Organizaciones
+                </Text>
+              }
               value={tenants.length}
               prefix={<GlobalOutlined style={{ color: tokens.colorPrimary }} />}
             />
           </Card>
         </Col>
         <Col xs={24} sm={8}>
-          <Card size="small" style={{ borderRadius: 16, borderLeft: `4px solid ${tokens.colorSecondary}` }}>
+          <Card
+            size="small"
+            style={{ borderRadius: 16, borderLeft: `4px solid ${tokens.colorSecondary}` }}
+          >
             <Statistic
-              title={<Text type="secondary" style={{ fontSize: 12 }}>Total Usuarios</Text>}
+              title={
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Total Usuarios
+                </Text>
+              }
               value={totalUsuarios}
               prefix={<TeamOutlined style={{ color: tokens.colorSecondary }} />}
             />
@@ -314,7 +371,11 @@ export default function AdminTenantsPage() {
         <Col xs={24} sm={8}>
           <Card size="small" style={{ borderRadius: 16, borderLeft: '4px solid #16a34a' }}>
             <Statistic
-              title={<Text type="secondary" style={{ fontSize: 12 }}>Total Solicitudes</Text>}
+              title={
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Total Solicitudes
+                </Text>
+              }
               value={totalSolicitudes}
               prefix={<FileTextOutlined style={{ color: '#16a34a' }} />}
             />
@@ -342,9 +403,18 @@ export default function AdminTenantsPage() {
         confirmLoading={saving}
         okButtonProps={{ disabled: hasErrors }}
         destroyOnHidden
-        afterOpenChange={(open) => { if (open) form.setFieldsValue(initialValues) }}
+        afterOpenChange={(open) => {
+          if (open) form.setFieldsValue(initialValues);
+        }}
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }} preserve={false} initialValues={initialValues} {...formProps}>
+        <Form
+          form={form}
+          layout="vertical"
+          style={{ marginTop: 16 }}
+          preserve={false}
+          initialValues={initialValues}
+          {...formProps}
+        >
           <Form.Item
             name="nombre"
             label="Nombre de la organización"
@@ -378,5 +448,5 @@ export default function AdminTenantsPage() {
         </Form>
       </Modal>
     </div>
-  )
+  );
 }

@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useState, useCallback, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useCallback, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   App,
   Form,
@@ -14,60 +14,62 @@ import {
   Upload,
   Alert,
   Typography,
-} from 'antd'
-import { PlusOutlined, MinusCircleOutlined, UploadOutlined } from '@ant-design/icons'
-import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
-import { useFormValid } from '@/hooks/useFormValid'
-import ProveedorSelect from '@/components/ProveedorSelect'
-import ProductoSelect from '@/components/ProductoSelect'
-import { useTheme } from '@/components/ThemeProvider'
-import ProveedorInfoCard from '@/components/ProveedorInfoCard'
+} from 'antd';
+import { PlusOutlined, MinusCircleOutlined, UploadOutlined } from '@ant-design/icons';
+import AnimatedSubmitButton from '@/components/AnimatedSubmitButton';
+import { useFormValid } from '@/hooks/useFormValid';
+import ProveedorSelect from '@/components/ProveedorSelect';
+import ProductoSelect from '@/components/ProductoSelect';
+import { useTheme } from '@/components/ThemeProvider';
+import ProveedorInfoCard from '@/components/ProveedorInfoCard';
 
-const { TextArea } = Input
-const { Title } = Typography
+const { TextArea } = Input;
+const { Title } = Typography;
 
 interface ItemForm {
-  producto_id?: number | null
-  descripcion: string
-  cantidad: number
-  unidad: string
-  precio_estimado?: number
-  link_producto?: string
+  producto_id?: number | null;
+  descripcion: string;
+  cantidad: number;
+  unidad: string;
+  precio_estimado?: number;
+  link_producto?: string;
 }
 
 interface SolicitudFormValues {
-  titulo: string
-  descripcion: string
-  justificacion: string
-  urgencia: 'normal' | 'urgente' | 'critica'
-  proveedor_id?: number | null
-  centro_costo_id?: number | null
-  items: ItemForm[]
+  titulo: string;
+  descripcion: string;
+  justificacion: string;
+  urgencia: 'normal' | 'urgente' | 'critica';
+  proveedor_id?: number | null;
+  centro_costo_id?: number | null;
+  items: ItemForm[];
 }
 
 function TotalItems({ form }: { form: ReturnType<typeof Form.useForm<any>>[0] }) {
-  const items = Form.useWatch('items', form) as ItemForm[] | undefined
+  const items = Form.useWatch('items', form) as ItemForm[] | undefined;
   const total = (items ?? []).reduce((acc, item) => {
     if (item?.precio_estimado && item?.cantidad) {
-      return acc + Number(item.precio_estimado) * Number(item.cantidad)
+      return acc + Number(item.precio_estimado) * Number(item.cantidad);
     }
-    return acc
-  }, 0)
+    return acc;
+  }, 0);
 
-  if (total <= 0) return null
+  if (total <= 0) return null;
 
   return (
-    <div style={{
-      marginTop: 16,
-      padding: '12px 16px',
-      background: 'var(--total-estimated-bg)',
-      borderRadius: 8,
-      border: '1px solid var(--total-estimated-border)',
-      display: 'flex',
-      justifyContent: 'flex-end',
-      alignItems: 'center',
-      gap: 12,
-    }}>
+    <div
+      style={{
+        marginTop: 16,
+        padding: '12px 16px',
+        background: 'var(--total-estimated-bg)',
+        borderRadius: 8,
+        border: '1px solid var(--total-estimated-border)',
+        display: 'flex',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        gap: 12,
+      }}
+    >
       <span style={{ fontWeight: 600, color: 'var(--total-estimated-text)', fontSize: 15 }}>
         Total Estimado:
       </span>
@@ -75,108 +77,130 @@ function TotalItems({ form }: { form: ReturnType<typeof Form.useForm<any>>[0] })
         ${total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
       </span>
     </div>
-  )
+  );
 }
 
 export default function NuevaSolicitudPage() {
-  const { message } = App.useApp()
-  const { tokens } = useTheme()
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const desdeId = searchParams.get('desde')
-  const [form] = Form.useForm<SolicitudFormValues>()
-  const { hasErrors, formProps } = useFormValid(form)
-  const [loading, setLoading] = useState<'borrador' | 'enviar' | null>(null)
-  const [selectedProveedor, setSelectedProveedor] = useState<any>(null)
-  const [presupuestoFile, setPresupuestoFile] = useState<File | null>(null)
-  const [centrosCosto, setCentrosCosto] = useState<{ id: number; nombre: string; codigo: string; area_id: number | null; area?: { nombre: string } | null }[]>([])
-  const [sessionAreaId, setSessionAreaId] = useState<number | null>(null)
-  const [esResponsable, setEsResponsable] = useState(false)
-  const [templateTitulo, setTemplateTitulo] = useState<string | null>(null)
+  const { message } = App.useApp();
+  const { tokens } = useTheme();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const desdeId = searchParams.get('desde');
+  const [form] = Form.useForm<SolicitudFormValues>();
+  const { hasErrors, formProps } = useFormValid(form);
+  const [loading, setLoading] = useState<'borrador' | 'enviar' | null>(null);
+  const [selectedProveedor, setSelectedProveedor] = useState<any>(null);
+  const [presupuestoFile, setPresupuestoFile] = useState<File | null>(null);
+  const [centrosCosto, setCentrosCosto] = useState<
+    {
+      id: number;
+      nombre: string;
+      codigo: string;
+      area_id: number | null;
+      area?: { nombre: string } | null;
+    }[]
+  >([]);
+  const [sessionAreaId, setSessionAreaId] = useState<number | null>(null);
+  const [esResponsable, setEsResponsable] = useState(false);
+  const [templateTitulo, setTemplateTitulo] = useState<string | null>(null);
   useEffect(() => {
     // Fetch session to get user's area and default centro_costo
-    fetch('/api/auth/session').then(r => r.json()).then(s => {
-      const areaId = s?.user?.areaId ?? null
-      const ccId = s?.user?.centroCostoId ?? null
-      const roles: string[] = s?.user?.roles ?? []
-      setSessionAreaId(areaId)
-      setEsResponsable(roles.includes('responsable_area'))
-      if (ccId) form.setFieldValue('centro_costo_id', ccId)
-    }).catch(() => {})
-    fetch('/api/centros-costo').then(r => r.ok ? r.json() : []).then(setCentrosCosto).catch(() => {})
+    fetch('/api/auth/session')
+      .then((r) => r.json())
+      .then((s) => {
+        const areaId = s?.user?.areaId ?? null;
+        const ccId = s?.user?.centroCostoId ?? null;
+        const roles: string[] = s?.user?.roles ?? [];
+        setSessionAreaId(areaId);
+        setEsResponsable(roles.includes('responsable_area'));
+        if (ccId) form.setFieldValue('centro_costo_id', ccId);
+      })
+      .catch(() => {});
+    fetch('/api/centros-costo')
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setCentrosCosto)
+      .catch(() => {});
 
     // Load template from previous solicitud
     if (desdeId) {
-      fetch(`/api/solicitudes/${desdeId}`).then(r => {
-        if (!r.ok) throw new Error('No se pudo cargar la plantilla')
-        return r.json()
-      }).then(data => {
-        setTemplateTitulo(data.titulo)
-        form.setFieldsValue({
-          titulo: data.titulo,
-          descripcion: data.descripcion,
-          justificacion: data.justificacion,
-          urgencia: data.urgencia,
-          proveedor_id: data.proveedor_id ?? undefined,
-          centro_costo_id: data.centro_costo_id ?? undefined,
-          items: (data.items_solicitud ?? []).map((i: any) => ({
-            producto_id: i.producto_id ?? null,
-            descripcion: i.descripcion,
-            cantidad: Number(i.cantidad),
-            unidad: i.unidad,
-            precio_estimado: i.precio_estimado ? Number(i.precio_estimado) : undefined,
-            link_producto: i.link_producto || undefined,
-          })),
+      fetch(`/api/solicitudes/${desdeId}`)
+        .then((r) => {
+          if (!r.ok) throw new Error('No se pudo cargar la plantilla');
+          return r.json();
         })
-        if (data.proveedor_id) {
-          fetch(`/api/proveedores/${data.proveedor_id}`).then(r => r.json()).then(setSelectedProveedor).catch(() => {})
-        }
-      }).catch(() => {
-        message.warning('No se pudo cargar la solicitud como plantilla')
-      })
+        .then((data) => {
+          setTemplateTitulo(data.titulo);
+          form.setFieldsValue({
+            titulo: data.titulo,
+            descripcion: data.descripcion,
+            justificacion: data.justificacion,
+            urgencia: data.urgencia,
+            proveedor_id: data.proveedor_id ?? undefined,
+            centro_costo_id: data.centro_costo_id ?? undefined,
+            items: (data.items_solicitud ?? []).map((i: any) => ({
+              producto_id: i.producto_id ?? null,
+              descripcion: i.descripcion,
+              cantidad: Number(i.cantidad),
+              unidad: i.unidad,
+              precio_estimado: i.precio_estimado ? Number(i.precio_estimado) : undefined,
+              link_producto: i.link_producto || undefined,
+            })),
+          });
+          if (data.proveedor_id) {
+            fetch(`/api/proveedores/${data.proveedor_id}`)
+              .then((r) => r.json())
+              .then(setSelectedProveedor)
+              .catch(() => {});
+          }
+        })
+        .catch(() => {
+          message.warning('No se pudo cargar la solicitud como plantilla');
+        });
     }
-  }, [form, desdeId, message])
+  }, [form, desdeId, message]);
 
   async function handleSubmit(accion: 'borrador' | 'enviar') {
     try {
-      const values = await form.validateFields()
-      setLoading(accion)
+      const values = await form.validateFields();
+      setLoading(accion);
 
-      const body = { ...values, accion }
+      const body = { ...values, accion };
 
       const res = await fetch('/api/solicitudes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-      })
+      });
 
       if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err?.error?.message ?? 'Error al guardar la solicitud')
+        const err = await res.json();
+        throw new Error(err?.error?.message ?? 'Error al guardar la solicitud');
       }
 
-      const solicitud = await res.json()
+      const solicitud = await res.json();
 
       // Upload presupuesto file if provided
       if (presupuestoFile) {
-        const formData = new FormData()
-        formData.append('archivo', presupuestoFile)
-        formData.append('entidad', 'solicitud')
-        formData.append('entidad_id', String(solicitud.id))
-        await fetch('/api/archivos', { method: 'POST', body: formData })
+        const formData = new FormData();
+        formData.append('archivo', presupuestoFile);
+        formData.append('entidad', 'solicitud');
+        formData.append('entidad_id', String(solicitud.id));
+        await fetch('/api/archivos', { method: 'POST', body: formData });
       }
 
       message.success(
-        accion === 'borrador' ? 'Borrador guardado correctamente' : 'Solicitud enviada correctamente'
-      )
+        accion === 'borrador'
+          ? 'Borrador guardado correctamente'
+          : 'Solicitud enviada correctamente',
+      );
       // Let the animated button finish before navigating
-      if (accion === 'enviar') await new Promise(r => setTimeout(r, 3500))
-      router.push('/solicitudes')
+      if (accion === 'enviar') await new Promise((r) => setTimeout(r, 3500));
+      router.push('/solicitudes');
     } catch (err: any) {
-      if (err?.errorFields) return // antd validation errors — already shown
-      message.error(err?.message ?? 'Error inesperado')
+      if (err?.errorFields) return; // antd validation errors — already shown
+      message.error(err?.message ?? 'Error inesperado');
     } finally {
-      setLoading(null)
+      setLoading(null);
     }
   }
 
@@ -197,8 +221,19 @@ export default function NuevaSolicitudPage() {
         />
       )}
 
-      <Form form={form} layout="vertical" initialValues={{ urgencia: 'normal', items: [{ unidad: 'unidades', cantidad: 1 }] }} style={{ display: 'flex', flexDirection: 'column', gap: 24 }} {...formProps}>
-        <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Información General</span>} style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{ urgencia: 'normal', items: [{ unidad: 'unidades', cantidad: 1 }] }}
+        style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
+        {...formProps}
+      >
+        <Card
+          title={
+            <span style={{ fontWeight: 700, color: tokens.textPrimary }}>Información General</span>
+          }
+          style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
+        >
           <Form.Item
             label="Título"
             name="titulo"
@@ -212,7 +247,12 @@ export default function NuevaSolicitudPage() {
             name="descripcion"
             rules={[{ required: true, message: 'La descripción es obligatoria' }]}
           >
-            <TextArea rows={3} placeholder="Descripción detallada de la solicitud" maxLength={1000} showCount />
+            <TextArea
+              rows={3}
+              placeholder="Descripción detallada de la solicitud"
+              maxLength={1000}
+              showCount
+            />
           </Form.Item>
 
           <Form.Item
@@ -220,7 +260,12 @@ export default function NuevaSolicitudPage() {
             name="justificacion"
             rules={[{ required: true, message: 'La justificación es obligatoria' }]}
           >
-            <TextArea rows={3} placeholder="¿Por qué se necesita esta compra?" maxLength={1000} showCount />
+            <TextArea
+              rows={3}
+              placeholder="¿Por qué se necesita esta compra?"
+              maxLength={1000}
+              showCount
+            />
           </Form.Item>
 
           <Form.Item
@@ -241,11 +286,14 @@ export default function NuevaSolicitudPage() {
           <Form.Item label="Proveedor" name="proveedor_id">
             <ProveedorSelect
               onChange={(id, prov) => {
-                form.setFieldValue('proveedor_id', id)
-                setSelectedProveedor(prov ? { ...prov, id } : null)
+                form.setFieldValue('proveedor_id', id);
+                setSelectedProveedor(prov ? { ...prov, id } : null);
                 // Fetch full proveedor details if selected
                 if (id) {
-                  fetch(`/api/proveedores/${id}`).then(r => r.json()).then(setSelectedProveedor).catch(() => {})
+                  fetch(`/api/proveedores/${id}`)
+                    .then((r) => r.json())
+                    .then(setSelectedProveedor)
+                    .catch(() => {});
                 }
               }}
             />
@@ -257,18 +305,25 @@ export default function NuevaSolicitudPage() {
 
           <Form.Item label="Presupuesto (opcional)">
             <Upload
-              beforeUpload={(file) => { setPresupuestoFile(file); return false }}
+              beforeUpload={(file) => {
+                setPresupuestoFile(file);
+                return false;
+              }}
               onRemove={() => setPresupuestoFile(null)}
               maxCount={1}
               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
-              fileList={presupuestoFile ? [{ uid: '-1', name: presupuestoFile.name, status: 'done' as const }] : []}
+              fileList={
+                presupuestoFile
+                  ? [{ uid: '-1', name: presupuestoFile.name, status: 'done' as const }]
+                  : []
+              }
             >
               <Button icon={<UploadOutlined />}>Adjuntar presupuesto</Button>
             </Upload>
           </Form.Item>
 
           {(() => {
-            const filtered = centrosCosto.filter(cc => cc.area_id === sessionAreaId)
+            const filtered = centrosCosto.filter((cc) => cc.area_id === sessionAreaId);
             return filtered.length > 0 ? (
               <Form.Item label="Centro de Costo" name="centro_costo_id">
                 <Select
@@ -277,24 +332,29 @@ export default function NuevaSolicitudPage() {
                   optionFilterProp="label"
                   placeholder="Seleccionar centro de costo"
                   style={{ width: '100%' }}
-                  options={filtered.map(c => ({
+                  options={filtered.map((c) => ({
                     value: c.id,
                     label: `${c.codigo} — ${c.nombre}`,
                   }))}
                 />
               </Form.Item>
-            ) : null
+            ) : null;
           })()}
         </Card>
 
-        <Card title={<span style={{ fontWeight: 700, color: tokens.textPrimary }}>Items Solicitados</span>} style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+        <Card
+          title={
+            <span style={{ fontWeight: 700, color: tokens.textPrimary }}>Items Solicitados</span>
+          }
+          style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
+        >
           <Form.List
             name="items"
             rules={[
               {
                 validator: async (_, items) => {
                   if (!items || items.length === 0) {
-                    return Promise.reject(new Error('Debe agregar al menos un ítem'))
+                    return Promise.reject(new Error('Debe agregar al menos un ítem'));
                   }
                 },
               },
@@ -313,7 +373,9 @@ export default function NuevaSolicitudPage() {
                       background: 'var(--bg-input)',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div
+                      style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}
+                    >
                       <strong style={{ color: 'var(--text-secondary)' }}>Ítem {index + 1}</strong>
                       {fields.length > 1 && (
                         <Button
@@ -328,11 +390,7 @@ export default function NuevaSolicitudPage() {
                       )}
                     </div>
 
-                    <Form.Item
-                      {...restField}
-                      name={[name, 'producto_id']}
-                      hidden
-                    >
+                    <Form.Item {...restField} name={[name, 'producto_id']} hidden>
                       <Input type="hidden" />
                     </Form.Item>
 
@@ -344,13 +402,19 @@ export default function NuevaSolicitudPage() {
                     >
                       <ProductoSelect
                         onSelect={(producto) => {
-                          form.setFieldValue(['items', name, 'producto_id'], producto.id)
-                          form.setFieldValue(['items', name, 'unidad'], producto.unidad_defecto)
+                          form.setFieldValue(['items', name, 'producto_id'], producto.id);
+                          form.setFieldValue(['items', name, 'unidad'], producto.unidad_defecto);
                           if (producto.precio_referencia != null) {
-                            form.setFieldValue(['items', name, 'precio_estimado'], Number(producto.precio_referencia))
+                            form.setFieldValue(
+                              ['items', name, 'precio_estimado'],
+                              Number(producto.precio_referencia),
+                            );
                           }
                           if (producto.link_producto) {
-                            form.setFieldValue(['items', name, 'link_producto'], producto.link_producto)
+                            form.setFieldValue(
+                              ['items', name, 'link_producto'],
+                              producto.link_producto,
+                            );
                           }
                         }}
                       />
@@ -383,7 +447,13 @@ export default function NuevaSolicitudPage() {
                         name={[name, 'precio_estimado']}
                         style={{ marginBottom: 0 }}
                       >
-                        <InputNumber min={0} precision={2} prefix="$" style={{ width: 160 }} placeholder="0.00" />
+                        <InputNumber
+                          min={0}
+                          precision={2}
+                          prefix="$"
+                          style={{ width: 160 }}
+                          placeholder="0.00"
+                        />
                       </Form.Item>
                     </Space>
 
@@ -448,5 +518,5 @@ export default function NuevaSolicitudPage() {
         </div>
       </Form>
     </div>
-  )
+  );
 }

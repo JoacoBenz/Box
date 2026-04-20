@@ -33,9 +33,19 @@ export async function GET(request: NextRequest) {
     });
 
     // Get stats for all tenants in a single query
-    const tenantIds = tenants.map(t => t.id);
-    const stats = tenantIds.length > 0
-      ? await prisma.$queryRaw<{ tenant_id: number; usuarios: string; areas: string; solicitudes: string; compras: string; proveedores: string }[]>`
+    const tenantIds = tenants.map((t) => t.id);
+    const stats =
+      tenantIds.length > 0
+        ? await prisma.$queryRaw<
+            {
+              tenant_id: number;
+              usuarios: string;
+              areas: string;
+              solicitudes: string;
+              compras: string;
+              proveedores: string;
+            }[]
+          >`
           SELECT
             t.id AS tenant_id,
             (SELECT COUNT(*) FROM usuarios u WHERE u.tenant_id = t.id AND u.activo = true)::text AS usuarios,
@@ -46,19 +56,30 @@ export async function GET(request: NextRequest) {
           FROM tenants t
           WHERE t.id = ANY(${tenantIds}::int[])
         `
-      : [];
+        : [];
 
-    const statsMap = new Map(stats.map(s => [s.tenant_id, {
-      usuarios: parseInt(s.usuarios),
-      areas: parseInt(s.areas),
-      solicitudes: parseInt(s.solicitudes),
-      compras: parseInt(s.compras),
-      proveedores: parseInt(s.proveedores),
-    }]));
+    const statsMap = new Map(
+      stats.map((s) => [
+        s.tenant_id,
+        {
+          usuarios: parseInt(s.usuarios),
+          areas: parseInt(s.areas),
+          solicitudes: parseInt(s.solicitudes),
+          compras: parseInt(s.compras),
+          proveedores: parseInt(s.proveedores),
+        },
+      ]),
+    );
 
-    const tenantsWithStats = tenants.map(t => ({
+    const tenantsWithStats = tenants.map((t) => ({
       ...t,
-      stats: statsMap.get(t.id) ?? { usuarios: 0, areas: 0, solicitudes: 0, compras: 0, proveedores: 0 },
+      stats: statsMap.get(t.id) ?? {
+        usuarios: 0,
+        areas: 0,
+        solicitudes: 0,
+        compras: 0,
+        proveedores: 0,
+      },
     }));
 
     return Response.json(tenantsWithStats);
@@ -70,7 +91,12 @@ export async function GET(request: NextRequest) {
 }
 
 function slugify(text: string): string {
-  return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 export async function POST(request: NextRequest) {
@@ -84,12 +110,14 @@ export async function POST(request: NextRequest) {
     const { nombre, email_contacto, moneda } = body;
 
     if (!nombre?.trim()) return apiError('VALIDATION', 'El nombre es obligatorio', 400);
-    if (!email_contacto?.trim()) return apiError('VALIDATION', 'El email de contacto es obligatorio', 400);
+    if (!email_contacto?.trim())
+      return apiError('VALIDATION', 'El email de contacto es obligatorio', 400);
 
     const slug = slugify(nombre.trim());
 
     const existing = await prisma.tenants.findUnique({ where: { slug } });
-    if (existing) return apiError('VALIDATION', 'Ya existe una organización con ese nombre/slug', 400);
+    if (existing)
+      return apiError('VALIDATION', 'Ya existe una organización con ese nombre/slug', 400);
 
     const tenant = await prisma.tenants.create({
       data: {

@@ -32,11 +32,21 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
   const estado = searchParams.get('estado') || undefined;
   const urgencia = searchParams.get('urgencia') || undefined;
   const areaId = searchParams.get('area_id') ? parseInt(searchParams.get('area_id')!) : undefined;
-  const solicitanteId = searchParams.get('solicitante_id') ? parseInt(searchParams.get('solicitante_id')!) : undefined;
+  const solicitanteId = searchParams.get('solicitante_id')
+    ? parseInt(searchParams.get('solicitante_id')!)
+    : undefined;
   const busqueda = searchParams.get('busqueda') || undefined;
   const desde = searchParams.get('desde') || undefined;
   const hasta = searchParams.get('hasta') || undefined;
-  const ALLOWED_ORDER_COLUMNS = ['created_at', 'updated_at', 'numero', 'titulo', 'urgencia', 'estado', 'fecha_envio'];
+  const ALLOWED_ORDER_COLUMNS = [
+    'created_at',
+    'updated_at',
+    'numero',
+    'titulo',
+    'urgencia',
+    'estado',
+    'fecha_envio',
+  ];
   const ordenParam = searchParams.get('orden') || 'created_at';
   const orden = ALLOWED_ORDER_COLUMNS.includes(ordenParam) ? ordenParam : 'created_at';
   const direccionParam = searchParams.get('direccion') || 'desc';
@@ -45,7 +55,13 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
   const where: any = {};
 
   // Role-based visibility filter
-  if (session.roles.includes('director') || session.roles.includes('tesoreria') || session.roles.includes('compras') || session.roles.includes('admin') || session.roles.includes('super_admin')) {
+  if (
+    session.roles.includes('director') ||
+    session.roles.includes('tesoreria') ||
+    session.roles.includes('compras') ||
+    session.roles.includes('admin') ||
+    session.roles.includes('super_admin')
+  ) {
     // sees all
   } else if (session.roles.includes('responsable_area')) {
     // Find all areas where this user is the designated responsable
@@ -53,13 +69,10 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       where: { responsable_id: session.userId, activo: true },
       select: { id: true },
     });
-    const areaIds = areasResponsable.map(a => a.id);
+    const areaIds = areasResponsable.map((a) => a.id);
     if (areaIds.length > 0) {
       // Show requests from areas they're responsible for, plus their own
-      where.OR = [
-        { area_id: { in: areaIds } },
-        { solicitante_id: session.userId },
-      ];
+      where.OR = [{ area_id: { in: areaIds } }, { solicitante_id: session.userId }];
     } else {
       where.solicitante_id = session.userId;
     }
@@ -68,7 +81,10 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
   }
 
   if (estado) {
-    const estados = estado.split(',').map(e => e.trim()).filter(Boolean);
+    const estados = estado
+      .split(',')
+      .map((e) => e.trim())
+      .filter(Boolean);
     where.estado = estados.length === 1 ? estados[0] : { in: estados };
   }
   if (areaId) where.area_id = areaId;
@@ -115,7 +131,15 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
 
 export const POST = withAuth({ roles: ['solicitante'] }, async (request, { session, ip }) => {
   if (!session.areaId) {
-    return Response.json({ error: { code: 'BAD_REQUEST', message: 'Tu cuenta no tiene un área asignada. Contactá al administrador.' } }, { status: 400 });
+    return Response.json(
+      {
+        error: {
+          code: 'BAD_REQUEST',
+          message: 'Tu cuenta no tiene un área asignada. Contactá al administrador.',
+        },
+      },
+      { status: 400 },
+    );
   }
 
   const body = await request.json();
@@ -123,7 +147,16 @@ export const POST = withAuth({ roles: ['solicitante'] }, async (request, { sessi
   const parsed = validateBody(solicitudSchema, body);
   if (!parsed.success) return parsed.response;
 
-  const { titulo, descripcion, justificacion, urgencia, proveedor_sugerido, proveedor_id, centro_costo_id, items } = parsed.data;
+  const {
+    titulo,
+    descripcion,
+    justificacion,
+    urgencia,
+    proveedor_sugerido,
+    proveedor_id,
+    centro_costo_id,
+    items,
+  } = parsed.data;
 
   const solicitud = await prisma.$transaction(async (tx) => {
     const numero = await generarNumeroSolicitud(session.tenantId);
@@ -148,7 +181,7 @@ export const POST = withAuth({ roles: ['solicitante'] }, async (request, { sessi
     });
 
     await tx.items_solicitud.createMany({
-      data: items.map(item => ({
+      data: items.map((item) => ({
         tenant_id: session.tenantId,
         solicitud_id: nueva.id,
         producto_id: item.producto_id ?? null,
@@ -164,9 +197,14 @@ export const POST = withAuth({ roles: ['solicitante'] }, async (request, { sessi
   });
 
   if (enviar) {
-    const esResponsableDelArea = session.roles.includes('responsable_area')
-      && await verificarResponsableDeArea(session.tenantId, session.userId, session.areaId!);
-    const requiereValidacion = await getTenantConfigBool(session.tenantId, 'requiere_validacion_responsable', true);
+    const esResponsableDelArea =
+      session.roles.includes('responsable_area') &&
+      (await verificarResponsableDeArea(session.tenantId, session.userId, session.areaId!));
+    const requiereValidacion = await getTenantConfigBool(
+      session.tenantId,
+      'requiere_validacion_responsable',
+      true,
+    );
     const skipValidacion = !requiereValidacion || esResponsableDelArea;
 
     if (skipValidacion) {
@@ -181,17 +219,34 @@ export const POST = withAuth({ roles: ['solicitante'] }, async (request, { sessi
       });
       if (esResponsableDelArea) {
         await registrarAuditoria({
-          tenantId: session.tenantId, usuarioId: session.userId,
-          accion: 'validar_solicitud', entidad: 'solicitud', entidadId: solicitud.id,
+          tenantId: session.tenantId,
+          usuarioId: session.userId,
+          accion: 'validar_solicitud',
+          entidad: 'solicitud',
+          entidadId: solicitud.id,
           datosNuevos: { automatico: true },
           ipAddress: ip,
         });
       }
-      await notificarPorRol(session.tenantId, 'director', 'Nueva solicitud para aprobar', `${session.nombre} solicita: ${titulo}`, solicitud.id);
+      await notificarPorRol(
+        session.tenantId,
+        'director',
+        'Nueva solicitud para aprobar',
+        `${session.nombre} solicita: ${titulo}`,
+        solicitud.id,
+      );
     } else {
-      const area = await prisma.areas.findFirst({ where: { id: session.areaId!, tenant_id: session.tenantId } });
+      const area = await prisma.areas.findFirst({
+        where: { id: session.areaId!, tenant_id: session.tenantId },
+      });
       if (!area?.responsable_id) {
-        await notificarPorRol(session.tenantId, 'director', 'Área sin responsable', `La solicitud "${titulo}" fue enviada pero el área no tiene responsable asignado. Asigná uno para que pueda ser validada.`, solicitud.id);
+        await notificarPorRol(
+          session.tenantId,
+          'director',
+          'Área sin responsable',
+          `La solicitud "${titulo}" fue enviada pero el área no tiene responsable asignado. Asigná uno para que pueda ser validada.`,
+          solicitud.id,
+        );
       } else {
         await crearNotificacion({
           tenantId: session.tenantId,
@@ -206,29 +261,42 @@ export const POST = withAuth({ roles: ['solicitante'] }, async (request, { sessi
   }
 
   if (enviar && (urgencia === 'critica' || urgencia === 'urgente')) {
-    const esCritica = urgencia === 'critica'
-    const tituloUrgencia = esCritica ? '🚨 Solicitud CRÍTICA enviada' : '⚠️ Solicitud urgente enviada'
-    const mensajeUrgencia = `${session.nombre} marcó como ${urgencia}: "${titulo}". Requiere atención prioritaria.`
+    const esCritica = urgencia === 'critica';
+    const tituloUrgencia = esCritica
+      ? '🚨 Solicitud CRÍTICA enviada'
+      : '⚠️ Solicitud urgente enviada';
+    const mensajeUrgencia = `${session.nombre} marcó como ${urgencia}: "${titulo}". Requiere atención prioritaria.`;
 
-    const areaUrgencia = await prisma.areas.findFirst({ where: { id: session.areaId!, tenant_id: session.tenantId } })
+    const areaUrgencia = await prisma.areas.findFirst({
+      where: { id: session.areaId!, tenant_id: session.tenantId },
+    });
     const urgencyNotifications: Promise<any>[] = [
       notificarPorRol(session.tenantId, 'tesoreria', tituloUrgencia, mensajeUrgencia, solicitud.id),
       notificarPorRol(session.tenantId, 'compras', tituloUrgencia, mensajeUrgencia, solicitud.id),
     ];
     if (areaUrgencia?.responsable_id) {
-      urgencyNotifications.push(crearNotificacion({
-        tenantId: session.tenantId,
-        destinatarioId: areaUrgencia.responsable_id,
-        tipo: `solicitud_${urgencia}`,
-        titulo: tituloUrgencia,
-        mensaje: mensajeUrgencia,
-        solicitudId: solicitud.id,
-      }));
+      urgencyNotifications.push(
+        crearNotificacion({
+          tenantId: session.tenantId,
+          destinatarioId: areaUrgencia.responsable_id,
+          tipo: `solicitud_${urgencia}`,
+          titulo: tituloUrgencia,
+          mensaje: mensajeUrgencia,
+          solicitudId: solicitud.id,
+        }),
+      );
     }
-    await Promise.all(urgencyNotifications)
+    await Promise.all(urgencyNotifications);
   }
 
-  await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: enviar ? 'enviar_solicitud' : 'crear_borrador', entidad: 'solicitud', entidadId: solicitud.id, ipAddress: ip });
+  await registrarAuditoria({
+    tenantId: session.tenantId,
+    usuarioId: session.userId,
+    accion: enviar ? 'enviar_solicitud' : 'crear_borrador',
+    entidad: 'solicitud',
+    entidadId: solicitud.id,
+    ipAddress: ip,
+  });
 
   return Response.json(solicitud, { status: 201 });
 });

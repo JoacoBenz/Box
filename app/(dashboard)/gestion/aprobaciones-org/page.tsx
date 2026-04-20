@@ -1,100 +1,103 @@
-'use client'
+'use client';
 
-import { useEffect, useState, useCallback } from 'react'
-import { App, Table, Button, Tag, Space, Typography, Popconfirm, Divider, Tooltip } from 'antd'
-import { MailOutlined, DeleteOutlined } from '@ant-design/icons'
-import type { ColumnsType } from 'antd/es/table'
+import { useEffect, useState, useCallback } from 'react';
+import { App, Table, Button, Tag, Space, Typography, Popconfirm, Divider, Tooltip } from 'antd';
+import { MailOutlined, DeleteOutlined } from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
 
-const { Title, Text } = Typography
+const { Title, Text } = Typography;
 
 interface Tenant {
-  id: number
-  nombre: string
-  slug: string
-  email_contacto: string
-  estado: string
-  fecha_registro: string
-  _count?: { usuarios: number; areas: number }
+  id: number;
+  nombre: string;
+  slug: string;
+  email_contacto: string;
+  estado: string;
+  fecha_registro: string;
+  _count?: { usuarios: number; areas: number };
 }
 
 interface RegistroPendiente {
-  id: number
-  nombre_organizacion: string
-  nombre_usuario: string
-  email: string
-  expira_el: string
-  created_at: string
-  expirado: boolean
+  id: number;
+  nombre_organizacion: string;
+  nombre_usuario: string;
+  email: string;
+  expira_el: string;
+  created_at: string;
+  expirado: boolean;
 }
 
 export default function AprobacionesOrgPage() {
-  const { message } = App.useApp()
-  const [tenants, setTenants] = useState<Tenant[]>([])
-  const [registros, setRegistros] = useState<RegistroPendiente[]>([])
-  const [loading, setLoading] = useState(true)
-  const [loadingRegistros, setLoadingRegistros] = useState(true)
+  const { message } = App.useApp();
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [registros, setRegistros] = useState<RegistroPendiente[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingRegistros, setLoadingRegistros] = useState(true);
 
   const fetchPendientes = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await fetch('/api/admin/tenants?estado=pendiente')
-      if (!res.ok) throw new Error('Error al cargar')
-      const data = await res.json()
-      setTenants(Array.isArray(data) ? data : data.data ?? [])
+      const res = await fetch('/api/admin/tenants?estado=pendiente');
+      if (!res.ok) throw new Error('Error al cargar');
+      const data = await res.json();
+      setTenants(Array.isArray(data) ? data : (data.data ?? []));
     } catch (err: any) {
-      message.error(err.message)
+      message.error(err.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
   const fetchRegistros = useCallback(async () => {
-    setLoadingRegistros(true)
+    setLoadingRegistros(true);
     try {
-      const res = await fetch('/api/admin/registros-pendientes')
-      if (!res.ok) throw new Error('Error al cargar registros')
-      const data = await res.json()
-      setRegistros(Array.isArray(data) ? data : [])
+      const res = await fetch('/api/admin/registros-pendientes');
+      if (!res.ok) throw new Error('Error al cargar registros');
+      const data = await res.json();
+      setRegistros(Array.isArray(data) ? data : []);
     } catch (err: any) {
-      message.error(err.message)
+      message.error(err.message);
     } finally {
-      setLoadingRegistros(false)
+      setLoadingRegistros(false);
     }
-  }, [])
+  }, []);
 
-  useEffect(() => { fetchPendientes(); fetchRegistros() }, [fetchPendientes, fetchRegistros])
+  useEffect(() => {
+    fetchPendientes();
+    fetchRegistros();
+  }, [fetchPendientes, fetchRegistros]);
 
-  const [actionLoading, setActionLoading] = useState<number | null>(null)
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
 
   async function cambiarEstado(id: number, estado: 'activo' | 'rechazado') {
     try {
-      setActionLoading(id)
+      setActionLoading(id);
       const res = await fetch(`/api/admin/tenants/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ estado }),
-      })
+      });
       if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err?.error?.message ?? 'Error')
+        const err = await res.json();
+        throw new Error(err?.error?.message ?? 'Error');
       }
-      message.success(estado === 'activo' ? 'Organización aprobada' : 'Organización rechazada')
-      fetchPendientes()
+      message.success(estado === 'activo' ? 'Organización aprobada' : 'Organización rechazada');
+      fetchPendientes();
     } catch (err: any) {
-      message.error(err.message)
+      message.error(err.message);
     } finally {
-      setActionLoading(null)
+      setActionLoading(null);
     }
   }
 
   async function eliminarRegistro(id: number) {
     try {
-      const res = await fetch(`/api/admin/registros-pendientes?id=${id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Error al eliminar')
-      message.success('Registro eliminado')
-      fetchRegistros()
+      const res = await fetch(`/api/admin/registros-pendientes?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Error al eliminar');
+      message.success('Registro eliminado');
+      fetchRegistros();
     } catch (err: any) {
-      message.error(err.message)
+      message.error(err.message);
     }
   }
 
@@ -129,7 +132,14 @@ export default function AprobacionesOrgPage() {
             okText="Aprobar"
             cancelText="Cancelar"
           >
-            <Button type="primary" size="small" loading={actionLoading === r.id} disabled={actionLoading !== null}>Aprobar</Button>
+            <Button
+              type="primary"
+              size="small"
+              loading={actionLoading === r.id}
+              disabled={actionLoading !== null}
+            >
+              Aprobar
+            </Button>
           </Popconfirm>
           <Popconfirm
             title="¿Rechazar esta organización?"
@@ -138,12 +148,19 @@ export default function AprobacionesOrgPage() {
             okText="Rechazar"
             cancelText="Cancelar"
           >
-            <Button danger size="small" loading={actionLoading === r.id} disabled={actionLoading !== null}>Rechazar</Button>
+            <Button
+              danger
+              size="small"
+              loading={actionLoading === r.id}
+              disabled={actionLoading !== null}
+            >
+              Rechazar
+            </Button>
           </Popconfirm>
         </Space>
       ),
     },
-  ]
+  ];
 
   const registrosColumns: ColumnsType<RegistroPendiente> = [
     { title: 'Organización', dataIndex: 'nombre_organizacion', key: 'org' },
@@ -156,7 +173,9 @@ export default function AprobacionesOrgPage() {
         <Space>
           <span>{email}</span>
           <Tooltip title={`Enviar email a ${email}`}>
-            <a href={`mailto:${email}`}><MailOutlined style={{ color: 'var(--color-primary)' }} /></a>
+            <a href={`mailto:${email}`}>
+              <MailOutlined style={{ color: 'var(--color-primary)' }} />
+            </a>
           </Tooltip>
         </Space>
       ),
@@ -172,9 +191,12 @@ export default function AprobacionesOrgPage() {
       title: 'Estado',
       key: 'estado',
       width: 140,
-      render: (_, r) => r.expirado
-        ? <Tag color="red">Link expirado</Tag>
-        : <Tag color="blue">Esperando verificación</Tag>,
+      render: (_, r) =>
+        r.expirado ? (
+          <Tag color="red">Link expirado</Tag>
+        ) : (
+          <Tag color="blue">Esperando verificación</Tag>
+        ),
     },
     {
       title: 'Acciones',
@@ -192,11 +214,18 @@ export default function AprobacionesOrgPage() {
         </Popconfirm>
       ),
     },
-  ]
+  ];
 
   return (
     <div className="page-content">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 24,
+        }}
+      >
         <Title level={3} style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>
           Organizaciones Pendientes
         </Title>
@@ -217,13 +246,21 @@ export default function AprobacionesOrgPage() {
 
       <Divider />
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 16,
+        }}
+      >
         <div>
           <Title level={4} style={{ margin: 0, fontWeight: 600, color: 'var(--text-primary)' }}>
             Registros sin verificar email
           </Title>
           <Text type="secondary" style={{ fontSize: 13 }}>
-            Organizaciones que se registraron pero no completaron la verificación de email. Posibles clientes para contactar.
+            Organizaciones que se registraron pero no completaron la verificación de email. Posibles
+            clientes para contactar.
           </Text>
         </div>
         <Tag color="blue" style={{ fontSize: 14, padding: '4px 12px' }}>
@@ -241,5 +278,5 @@ export default function AprobacionesOrgPage() {
         locale={{ emptyText: 'No hay registros pendientes de verificación' }}
       />
     </div>
-  )
+  );
 }

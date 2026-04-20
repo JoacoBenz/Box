@@ -1,16 +1,33 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { mockSession, mockDb, mockTransaction } = vi.hoisted(() => {
-  const mockSession = { userId: 1, tenantId: 1, roles: ['solicitante'], nombre: 'Solicitante', email: 'sol@test.com', areaId: 1 };
+  const mockSession = {
+    userId: 1,
+    tenantId: 1,
+    roles: ['solicitante'],
+    nombre: 'Solicitante',
+    email: 'sol@test.com',
+    areaId: 1,
+  };
   const mockDb = {
-    solicitudes: { findMany: vi.fn(), findFirst: vi.fn(), count: vi.fn(), create: vi.fn(), update: vi.fn() },
+    solicitudes: {
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      count: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
     areas: { findMany: vi.fn(), findFirst: vi.fn() },
     items_solicitud: { createMany: vi.fn(), deleteMany: vi.fn() },
     archivos: { findMany: vi.fn() },
   };
   const mockTransaction = vi.fn().mockImplementation(async (cb: any) => {
     const tx = {
-      solicitudes: { create: vi.fn().mockResolvedValue({ id: 1, numero: 'SC-2026-0001', titulo: 'Test', estado: 'borrador' }) },
+      solicitudes: {
+        create: vi
+          .fn()
+          .mockResolvedValue({ id: 1, numero: 'SC-2026-0001', titulo: 'Test', estado: 'borrador' }),
+      },
       items_solicitud: { createMany: vi.fn() },
     };
     return cb(tx);
@@ -33,21 +50,38 @@ vi.mock('@/lib/permissions', () => ({
   verificarRol: vi.fn().mockReturnValue(true),
   verificarSegregacion: vi.fn().mockReturnValue({ permitido: true }),
   verificarResponsableDeArea: vi.fn().mockResolvedValue(false),
-  apiError: vi.fn((code: string, msg: string, status: number, details?: any) => new Response(JSON.stringify({ error: { code, message: msg, details } }), { status })),
+  apiError: vi.fn(
+    (code: string, msg: string, status: number, details?: any) =>
+      new Response(JSON.stringify({ error: { code, message: msg, details } }), { status }),
+  ),
   isOnlyResponsable: vi.fn().mockReturnValue(false),
 }));
-vi.mock('@/lib/audit', () => ({ registrarAuditoria: vi.fn(), getClientIp: vi.fn(() => '1.2.3.4') }));
-vi.mock('@/lib/notifications', () => ({ crearNotificacion: vi.fn(), notificarPorRol: vi.fn(), notificarAdmins: vi.fn() }));
+vi.mock('@/lib/audit', () => ({
+  registrarAuditoria: vi.fn(),
+  getClientIp: vi.fn(() => '1.2.3.4'),
+}));
+vi.mock('@/lib/notifications', () => ({
+  crearNotificacion: vi.fn(),
+  notificarPorRol: vi.fn(),
+  notificarAdmins: vi.fn(),
+}));
 vi.mock('@/lib/logger', () => ({ logApiError: vi.fn() }));
-vi.mock('@/lib/tenant-override', () => ({ getEffectiveTenantId: vi.fn().mockResolvedValue({ session: mockSession, effectiveTenantId: 1 }) }));
-vi.mock('@/lib/tenant-config', () => ({ getTenantConfigBool: vi.fn().mockResolvedValue(true), getTenantConfigNumber: vi.fn().mockResolvedValue(0) }));
+vi.mock('@/lib/tenant-override', () => ({
+  getEffectiveTenantId: vi.fn().mockResolvedValue({ session: mockSession, effectiveTenantId: 1 }),
+}));
+vi.mock('@/lib/tenant-config', () => ({
+  getTenantConfigBool: vi.fn().mockResolvedValue(true),
+  getTenantConfigNumber: vi.fn().mockResolvedValue(0),
+}));
 vi.mock('@/lib/validators', async () => await vi.importActual('@/lib/validators'));
 vi.mock('@/types', () => ({ default: {} }));
 
 import { GET, POST } from '@/app/api/solicitudes/route';
 
 describe('GET /api/solicitudes', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('returns paginated list', async () => {
     const data = [{ id: 1, titulo: 'Test', estado: 'borrador' }];
@@ -64,7 +98,9 @@ describe('GET /api/solicitudes', () => {
 });
 
 describe('POST /api/solicitudes', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('creates solicitud in borrador', async () => {
     const req = new Request('http://localhost/api/solicitudes', {

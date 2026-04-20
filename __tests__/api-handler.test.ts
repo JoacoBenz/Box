@@ -34,7 +34,13 @@ const mockGetSession = getServerSession as any;
 const mockVerificarRol = verificarRol as any;
 const mockGetEffective = getEffectiveTenantId as any;
 
-const fakeSession = { userId: 1, tenantId: 1, roles: ['director'], nombre: 'Test', email: 'test@test.com' };
+const fakeSession = {
+  userId: 1,
+  tenantId: 1,
+  roles: ['director'],
+  nombre: 'Test',
+  email: 'test@test.com',
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -69,7 +75,11 @@ describe('withAuth', () => {
     const wrapped = withAuth({ roles: ['director'] }, handler);
     const req = new Request('http://localhost/api/test');
     await wrapped(req);
-    expect(handler).toHaveBeenCalledWith(req, expect.objectContaining({ session: fakeSession, ip: '1.2.3.4' }), undefined);
+    expect(handler).toHaveBeenCalledWith(
+      req,
+      expect.objectContaining({ session: fakeSession, ip: '1.2.3.4' }),
+      undefined,
+    );
   });
 
   it('returns 401 when not authenticated', async () => {
@@ -110,7 +120,7 @@ describe('withAdminOverride', () => {
     expect(handler).toHaveBeenCalledWith(
       expect.any(Request),
       expect.objectContaining({ effectiveTenantId: 5 }),
-      undefined
+      undefined,
     );
   });
 

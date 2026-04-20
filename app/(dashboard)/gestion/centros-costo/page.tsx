@@ -1,26 +1,26 @@
-'use client'
+'use client';
 
-import { Form, Input, InputNumber, Select, Tag, Button, Space, Popconfirm } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
-import AdminCrudTable from '@/components/admin/AdminCrudTable'
+import { Form, Input, InputNumber, Select, Tag, Button, Space, Popconfirm } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import AdminCrudTable from '@/components/admin/AdminCrudTable';
 
 const formatCurrency = (val: number | null) =>
-  `$${Number(val ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
+  `$${Number(val ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
 
 interface CentroCosto {
-  id: number
-  nombre: string
-  codigo: string
-  activo: boolean
-  presupuesto_anual: number | null
-  presupuesto_mensual: number | null
-  area: { id: number; nombre: string } | null
-  tenant?: { id: number; nombre: string }
+  id: number;
+  nombre: string;
+  codigo: string;
+  activo: boolean;
+  presupuesto_anual: number | null;
+  presupuesto_mensual: number | null;
+  area: { id: number; nombre: string } | null;
+  tenant?: { id: number; nombre: string };
 }
 
 interface AreaOption {
-  id: number
-  nombre: string
+  id: number;
+  nombre: string;
 }
 
 export default function CentrosCostoPage() {
@@ -29,7 +29,9 @@ export default function CentrosCostoPage() {
       title="Centros de Costo"
       apiUrl="/api/centros-costo"
       secondaryApiUrl="/api/areas"
-      extractSecondaryData={(data) => (data ?? []).map((a: any) => ({ id: a.id, nombre: a.nombre }))}
+      extractSecondaryData={(data) =>
+        (data ?? []).map((a: any) => ({ id: a.id, nombre: a.nombre }))
+      }
       entityName="Centro de Costo"
       createLabel="+ Nuevo Centro de Costo"
       useFormSubmit
@@ -51,13 +53,22 @@ export default function CentrosCostoPage() {
             marginBottom: 10,
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              marginBottom: 8,
+            }}
+          >
             <span style={{ color: 'var(--color-primary)', fontWeight: 600, fontSize: 15 }}>
               {item.nombre}
             </span>
             <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
               <Tag>{item.codigo}</Tag>
-              <Tag color={item.activo ? 'green' : 'default'}>{item.activo ? 'Activo' : 'Inactivo'}</Tag>
+              <Tag color={item.activo ? 'green' : 'default'}>
+                {item.activo ? 'Activo' : 'Inactivo'}
+              </Tag>
             </div>
           </div>
 
@@ -79,7 +90,9 @@ export default function CentrosCostoPage() {
           </div>
 
           <div style={{ display: 'flex', gap: 8 }}>
-            <Button size="small" onClick={() => openEdit(item)}>Editar</Button>
+            <Button size="small" onClick={() => openEdit(item)}>
+              Editar
+            </Button>
             {item.activo && (
               <Popconfirm
                 title="¿Desactivar este centro de costo?"
@@ -87,20 +100,31 @@ export default function CentrosCostoPage() {
                 okText="Sí"
                 cancelText="No"
               >
-                <Button size="small" danger>Desactivar</Button>
+                <Button size="small" danger>
+                  Desactivar
+                </Button>
               </Popconfirm>
             )}
           </div>
         </div>
       )}
       columns={(selectedTenant, { openEdit, handleDeactivate }) => [
-        ...(!selectedTenant ? [{
-          title: 'Organización',
-          key: 'tenant',
-          width: 180,
-          render: (_: unknown, r: CentroCosto) => r.tenant?.nombre ?? '—',
-        }] : []),
-        { title: 'Código', dataIndex: 'codigo', width: 120, render: (val: string) => <Tag>{val}</Tag> },
+        ...(!selectedTenant
+          ? [
+              {
+                title: 'Organización',
+                key: 'tenant',
+                width: 180,
+                render: (_: unknown, r: CentroCosto) => r.tenant?.nombre ?? '—',
+              },
+            ]
+          : []),
+        {
+          title: 'Código',
+          dataIndex: 'codigo',
+          width: 120,
+          render: (val: string) => <Tag>{val}</Tag>,
+        },
         { title: 'Nombre', dataIndex: 'nombre' },
         {
           title: 'Área',
@@ -124,32 +148,46 @@ export default function CentrosCostoPage() {
           title: 'Estado',
           dataIndex: 'activo',
           width: 100,
-          render: (val: boolean) => <Tag color={val ? 'green' : 'default'}>{val ? 'Activo' : 'Inactivo'}</Tag>,
-        },
-        ...(selectedTenant ? [{
-          title: 'Acciones',
-          key: 'acciones',
-          width: 150,
-          render: (_: unknown, row: CentroCosto) => (
-            <Space>
-              <Button size="small" onClick={() => openEdit(row)}>Editar</Button>
-              {row.activo && (
-                <Popconfirm
-                  title="¿Desactivar este centro de costo?"
-                  onConfirm={() => handleDeactivate(row)}
-                  okText="Sí"
-                  cancelText="No"
-                >
-                  <Button size="small" danger>Desactivar</Button>
-                </Popconfirm>
-              )}
-            </Space>
+          render: (val: boolean) => (
+            <Tag color={val ? 'green' : 'default'}>{val ? 'Activo' : 'Inactivo'}</Tag>
           ),
-        }] : []),
+        },
+        ...(selectedTenant
+          ? [
+              {
+                title: 'Acciones',
+                key: 'acciones',
+                width: 150,
+                render: (_: unknown, row: CentroCosto) => (
+                  <Space>
+                    <Button size="small" onClick={() => openEdit(row)}>
+                      Editar
+                    </Button>
+                    {row.activo && (
+                      <Popconfirm
+                        title="¿Desactivar este centro de costo?"
+                        onConfirm={() => handleDeactivate(row)}
+                        okText="Sí"
+                        cancelText="No"
+                      >
+                        <Button size="small" danger>
+                          Desactivar
+                        </Button>
+                      </Popconfirm>
+                    )}
+                  </Space>
+                ),
+              },
+            ]
+          : []),
       ]}
       renderForm={(_form, _editing, areas: AreaOption[]) => (
         <>
-          <Form.Item name="area_id" label="Área asociada" rules={[{ required: true, message: 'Seleccione un área' }]}>
+          <Form.Item
+            name="area_id"
+            label="Área asociada"
+            rules={[{ required: true, message: 'Seleccione un área' }]}
+          >
             <Select
               placeholder="Seleccionar área..."
               showSearch
@@ -163,18 +201,26 @@ export default function CentrosCostoPage() {
             rules={[
               { required: true, message: 'Requerido' },
               { max: 20, message: 'Máximo 20 caracteres' },
-              { pattern: /^[A-Z0-9_-]+$/i, message: 'Solo letras, números, guiones y guiones bajos' },
+              {
+                pattern: /^[A-Z0-9_-]+$/i,
+                message: 'Solo letras, números, guiones y guiones bajos',
+              },
               { whitespace: false, message: 'Sin espacios' },
               () => ({
                 validator(_, value) {
-                  if (value && value !== value.trim()) return Promise.reject('Sin espacios al inicio o al final');
+                  if (value && value !== value.trim())
+                    return Promise.reject('Sin espacios al inicio o al final');
                   return Promise.resolve();
                 },
               }),
             ]}
             extra="Ej: ADM, FIN-01, OP_NORTE"
           >
-            <Input placeholder="ADM, FIN, OP..." maxLength={20} style={{ textTransform: 'uppercase' }} />
+            <Input
+              placeholder="ADM, FIN, OP..."
+              maxLength={20}
+              style={{ textTransform: 'uppercase' }}
+            />
           </Form.Item>
           <Form.Item
             name="nombre"
@@ -195,7 +241,9 @@ export default function CentrosCostoPage() {
               max={999999999}
               precision={2}
               placeholder="Opcional"
-              formatter={(value) => value ? `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}
+              formatter={(value) =>
+                value ? `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''
+              }
               parser={(value) => Number(value?.replace(/\$\s?|(\.)/g, '') || 0) as any}
             />
           </Form.Item>
@@ -206,12 +254,14 @@ export default function CentrosCostoPage() {
               max={999999999}
               precision={2}
               placeholder="Opcional"
-              formatter={(value) => value ? `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}
+              formatter={(value) =>
+                value ? `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''
+              }
               parser={(value) => Number(value?.replace(/\$\s?|(\.)/g, '') || 0) as any}
             />
           </Form.Item>
         </>
       )}
     />
-  )
+  );
 }

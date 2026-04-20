@@ -21,14 +21,20 @@ export const POST = withAuth({ roles: ['director'] }, async (request, { session,
     return apiError('BAD_REQUEST', 'Máximo 50 solicitudes por lote', 400);
   }
 
-  const skipValidacion = !(await getTenantConfigBool(session.tenantId, 'requiere_validacion_responsable', true));
+  const skipValidacion = !(await getTenantConfigBool(
+    session.tenantId,
+    'requiere_validacion_responsable',
+    true,
+  ));
   const estadosPermitidos = skipValidacion ? ['validada', 'enviada'] : ['validada'];
 
   // Check if tenant has compras users
   const comprasRole = await prisma.roles.findUnique({ where: { nombre: 'compras' } });
-  const hasComprasUsers = comprasRole ? await prisma.usuarios_roles.count({
-    where: { rol_id: comprasRole.id, usuario: { tenant_id: session.tenantId, activo: true } },
-  }) > 0 : false;
+  const hasComprasUsers = comprasRole
+    ? (await prisma.usuarios_roles.count({
+        where: { rol_id: comprasRole.id, usuario: { tenant_id: session.tenantId, activo: true } },
+      })) > 0
+    : false;
   const nuevoEstado = hasComprasUsers ? 'en_compras' : 'aprobada';
 
   const aprobadas: number[] = [];
@@ -57,9 +63,12 @@ export const POST = withAuth({ roles: ['director'] }, async (request, { session,
         continue;
       }
 
-      const montoTotal = solicitud.items_solicitud.reduce((acc, item) => {
-        return acc + (item.precio_estimado ? Number(item.precio_estimado) * Number(item.cantidad) : 0);
-      }, 0) || null;
+      const montoTotal =
+        solicitud.items_solicitud.reduce((acc, item) => {
+          return (
+            acc + (item.precio_estimado ? Number(item.precio_estimado) * Number(item.cantidad) : 0)
+          );
+        }, 0) || null;
 
       const amountCheck = await canUserApproveAmount(session.tenantId, session.roles, montoTotal);
       if (!amountCheck.allowed) {
@@ -70,35 +79,91 @@ export const POST = withAuth({ roles: ['director'] }, async (request, { session,
       // Approve
       await db.solicitudes.update({
         where: { id: solicitudId },
-        data: { estado: nuevoEstado, aprobado_por_id: session.userId, fecha_aprobacion: new Date() },
+        data: {
+          estado: nuevoEstado,
+          aprobado_por_id: session.userId,
+          fecha_aprobacion: new Date(),
+        },
       });
 
       // Notifications
       const montoStr = montoTotal ? ` por $${montoTotal.toLocaleString()}` : '';
       if (hasComprasUsers) {
-        await crearNotificacion({ tenantId: session.tenantId, destinatarioId: solicitud.solicitante_id, tipo: 'solicitud_aprobada', titulo: 'Tu solicitud fue aprobada', mensaje: `${session.nombre} aprobó: ${solicitud.titulo}. El sector Compras la procesará.`, solicitudId });
-        await notificarPorRol(session.tenantId, 'compras', 'Nueva solicitud para procesar', `Solicitud aprobada: ${solicitud.titulo}${montoStr}`, solicitudId);
+        await crearNotificacion({
+          tenantId: session.tenantId,
+          destinatarioId: solicitud.solicitante_id,
+          tipo: 'solicitud_aprobada',
+          titulo: 'Tu solicitud fue aprobada',
+          mensaje: `${session.nombre} aprobó: ${solicitud.titulo}. El sector Compras la procesará.`,
+          solicitudId,
+        });
+        await notificarPorRol(
+          session.tenantId,
+          'compras',
+          'Nueva solicitud para procesar',
+          `Solicitud aprobada: ${solicitud.titulo}${montoStr}`,
+          solicitudId,
+        );
       } else {
-        await crearNotificacion({ tenantId: session.tenantId, destinatarioId: solicitud.solicitante_id, tipo: 'solicitud_aprobada', titulo: 'Tu solicitud fue aprobada', mensaje: `${session.nombre} aprobó: ${solicitud.titulo}. Tesorería la procesará en breve.`, solicitudId });
-        await notificarPorRol(session.tenantId, 'tesoreria', 'Nueva compra para ejecutar', `Solicitud aprobada: ${solicitud.titulo}${montoStr}`, solicitudId);
+        await crearNotificacion({
+          tenantId: session.tenantId,
+          destinatarioId: solicitud.solicitante_id,
+          tipo: 'solicitud_aprobada',
+          titulo: 'Tu solicitud fue aprobada',
+          mensaje: `${session.nombre} aprobó: ${solicitud.titulo}. Tesorería la procesará en breve.`,
+          solicitudId,
+        });
+        await notificarPorRol(
+          session.tenantId,
+          'tesoreria',
+          'Nueva compra para ejecutar',
+          `Solicitud aprobada: ${solicitud.titulo}${montoStr}`,
+          solicitudId,
+        );
       }
 
       if (solicitud.validado_por_id) {
-        const area = await prisma.areas.findFirst({ where: { id: solicitud.area_id, tenant_id: session.tenantId } });
+        const area = await prisma.areas.findFirst({
+          where: { id: solicitud.area_id, tenant_id: session.tenantId },
+        });
         if (area?.responsable_id) {
-          await crearNotificacion({ tenantId: session.tenantId, destinatarioId: area.responsable_id, tipo: 'solicitud_aprobada', titulo: 'Solicitud aprobada', mensaje: `La solicitud "${solicitud.titulo}" fue aprobada`, solicitudId });
+          await crearNotificacion({
+            tenantId: session.tenantId,
+            destinatarioId: area.responsable_id,
+            tipo: 'solicitud_aprobada',
+            titulo: 'Solicitud aprobada',
+            mensaje: `La solicitud "${solicitud.titulo}" fue aprobada`,
+            solicitudId,
+          });
         }
       }
 
       // Budget warning
       if (solicitud.centro_costo_id && montoTotal) {
-        const budget = await verificarPresupuesto(session.tenantId, solicitud.centro_costo_id, Number(montoTotal));
+        const budget = await verificarPresupuesto(
+          session.tenantId,
+          solicitud.centro_costo_id,
+          Number(montoTotal),
+        );
         if (budget.status.excedido) {
-          await notificarPorRol(session.tenantId, 'tesoreria', `⚠ Presupuesto excedido: ${budget.status.centroCosto}`, `La solicitud ${solicitud.numero} ($${Number(montoTotal).toLocaleString()}) excede el presupuesto del centro de costo "${budget.status.centroCosto}". Uso: ${budget.status.alertaPorcentaje}%`, solicitudId);
+          await notificarPorRol(
+            session.tenantId,
+            'tesoreria',
+            `⚠ Presupuesto excedido: ${budget.status.centroCosto}`,
+            `La solicitud ${solicitud.numero} ($${Number(montoTotal).toLocaleString()}) excede el presupuesto del centro de costo "${budget.status.centroCosto}". Uso: ${budget.status.alertaPorcentaje}%`,
+            solicitudId,
+          );
         }
       }
 
-      await registrarAuditoria({ tenantId: session.tenantId, usuarioId: session.userId, accion: 'aprobar_solicitud', entidad: 'solicitud', entidadId: solicitudId, ipAddress: ip });
+      await registrarAuditoria({
+        tenantId: session.tenantId,
+        usuarioId: session.userId,
+        accion: 'aprobar_solicitud',
+        entidad: 'solicitud',
+        entidadId: solicitudId,
+        ipAddress: ip,
+      });
       aprobadas.push(solicitudId);
     } catch (e: any) {
       errores.push({ id: solicitudId, error: e.message?.slice(0, 100) || 'Error desconocido' });

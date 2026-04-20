@@ -10,13 +10,19 @@ export async function POST(request: NextRequest) {
     const ip = getClientIp(request);
     const rateLimit = await checkRateLimitDb(`verificar-unirse:${ip}`, 10, 60_000);
     if (!rateLimit.allowed) {
-      return Response.json({ error: { code: 'RATE_LIMITED', message: 'Demasiados intentos' } }, { status: 429 });
+      return Response.json(
+        { error: { code: 'RATE_LIMITED', message: 'Demasiados intentos' } },
+        { status: 429 },
+      );
     }
 
     const body = await request.json();
     const { token } = body;
     if (!token || typeof token !== 'string') {
-      return Response.json({ error: { code: 'VALIDATION_ERROR', message: 'Token inválido' } }, { status: 400 });
+      return Response.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'Token inválido' } },
+        { status: 400 },
+      );
     }
 
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
@@ -30,7 +36,12 @@ export async function POST(request: NextRequest) {
     `;
 
     if (consumed.length === 0) {
-      return Response.json({ error: { code: 'NOT_FOUND', message: 'Enlace inválido o expirado. Registrate de nuevo.' } }, { status: 404 });
+      return Response.json(
+        {
+          error: { code: 'NOT_FOUND', message: 'Enlace inválido o expirado. Registrate de nuevo.' },
+        },
+        { status: 404 },
+      );
     }
 
     const { usuario_id } = consumed[0];
@@ -63,6 +74,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logApiError('/api/unirse/verificar', 'POST', error);
-    return Response.json({ error: { code: 'INTERNAL', message: 'Error interno del servidor' } }, { status: 500 });
+    return Response.json(
+      { error: { code: 'INTERNAL', message: 'Error interno del servidor' } },
+      { status: 500 },
+    );
   }
 }

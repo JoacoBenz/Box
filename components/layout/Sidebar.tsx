@@ -48,7 +48,14 @@ interface TenantOption {
   nombre: string;
 }
 
-export function Sidebar({ roles, pendientes = {}, collapsed, isMobile, drawerOpen, onDrawerClose }: SidebarProps) {
+export function Sidebar({
+  roles,
+  pendientes = {},
+  collapsed,
+  isMobile,
+  drawerOpen,
+  onDrawerClose,
+}: SidebarProps) {
   const { tokens } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
@@ -68,13 +75,13 @@ export function Sidebar({ roles, pendientes = {}, collapsed, isMobile, drawerOpe
   useEffect(() => {
     if (!isAdmin) return;
     fetch('/api/admin/tenants')
-      .then(r => r.ok ? r.json() : [])
-      .then((data: any[]) => setTenants(data.map(t => ({ id: t.id, nombre: t.nombre }))))
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data: any[]) => setTenants(data.map((t) => ({ id: t.id, nombre: t.nombre }))))
       .catch(() => {});
   }, [isAdmin]);
 
   const hasOrgSelected = isAdmin ? selectedTenant !== null : true;
-  const selectedTenantName = tenants.find(t => t.id === selectedTenant)?.nombre;
+  const selectedTenantName = tenants.find((t) => t.id === selectedTenant)?.nombre;
 
   // Build menu items based on role and org selection
   const items: any[] = [];
@@ -84,20 +91,65 @@ export function Sidebar({ roles, pendientes = {}, collapsed, isMobile, drawerOpe
 
   if (isAdmin) {
     // Admin: platform items always visible
-    items.push({ key: '/gestion/tenants', icon: <GlobalOutlined />, label: 'Organizaciones', visible: true });
-    items.push({ key: '/gestion/aprobaciones-org', icon: <AuditOutlined />, label: 'Aprobaciones Org', visible: true });
+    items.push({
+      key: '/gestion/tenants',
+      icon: <GlobalOutlined />,
+      label: 'Organizaciones',
+      visible: true,
+    });
+    items.push({
+      key: '/gestion/aprobaciones-org',
+      icon: <AuditOutlined />,
+      label: 'Aprobaciones Org',
+      visible: true,
+    });
     items.push({ key: '/auditoria', icon: <AuditOutlined />, label: 'Auditoría', visible: true });
 
     // Org-scoped items only when an org is selected (super_admin sees everything like a director)
     if (hasOrgSelected) {
-      items.push({ key: '/solicitudes', icon: <FileTextOutlined />, label: 'Solicitudes', visible: true });
-      items.push({ key: '/validaciones', icon: <CheckCircleOutlined />, label: 'Validaciones', visible: true });
-      items.push({ key: '/aprobaciones', icon: <ThunderboltOutlined />, label: 'Aprobaciones', visible: true });
+      items.push({
+        key: '/solicitudes',
+        icon: <FileTextOutlined />,
+        label: 'Solicitudes',
+        visible: true,
+      });
+      items.push({
+        key: '/validaciones',
+        icon: <CheckCircleOutlined />,
+        label: 'Validaciones',
+        visible: true,
+      });
+      items.push({
+        key: '/aprobaciones',
+        icon: <ThunderboltOutlined />,
+        label: 'Aprobaciones',
+        visible: true,
+      });
       items.push({ key: '/compras', icon: <DollarOutlined />, label: 'Compras', visible: true });
-      items.push({ key: '/gestion-compras', icon: <ShoppingCartOutlined />, label: 'Gestión Compras', visible: true });
-      items.push({ key: '/recepciones', icon: <InboxOutlined />, label: 'Recepciones', visible: true });
-      items.push({ key: '/proveedores', icon: <ShopOutlined />, label: 'Proveedores', visible: true });
-      items.push({ key: '/reportes', icon: <BarChartOutlined />, label: 'Reportes', visible: true });
+      items.push({
+        key: '/gestion-compras',
+        icon: <ShoppingCartOutlined />,
+        label: 'Gestión Compras',
+        visible: true,
+      });
+      items.push({
+        key: '/recepciones',
+        icon: <InboxOutlined />,
+        label: 'Recepciones',
+        visible: true,
+      });
+      items.push({
+        key: '/proveedores',
+        icon: <ShopOutlined />,
+        label: 'Proveedores',
+        visible: true,
+      });
+      items.push({
+        key: '/reportes',
+        icon: <BarChartOutlined />,
+        label: 'Reportes',
+        visible: true,
+      });
       items.push({
         type: 'group' as const,
         label: collapsed ? '—' : 'Gestión Org',
@@ -113,8 +165,26 @@ export function Sidebar({ roles, pendientes = {}, collapsed, isMobile, drawerOpe
     }
   } else {
     // Non-admin: original menu logic
-    items.push({ key: '/solicitudes/nueva', icon: <PlusCircleOutlined />, label: 'Nueva Solicitud', visible: roles.includes('solicitante') });
-    items.push({ key: '/solicitudes', icon: <FileTextOutlined />, label: roles.includes('director') || roles.includes('tesoreria') ? 'Solicitudes' : 'Mis Solicitudes', visible: roles.includes('solicitante') || roles.includes('director') || roles.includes('tesoreria') || roles.includes('responsable_area') || roles.includes('compras') });
+    items.push({
+      key: '/solicitudes/nueva',
+      icon: <PlusCircleOutlined />,
+      label: 'Nueva Solicitud',
+      visible: roles.includes('solicitante'),
+    });
+    items.push({
+      key: '/solicitudes',
+      icon: <FileTextOutlined />,
+      label:
+        roles.includes('director') || roles.includes('tesoreria')
+          ? 'Solicitudes'
+          : 'Mis Solicitudes',
+      visible:
+        roles.includes('solicitante') ||
+        roles.includes('director') ||
+        roles.includes('tesoreria') ||
+        roles.includes('responsable_area') ||
+        roles.includes('compras'),
+    });
     items.push({
       key: '/validaciones',
       icon: <CheckCircleOutlined />,
@@ -145,10 +215,37 @@ export function Sidebar({ roles, pendientes = {}, collapsed, isMobile, drawerOpe
       label: pendientes.compras ? `Gestión Compras (${pendientes.compras})` : 'Gestión Compras',
       visible: roles.includes('compras'),
     });
-    items.push({ key: '/proveedores', icon: <ShopOutlined />, label: 'Proveedores', visible: true });
-    items.push({ key: '/reportes', icon: <BarChartOutlined />, label: 'Reportes', visible: roles.includes('director') || roles.includes('compras') || roles.includes('tesoreria') || roles.includes('admin') });
-    items.push({ key: '/auditoria', icon: <AuditOutlined />, label: 'Auditoría', visible: roles.includes('admin') });
-    items.push({ key: '/mi-area/usuarios', icon: <TeamOutlined />, label: 'Usuarios de mi Área', visible: roles.includes('responsable_area') && !roles.includes('admin') && !roles.includes('director') });
+    items.push({
+      key: '/proveedores',
+      icon: <ShopOutlined />,
+      label: 'Proveedores',
+      visible: true,
+    });
+    items.push({
+      key: '/reportes',
+      icon: <BarChartOutlined />,
+      label: 'Reportes',
+      visible:
+        roles.includes('director') ||
+        roles.includes('compras') ||
+        roles.includes('tesoreria') ||
+        roles.includes('admin'),
+    });
+    items.push({
+      key: '/auditoria',
+      icon: <AuditOutlined />,
+      label: 'Auditoría',
+      visible: roles.includes('admin'),
+    });
+    items.push({
+      key: '/mi-area/usuarios',
+      icon: <TeamOutlined />,
+      label: 'Usuarios de mi Área',
+      visible:
+        roles.includes('responsable_area') &&
+        !roles.includes('admin') &&
+        !roles.includes('director'),
+    });
 
     if (roles.includes('director') || isOrgAdmin) {
       const adminChildren = [
@@ -158,7 +255,11 @@ export function Sidebar({ roles, pendientes = {}, collapsed, isMobile, drawerOpe
         { key: '/gestion/invitaciones', icon: <KeyOutlined />, label: 'Invitaciones' },
       ];
       if (isOrgAdmin) {
-        adminChildren.push({ key: '/gestion/configuracion-sso', icon: <SettingOutlined />, label: 'Config SSO' });
+        adminChildren.push({
+          key: '/gestion/configuracion-sso',
+          icon: <SettingOutlined />,
+          label: 'Config SSO',
+        });
       }
       items.push({
         type: 'group' as const,
@@ -169,12 +270,12 @@ export function Sidebar({ roles, pendientes = {}, collapsed, isMobile, drawerOpe
     }
   }
 
-  const filteredItems = items
-    .filter((item) => item.visible)
-    .map(({ visible, ...item }) => item);
+  const filteredItems = items.filter((item) => item.visible).map(({ visible, ...item }) => item);
 
-  const selectedKey = filteredItems.find(item => 'key' in item && pathname.startsWith(item.key as string) && item.key !== '/')?.key as string
-    ?? (pathname === '/' ? '/' : undefined);
+  const selectedKey =
+    (filteredItems.find(
+      (item) => 'key' in item && pathname.startsWith(item.key as string) && item.key !== '/',
+    )?.key as string) ?? (pathname === '/' ? '/' : undefined);
 
   return (
     <>
@@ -200,32 +301,49 @@ export function Sidebar({ roles, pendientes = {}, collapsed, isMobile, drawerOpe
           open={drawerOpen}
           onClose={onDrawerClose}
           size="default"
-          styles={{ body: { padding: 0, background: tokens.sidebarBg }, header: { display: 'none' } }}
+          styles={{
+            body: { padding: 0, background: tokens.sidebarBg },
+            header: { display: 'none' },
+          }}
           style={{ zIndex: 1001 }}
         >
-          <div style={{
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 10,
-            borderBottom: `1px solid ${tokens.sidebarBorder}`,
-          }}>
+          <div
+            style={{
+              height: 64,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              borderBottom: `1px solid ${tokens.sidebarBorder}`,
+            }}
+          >
             <span style={{ fontSize: 24 }}>📦</span>
-            <span style={{ fontWeight: 700, fontSize: 15, color: tokens.textPrimary, letterSpacing: '-0.3px' }}>Box</span>
+            <span
+              style={{
+                fontWeight: 700,
+                fontSize: 15,
+                color: tokens.textPrimary,
+                letterSpacing: '-0.3px',
+              }}
+            >
+              Box
+            </span>
           </div>
           {isAdmin && (
             <div style={{ padding: '12px 12px 0' }}>
               <Select
                 value={selectedTenant}
-                onChange={(val: number | null) => { setSelectedTenant(val); if (val === undefined || val === null) router.push('/'); }}
+                onChange={(val: number | null) => {
+                  setSelectedTenant(val);
+                  if (val === undefined || val === null) router.push('/');
+                }}
                 placeholder="Seleccionar organización..."
                 allowClear
                 showSearch
                 optionFilterProp="label"
                 size="small"
                 style={{ width: '100%' }}
-                options={tenants.map(t => ({ value: t.id, label: t.nombre }))}
+                options={tenants.map((t) => ({ value: t.id, label: t.nombre }))}
               />
             </div>
           )}
@@ -235,82 +353,110 @@ export function Sidebar({ roles, pendientes = {}, collapsed, isMobile, drawerOpe
             selectedKeys={selectedKey ? [selectedKey] : []}
             style={{ border: 'none', padding: '12px 4px', background: 'transparent' }}
             items={filteredItems}
-            onClick={({ key }) => { router.push(key); onDrawerClose?.(); }}
+            onClick={({ key }) => {
+              router.push(key);
+              onDrawerClose?.();
+            }}
           />
         </Drawer>
       ) : (
-      <Sider
-        collapsible
-        collapsed={collapsed}
-        trigger={null}
-        width={240}
-        style={{
-          background: tokens.sidebarBg,
-          borderRight: 'none',
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          zIndex: 100,
-          overflow: 'auto',
-        }}
-      >
-        <div style={{
-          height: 64,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 10,
-          borderBottom: `1px solid ${tokens.sidebarBorder}`,
-        }}>
+        <Sider
+          collapsible
+          collapsed={collapsed}
+          trigger={null}
+          width={240}
+          style={{
+            background: tokens.sidebarBg,
+            borderRight: 'none',
+            position: 'fixed',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            zIndex: 100,
+            overflow: 'auto',
+          }}
+        >
           <div
-            className={pulse ? 'sidebar-icon-pulse' : undefined}
             style={{
-              width: 32,
-              height: 32,
-              borderRadius: 10,
-              background: tokens.logoGradient,
+              height: 64,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              flexShrink: 0,
+              gap: 10,
+              borderBottom: `1px solid ${tokens.sidebarBorder}`,
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <path d="M16 10a4 4 0 01-8 0" />
-            </svg>
+            <div
+              className={pulse ? 'sidebar-icon-pulse' : undefined}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 10,
+                background: tokens.logoGradient,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <path d="M16 10a4 4 0 01-8 0" />
+              </svg>
+            </div>
+            {!collapsed && (
+              <span
+                style={{
+                  fontWeight: 700,
+                  fontSize: 15,
+                  color: tokens.textPrimary,
+                  letterSpacing: '-0.3px',
+                }}
+              >
+                Box
+              </span>
+            )}
           </div>
-          {!collapsed && <span style={{ fontWeight: 700, fontSize: 15, color: tokens.textPrimary, letterSpacing: '-0.3px' }}>Box</span>}
-        </div>
 
-        {/* Admin org selector */}
-        {isAdmin && !collapsed && (
-          <div style={{ padding: '12px 12px 0' }}>
-            <Select
-              value={selectedTenant}
-              onChange={(val: number | null) => { setSelectedTenant(val); if (val === undefined || val === null) router.push('/'); }}
-              placeholder="Seleccionar organización..."
-              allowClear
-              showSearch
-              optionFilterProp="label"
-              size="small"
-              style={{ width: '100%' }}
-              options={tenants.map(t => ({ value: t.id, label: t.nombre }))}
-            />
-          </div>
-        )}
+          {/* Admin org selector */}
+          {isAdmin && !collapsed && (
+            <div style={{ padding: '12px 12px 0' }}>
+              <Select
+                value={selectedTenant}
+                onChange={(val: number | null) => {
+                  setSelectedTenant(val);
+                  if (val === undefined || val === null) router.push('/');
+                }}
+                placeholder="Seleccionar organización..."
+                allowClear
+                showSearch
+                optionFilterProp="label"
+                size="small"
+                style={{ width: '100%' }}
+                options={tenants.map((t) => ({ value: t.id, label: t.nombre }))}
+              />
+            </div>
+          )}
 
-        <Menu
-          className="sidebar-menu"
-          mode="inline"
-          selectedKeys={selectedKey ? [selectedKey] : []}
-          style={{ border: 'none', padding: '12px 4px', background: 'transparent' }}
-          items={filteredItems}
-          onClick={({ key }) => router.push(key)}
-        />
-      </Sider>
+          <Menu
+            className="sidebar-menu"
+            mode="inline"
+            selectedKeys={selectedKey ? [selectedKey] : []}
+            style={{ border: 'none', padding: '12px 4px', background: 'transparent' }}
+            items={filteredItems}
+            onClick={({ key }) => router.push(key)}
+          />
+        </Sider>
       )}
     </>
   );

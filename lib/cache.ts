@@ -12,11 +12,7 @@ const pendingRequests = new Map<string, Promise<any>>();
  * Key should include tenantId for tenant isolation.
  * Concurrent requests for the same key share one fetch (stampede protection).
  */
-export async function cached<T>(
-  key: string,
-  ttlMs: number,
-  fetcher: () => Promise<T>
-): Promise<T> {
+export async function cached<T>(key: string, ttlMs: number, fetcher: () => Promise<T>): Promise<T> {
   const entry = store.get(key);
   if (entry && Date.now() < entry.expiresAt) {
     return entry.data;
@@ -26,16 +22,18 @@ export async function cached<T>(
   const pending = pendingRequests.get(key);
   if (pending) return pending;
 
-  const promise = fetcher().then((data) => {
-    if (store.size >= MAX_CACHE_SIZE) {
-      const firstKey = store.keys().next().value;
-      if (firstKey !== undefined) store.delete(firstKey);
-    }
-    store.set(key, { data, expiresAt: Date.now() + ttlMs });
-    return data;
-  }).finally(() => {
-    pendingRequests.delete(key);
-  });
+  const promise = fetcher()
+    .then((data) => {
+      if (store.size >= MAX_CACHE_SIZE) {
+        const firstKey = store.keys().next().value;
+        if (firstKey !== undefined) store.delete(firstKey);
+      }
+      store.set(key, { data, expiresAt: Date.now() + ttlMs });
+      return data;
+    })
+    .finally(() => {
+      pendingRequests.delete(key);
+    });
 
   pendingRequests.set(key, promise);
   return promise;

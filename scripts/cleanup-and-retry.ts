@@ -7,13 +7,13 @@ async function main() {
 
   // Delete the unverified registration
   const deleted = await prisma.registros_pendientes.deleteMany({
-    where: { email: 'joaquinbenz99@gmail.com', verificado: false }
+    where: { email: 'joaquinbenz99@gmail.com', verificado: false },
   });
   process.stderr.write(`Deleted ${deleted.count} pending registration(s)\n`);
 
   // Also clean up the ones that weren't deleted before
   const deleted2 = await prisma.registros_pendientes.deleteMany({
-    where: { email: { in: ['jbenz@mta.edu.ar', 'jbenz@bexovar.com'] } }
+    where: { email: { in: ['jbenz@mta.edu.ar', 'jbenz@bexovar.com'] } },
   });
   process.stderr.write(`Deleted ${deleted2.count} old registration(s)\n`);
 
@@ -22,4 +22,7 @@ async function main() {
 
   await prisma.$disconnect();
 }
-main().catch(e => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

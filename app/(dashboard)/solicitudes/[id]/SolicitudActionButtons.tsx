@@ -1,28 +1,42 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button, Space, Modal, Form, Input, Popconfirm, Radio, Select, Typography, Tag, DatePicker, Upload, Dropdown } from 'antd'
-import type { MenuProps } from 'antd'
-import { UploadOutlined, CopyOutlined, MoreOutlined } from '@ant-design/icons'
-import { useIsMobile } from '@/hooks/useIsMobile'
-import dayjs from 'dayjs'
-import Link from 'next/link'
-import AnimatedSubmitButton from '@/components/AnimatedSubmitButton'
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  Button,
+  Space,
+  Modal,
+  Form,
+  Input,
+  Popconfirm,
+  Radio,
+  Select,
+  Typography,
+  Tag,
+  DatePicker,
+  Upload,
+  Dropdown,
+} from 'antd';
+import type { MenuProps } from 'antd';
+import { UploadOutlined, CopyOutlined, MoreOutlined } from '@ant-design/icons';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import dayjs from 'dayjs';
+import Link from 'next/link';
+import AnimatedSubmitButton from '@/components/AnimatedSubmitButton';
 
-const { TextArea } = Input
+const { TextArea } = Input;
 
 interface Props {
-  solicitudId: number
-  estado: string
-  solicitanteId: number
-  solicitudAreaId: number | null
-  sessionUserId: number
-  sessionRoles: string[]
-  sessionAreaId: number | null
-  isAreaResponsable: boolean
-  skipValidacion?: boolean
-  updatedAt?: string
+  solicitudId: number;
+  estado: string;
+  solicitanteId: number;
+  solicitudAreaId: number | null;
+  sessionUserId: number;
+  sessionRoles: string[];
+  sessionAreaId: number | null;
+  isAreaResponsable: boolean;
+  skipValidacion?: boolean;
+  updatedAt?: string;
 }
 
 export default function SolicitudActionButtons({
@@ -37,134 +51,182 @@ export default function SolicitudActionButtons({
   skipValidacion = false,
   updatedAt,
 }: Props) {
-  const router = useRouter()
-  const isMobile = useIsMobile()
-  const [loading, setLoading] = useState(false)
+  const router = useRouter();
+  const isMobile = useIsMobile();
+  const [loading, setLoading] = useState(false);
 
-  const [devolverOpen, setDevolverOpen] = useState(false)
-  const [devolverForm] = Form.useForm<{ motivo: string }>()
+  const [devolverOpen, setDevolverOpen] = useState(false);
+  const [devolverForm] = Form.useForm<{ motivo: string }>();
 
-  const [rechazarOpen, setRechazarOpen] = useState(false)
-  const [rechazarForm] = Form.useForm<{ motivo: string }>()
+  const [rechazarOpen, setRechazarOpen] = useState(false);
+  const [rechazarForm] = Form.useForm<{ motivo: string }>();
 
-  const [anularOpen, setAnularOpen] = useState(false)
-  const [anularForm] = Form.useForm<{ motivo: string }>()
+  const [anularOpen, setAnularOpen] = useState(false);
+  const [anularForm] = Form.useForm<{ motivo: string }>();
 
-  const [recepcionOpen, setRecepcionOpen] = useState(false)
-  const [recepcionForm] = Form.useForm<{ conforme: 'si' | 'no'; tipo_problema?: string; observaciones?: string }>()
+  const [recepcionOpen, setRecepcionOpen] = useState(false);
+  const [recepcionForm] = Form.useForm<{
+    conforme: 'si' | 'no';
+    tipo_problema?: string;
+    observaciones?: string;
+  }>();
 
-  const [programarOpen, setProgramarOpen] = useState(false)
-  const [programarForm] = Form.useForm<{ prioridad_compra: string; dia_pago_programado: any; observaciones?: string }>()
+  const [programarOpen, setProgramarOpen] = useState(false);
+  const [programarForm] = Form.useForm<{
+    prioridad_compra: string;
+    dia_pago_programado: any;
+    observaciones?: string;
+  }>();
 
-  const roles = sessionRoles
-  const isOwner = solicitanteId === sessionUserId
-  const isSolicitante = roles.includes('solicitante')
-  const isResponsable = roles.includes('responsable_area')
-  const isDirector = roles.includes('director')
-  const isTesoreria = roles.includes('tesoreria')
-  const isCompras = roles.includes('compras')
-  const isAdmin = roles.includes('admin')
-  const isSameArea = isAdmin || (solicitudAreaId != null && sessionAreaId === solicitudAreaId)
+  const roles = sessionRoles;
+  const isOwner = solicitanteId === sessionUserId;
+  const isSolicitante = roles.includes('solicitante');
+  const isResponsable = roles.includes('responsable_area');
+  const isDirector = roles.includes('director');
+  const isTesoreria = roles.includes('tesoreria');
+  const isCompras = roles.includes('compras');
+  const isAdmin = roles.includes('admin');
+  const isSameArea = isAdmin || (solicitudAreaId != null && sessionAreaId === solicitudAreaId);
 
   // Button visibility must match backend role checks exactly to avoid 403s
-  const canEditar = isSolicitante && isOwner && ['borrador', 'devuelta_resp', 'devuelta_dir'].includes(estado)
-  const canEnviar = isSolicitante && isOwner && ['borrador', 'devuelta_resp', 'devuelta_dir'].includes(estado)
-  const canValidar = isResponsable && isAreaResponsable && ['enviada', 'devuelta_dir'].includes(estado)
-  const canDevolver = (isResponsable && isAreaResponsable && estado === 'enviada') || (isDirector && estado === 'validada')
-  const canAprobar = isDirector && (estado === 'validada' || (skipValidacion && estado === 'enviada'))
-  const canRechazar = isDirector && (estado === 'validada' || (skipValidacion && estado === 'enviada'))
-  const canProgramarPago = isCompras && estado === 'en_compras'
-  const canRegistrarCompra = isTesoreria && estado === 'pago_programado'
-  const canConfirmarRecepcion = ((isSolicitante && isOwner) || (isResponsable && isAreaResponsable)) && estado === 'abonada'
-  const canCerrar = (isTesoreria || isAdmin) && estado === 'recibida_con_obs'
-  const canAnular = ['enviada', 'validada', 'aprobada', 'en_compras', 'pago_programado'].includes(estado) && (isOwner || isDirector || isAdmin)
-  const isCerrada = estado === 'cerrada'
-  const canReusar = estado === 'cerrada'
+  const canEditar =
+    isSolicitante && isOwner && ['borrador', 'devuelta_resp', 'devuelta_dir'].includes(estado);
+  const canEnviar =
+    isSolicitante && isOwner && ['borrador', 'devuelta_resp', 'devuelta_dir'].includes(estado);
+  const canValidar =
+    isResponsable && isAreaResponsable && ['enviada', 'devuelta_dir'].includes(estado);
+  const canDevolver =
+    (isResponsable && isAreaResponsable && estado === 'enviada') ||
+    (isDirector && estado === 'validada');
+  const canAprobar =
+    isDirector && (estado === 'validada' || (skipValidacion && estado === 'enviada'));
+  const canRechazar =
+    isDirector && (estado === 'validada' || (skipValidacion && estado === 'enviada'));
+  const canProgramarPago = isCompras && estado === 'en_compras';
+  const canRegistrarCompra = isTesoreria && estado === 'pago_programado';
+  const canConfirmarRecepcion =
+    ((isSolicitante && isOwner) || (isResponsable && isAreaResponsable)) && estado === 'abonada';
+  const canCerrar = (isTesoreria || isAdmin) && estado === 'recibida_con_obs';
+  const canAnular =
+    ['enviada', 'validada', 'aprobada', 'en_compras', 'pago_programado'].includes(estado) &&
+    (isOwner || isDirector || isAdmin);
+  const isCerrada = estado === 'cerrada';
+  const canReusar = estado === 'cerrada';
 
   const hasAnyAction =
-    canEditar || canEnviar || canValidar || canDevolver || canAprobar ||
-    canRechazar || canProgramarPago || canRegistrarCompra || canConfirmarRecepcion || canCerrar || canAnular || isCerrada || canReusar
+    canEditar ||
+    canEnviar ||
+    canValidar ||
+    canDevolver ||
+    canAprobar ||
+    canRechazar ||
+    canProgramarPago ||
+    canRegistrarCompra ||
+    canConfirmarRecepcion ||
+    canCerrar ||
+    canAnular ||
+    isCerrada ||
+    canReusar;
 
   async function postAction(path: string, body?: Record<string, unknown>) {
-    setLoading(true)
+    setLoading(true);
     try {
       const res = await fetch(path, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: body ? JSON.stringify(body) : undefined,
-      })
+      });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        Modal.error({ title: 'Error', content: data?.error?.message ?? `Error ${res.status}` })
+        const data = await res.json().catch(() => ({}));
+        Modal.error({ title: 'Error', content: data?.error?.message ?? `Error ${res.status}` });
       } else {
-        router.refresh()
+        router.refresh();
       }
     } catch {
-      Modal.error({ title: 'Error', content: 'Error de red. Intente nuevamente.' })
+      Modal.error({ title: 'Error', content: 'Error de red. Intente nuevamente.' });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   async function handleEnviar() {
-    await postAction(`/api/solicitudes/${solicitudId}/enviar`, { updated_at: updatedAt })
+    await postAction(`/api/solicitudes/${solicitudId}/enviar`, { updated_at: updatedAt });
   }
 
   async function handleValidar() {
-    await postAction(`/api/solicitudes/${solicitudId}/validar`, { updated_at: updatedAt })
+    await postAction(`/api/solicitudes/${solicitudId}/validar`, { updated_at: updatedAt });
   }
 
   async function handleDevolver(values: { motivo: string }) {
     // Determine origen from the current state, not the role (a user may have both roles)
-    const origen = estado === 'validada' ? 'director' : 'responsable'
-    await postAction(`/api/solicitudes/${solicitudId}/devolver`, { observaciones: values.motivo, origen, updated_at: updatedAt })
-    setDevolverOpen(false)
-    devolverForm.resetFields()
+    const origen = estado === 'validada' ? 'director' : 'responsable';
+    await postAction(`/api/solicitudes/${solicitudId}/devolver`, {
+      observaciones: values.motivo,
+      origen,
+      updated_at: updatedAt,
+    });
+    setDevolverOpen(false);
+    devolverForm.resetFields();
   }
 
   async function handleAprobar() {
-    await postAction(`/api/solicitudes/${solicitudId}/aprobar`, { updated_at: updatedAt })
+    await postAction(`/api/solicitudes/${solicitudId}/aprobar`, { updated_at: updatedAt });
   }
 
   async function handleRechazar(values: { motivo: string }) {
-    await postAction(`/api/solicitudes/${solicitudId}/rechazar`, { motivo: values.motivo, updated_at: updatedAt })
-    setRechazarOpen(false)
-    rechazarForm.resetFields()
+    await postAction(`/api/solicitudes/${solicitudId}/rechazar`, {
+      motivo: values.motivo,
+      updated_at: updatedAt,
+    });
+    setRechazarOpen(false);
+    rechazarForm.resetFields();
   }
 
-  async function handleProgramarPago(values: { prioridad_compra: string; dia_pago_programado: any; observaciones?: string }) {
+  async function handleProgramarPago(values: {
+    prioridad_compra: string;
+    dia_pago_programado: any;
+    observaciones?: string;
+  }) {
     await postAction(`/api/solicitudes/${solicitudId}/procesar-compras`, {
       prioridad_compra: values.prioridad_compra,
       dia_pago_programado: values.dia_pago_programado.toISOString(),
       observaciones: values.observaciones || null,
       updated_at: updatedAt,
-    })
-    setProgramarOpen(false)
-    programarForm.resetFields()
+    });
+    setProgramarOpen(false);
+    programarForm.resetFields();
   }
 
   async function handleAnular(values: { motivo: string }) {
-    await postAction(`/api/solicitudes/${solicitudId}/anular`, { motivo: values.motivo, updated_at: updatedAt })
-    setAnularOpen(false)
-    anularForm.resetFields()
+    await postAction(`/api/solicitudes/${solicitudId}/anular`, {
+      motivo: values.motivo,
+      updated_at: updatedAt,
+    });
+    setAnularOpen(false);
+    anularForm.resetFields();
   }
 
-  async function handleConfirmarRecepcion(values: { conforme: 'si' | 'no'; tipo_problema?: string; observaciones?: string; remito?: any }) {
-    setLoading(true)
+  async function handleConfirmarRecepcion(values: {
+    conforme: 'si' | 'no';
+    tipo_problema?: string;
+    observaciones?: string;
+    remito?: any;
+  }) {
+    setLoading(true);
     try {
-      const remitoFile = values.remito?.fileList?.[0]?.originFileObj ?? null
-      let res: Response
+      const remitoFile = values.remito?.fileList?.[0]?.originFileObj ?? null;
+      let res: Response;
 
       if (remitoFile) {
-        const fd = new FormData()
-        fd.append('solicitud_id', String(solicitudId))
-        fd.append('conforme', values.conforme === 'si' ? 'true' : 'false')
+        const fd = new FormData();
+        fd.append('solicitud_id', String(solicitudId));
+        fd.append('conforme', values.conforme === 'si' ? 'true' : 'false');
         if (values.conforme === 'no') {
-          fd.append('tipo_problema', values.tipo_problema ?? '')
-          fd.append('observaciones', values.observaciones ?? '')
+          fd.append('tipo_problema', values.tipo_problema ?? '');
+          fd.append('observaciones', values.observaciones ?? '');
         }
-        fd.append('remito', remitoFile)
-        res = await fetch('/api/recepciones', { method: 'POST', body: fd })
+        fd.append('remito', remitoFile);
+        res = await fetch('/api/recepciones', { method: 'POST', body: fd });
       } else {
         res = await fetch('/api/recepciones', {
           method: 'POST',
@@ -175,53 +237,77 @@ export default function SolicitudActionButtons({
             tipo_problema: values.conforme === 'no' ? (values.tipo_problema ?? null) : null,
             observaciones: values.observaciones ?? null,
           }),
-        })
+        });
       }
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        Modal.error({ title: 'Error', content: data?.error?.message ?? `Error ${res.status}` })
+        const data = await res.json().catch(() => ({}));
+        Modal.error({ title: 'Error', content: data?.error?.message ?? `Error ${res.status}` });
       } else {
-        router.refresh()
+        router.refresh();
       }
     } catch {
-      Modal.error({ title: 'Error', content: 'Error de red. Intente nuevamente.' })
+      Modal.error({ title: 'Error', content: 'Error de red. Intente nuevamente.' });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-    setRecepcionOpen(false)
-    recepcionForm.resetFields()
+    setRecepcionOpen(false);
+    recepcionForm.resetFields();
   }
 
   // Build action items for mobile dropdown
-  const mobileActions: MenuProps['items'] = []
-  if (canReusar) mobileActions.push({ key: 'reusar', label: '📋 Reusar como plantilla' })
-  if (canEditar) mobileActions.push({ key: 'editar', label: '✏️ Editar' })
-  if (canEnviar) mobileActions.push({ key: 'enviar', label: '📤 Enviar' })
-  if (canValidar) mobileActions.push({ key: 'validar', label: '✅ Validar' })
-  if (canDevolver) mobileActions.push({ key: 'devolver', label: '↩️ Devolver', danger: true })
-  if (canAprobar) mobileActions.push({ key: 'aprobar', label: '✅ Aprobar' })
-  if (canRechazar) mobileActions.push({ key: 'rechazar', label: '❌ Rechazar', danger: true })
-  if (canProgramarPago) mobileActions.push({ key: 'programar', label: '📅 Programar Pago' })
-  if (canRegistrarCompra) mobileActions.push({ key: 'registrar', label: '💳 Registrar Compra' })
-  if (canConfirmarRecepcion) mobileActions.push({ key: 'recepcion', label: '📦 Confirmar Recepción' })
-  if (canAnular) mobileActions.push({ type: 'divider' }, { key: 'anular', label: '🚫 Anular', danger: true })
+  const mobileActions: MenuProps['items'] = [];
+  if (canReusar) mobileActions.push({ key: 'reusar', label: '📋 Reusar como plantilla' });
+  if (canEditar) mobileActions.push({ key: 'editar', label: '✏️ Editar' });
+  if (canEnviar) mobileActions.push({ key: 'enviar', label: '📤 Enviar' });
+  if (canValidar) mobileActions.push({ key: 'validar', label: '✅ Validar' });
+  if (canDevolver) mobileActions.push({ key: 'devolver', label: '↩️ Devolver', danger: true });
+  if (canAprobar) mobileActions.push({ key: 'aprobar', label: '✅ Aprobar' });
+  if (canRechazar) mobileActions.push({ key: 'rechazar', label: '❌ Rechazar', danger: true });
+  if (canProgramarPago) mobileActions.push({ key: 'programar', label: '📅 Programar Pago' });
+  if (canRegistrarCompra) mobileActions.push({ key: 'registrar', label: '💳 Registrar Compra' });
+  if (canConfirmarRecepcion)
+    mobileActions.push({ key: 'recepcion', label: '📦 Confirmar Recepción' });
+  if (canAnular)
+    mobileActions.push({ type: 'divider' }, { key: 'anular', label: '🚫 Anular', danger: true });
 
   const handleMobileAction: MenuProps['onClick'] = ({ key }) => {
     switch (key) {
-      case 'reusar': router.push(`/solicitudes/nueva?desde=${solicitudId}`); break
-      case 'editar': router.push(`/solicitudes/${solicitudId}/editar`); break
-      case 'enviar': handleEnviar(); break
-      case 'validar': handleValidar(); break
-      case 'devolver': setDevolverOpen(true); break
-      case 'aprobar': handleAprobar(); break
-      case 'rechazar': setRechazarOpen(true); break
-      case 'programar': setProgramarOpen(true); break
-      case 'registrar': router.push(`/compras/${solicitudId}`); break
-      case 'recepcion': setRecepcionOpen(true); break
-      case 'anular': setAnularOpen(true); break
+      case 'reusar':
+        router.push(`/solicitudes/nueva?desde=${solicitudId}`);
+        break;
+      case 'editar':
+        router.push(`/solicitudes/${solicitudId}/editar`);
+        break;
+      case 'enviar':
+        handleEnviar();
+        break;
+      case 'validar':
+        handleValidar();
+        break;
+      case 'devolver':
+        setDevolverOpen(true);
+        break;
+      case 'aprobar':
+        handleAprobar();
+        break;
+      case 'rechazar':
+        setRechazarOpen(true);
+        break;
+      case 'programar':
+        setProgramarOpen(true);
+        break;
+      case 'registrar':
+        router.push(`/compras/${solicitudId}`);
+        break;
+      case 'recepcion':
+        setRecepcionOpen(true);
+        break;
+      case 'anular':
+        setAnularOpen(true);
+        break;
     }
-  }
+  };
 
   return (
     <>
@@ -230,8 +316,17 @@ export default function SolicitudActionButtons({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           {isCerrada && <Tag color="default">Cerrada</Tag>}
           {mobileActions.length > 0 && (
-            <Dropdown menu={{ items: mobileActions, onClick: handleMobileAction }} trigger={['click']} placement="bottomRight">
-              <Button type="primary" loading={loading} icon={<MoreOutlined />} style={{ borderRadius: 10, fontWeight: 600 }}>
+            <Dropdown
+              menu={{ items: mobileActions, onClick: handleMobileAction }}
+              trigger={['click']}
+              placement="bottomRight"
+            >
+              <Button
+                type="primary"
+                loading={loading}
+                icon={<MoreOutlined />}
+                style={{ borderRadius: 10, fontWeight: 600 }}
+              >
                 Acciones
               </Button>
             </Dropdown>
@@ -240,97 +335,100 @@ export default function SolicitudActionButtons({
       ) : (
         /* ── Desktop: inline buttons ── */
         <Space wrap>
-        {isCerrada && <Tag color="default">Cerrada</Tag>}
+          {isCerrada && <Tag color="default">Cerrada</Tag>}
 
-        {canReusar && (
-          <Link href={`/solicitudes/nueva?desde=${solicitudId}`}>
-            <Button icon={<CopyOutlined />}>Reusar como plantilla</Button>
-          </Link>
-        )}
+          {canReusar && (
+            <Link href={`/solicitudes/nueva?desde=${solicitudId}`}>
+              <Button icon={<CopyOutlined />}>Reusar como plantilla</Button>
+            </Link>
+          )}
 
-        {canEditar && (
-          <Link href={`/solicitudes/${solicitudId}/editar`}>
-            <Button>Editar</Button>
-          </Link>
-        )}
+          {canEditar && (
+            <Link href={`/solicitudes/${solicitudId}/editar`}>
+              <Button>Editar</Button>
+            </Link>
+          )}
 
-        {canEnviar && (
-          <AnimatedSubmitButton variant="send" onClick={handleEnviar}>
-            Enviar
-          </AnimatedSubmitButton>
-        )}
+          {canEnviar && (
+            <AnimatedSubmitButton variant="send" onClick={handleEnviar}>
+              Enviar
+            </AnimatedSubmitButton>
+          )}
 
-        {canValidar && (
-          <AnimatedSubmitButton variant="approve" onClick={handleValidar}>
-            Validar
-          </AnimatedSubmitButton>
-        )}
+          {canValidar && (
+            <AnimatedSubmitButton variant="approve" onClick={handleValidar}>
+              Validar
+            </AnimatedSubmitButton>
+          )}
 
-        {canDevolver && (
-          <Button danger onClick={() => setDevolverOpen(true)}>
-            Devolver
-          </Button>
-        )}
-
-        {canAprobar && (
-          <AnimatedSubmitButton variant="approve" onClick={handleAprobar}>
-            Aprobar
-          </AnimatedSubmitButton>
-        )}
-
-        {canRechazar && (
-          <Button danger onClick={() => setRechazarOpen(true)}>
-            Rechazar
-          </Button>
-        )}
-
-        {canProgramarPago && (
-          <Button
-            style={{ background: '#7c3aed', borderColor: '#7c3aed', color: '#fff' }}
-            onClick={() => setProgramarOpen(true)}
-          >
-            Programar Pago
-          </Button>
-        )}
-
-        {canRegistrarCompra && (
-          <Link href={`/compras/${solicitudId}`}>
-            <Button type="primary">Registrar Compra</Button>
-          </Link>
-        )}
-
-        {canConfirmarRecepcion && (
-          <Button
-            type="primary"
-            style={{ background: '#52c41a', borderColor: '#52c41a' }}
-            onClick={() => setRecepcionOpen(true)}
-          >
-            Confirmar Recepción
-          </Button>
-        )}
-
-        {canAnular && (
-          <Popconfirm
-            title="¿Anular esta solicitud?"
-            description="Esta acción no se puede deshacer."
-            onConfirm={() => setAnularOpen(true)}
-            okText="Sí, anular"
-            cancelText="No"
-            okButtonProps={{ danger: true }}
-          >
-            <Button danger style={{ borderStyle: 'dashed' }}>
-              Anular
+          {canDevolver && (
+            <Button danger onClick={() => setDevolverOpen(true)}>
+              Devolver
             </Button>
-          </Popconfirm>
-        )}
-      </Space>
+          )}
+
+          {canAprobar && (
+            <AnimatedSubmitButton variant="approve" onClick={handleAprobar}>
+              Aprobar
+            </AnimatedSubmitButton>
+          )}
+
+          {canRechazar && (
+            <Button danger onClick={() => setRechazarOpen(true)}>
+              Rechazar
+            </Button>
+          )}
+
+          {canProgramarPago && (
+            <Button
+              style={{ background: '#7c3aed', borderColor: '#7c3aed', color: '#fff' }}
+              onClick={() => setProgramarOpen(true)}
+            >
+              Programar Pago
+            </Button>
+          )}
+
+          {canRegistrarCompra && (
+            <Link href={`/compras/${solicitudId}`}>
+              <Button type="primary">Registrar Compra</Button>
+            </Link>
+          )}
+
+          {canConfirmarRecepcion && (
+            <Button
+              type="primary"
+              style={{ background: '#52c41a', borderColor: '#52c41a' }}
+              onClick={() => setRecepcionOpen(true)}
+            >
+              Confirmar Recepción
+            </Button>
+          )}
+
+          {canAnular && (
+            <Popconfirm
+              title="¿Anular esta solicitud?"
+              description="Esta acción no se puede deshacer."
+              onConfirm={() => setAnularOpen(true)}
+              okText="Sí, anular"
+              cancelText="No"
+              okButtonProps={{ danger: true }}
+            >
+              <Button danger style={{ borderStyle: 'dashed' }}>
+                Anular
+              </Button>
+            </Popconfirm>
+          )}
+        </Space>
       )}
 
       {/* Modal: Devolver */}
       <Modal
         title="Devolver Solicitud"
         open={devolverOpen}
-        onCancel={() => { setDevolverOpen(false); devolverForm.resetFields() }}
+        onCancel={() => {
+          setDevolverOpen(false);
+          devolverForm.resetFields();
+        }}
         onOk={() => devolverForm.submit()}
         okText="Devolver"
         okButtonProps={{ danger: true, loading }}
@@ -355,7 +453,10 @@ export default function SolicitudActionButtons({
       <Modal
         title="Rechazar Solicitud"
         open={rechazarOpen}
-        onCancel={() => { setRechazarOpen(false); rechazarForm.resetFields() }}
+        onCancel={() => {
+          setRechazarOpen(false);
+          rechazarForm.resetFields();
+        }}
         onOk={() => rechazarForm.submit()}
         okText="Rechazar"
         okButtonProps={{ danger: true, loading }}
@@ -380,7 +481,10 @@ export default function SolicitudActionButtons({
       <Modal
         title="Programar Pago"
         open={programarOpen}
-        onCancel={() => { setProgramarOpen(false); programarForm.resetFields() }}
+        onCancel={() => {
+          setProgramarOpen(false);
+          programarForm.resetFields();
+        }}
         onOk={() => programarForm.submit()}
         okText="Programar Pago"
         okButtonProps={{ loading }}
@@ -388,12 +492,19 @@ export default function SolicitudActionButtons({
         destroyOnHidden={false}
       >
         <Form form={programarForm} layout="vertical" onFinish={handleProgramarPago}>
-          <Form.Item name="prioridad_compra" label="Prioridad" rules={[{ required: true, message: 'Seleccioná la prioridad' }]}>
-            <Select placeholder="Seleccionar prioridad" options={[
-              { value: 'urgente', label: 'Urgente' },
-              { value: 'normal', label: 'Normal' },
-              { value: 'programado', label: 'Programado' },
-            ]} />
+          <Form.Item
+            name="prioridad_compra"
+            label="Prioridad"
+            rules={[{ required: true, message: 'Seleccioná la prioridad' }]}
+          >
+            <Select
+              placeholder="Seleccionar prioridad"
+              options={[
+                { value: 'urgente', label: 'Urgente' },
+                { value: 'normal', label: 'Normal' },
+                { value: 'programado', label: 'Programado' },
+              ]}
+            />
           </Form.Item>
           <Form.Item
             name="dia_pago_programado"
@@ -407,7 +518,12 @@ export default function SolicitudActionButtons({
             />
           </Form.Item>
           <Form.Item name="observaciones" label="Observaciones">
-            <TextArea rows={3} placeholder="Notas internas de Compras..." maxLength={500} showCount />
+            <TextArea
+              rows={3}
+              placeholder="Notas internas de Compras..."
+              maxLength={500}
+              showCount
+            />
           </Form.Item>
         </Form>
       </Modal>
@@ -416,7 +532,10 @@ export default function SolicitudActionButtons({
       <Modal
         title="Anular Solicitud"
         open={anularOpen}
-        onCancel={() => { setAnularOpen(false); anularForm.resetFields() }}
+        onCancel={() => {
+          setAnularOpen(false);
+          anularForm.resetFields();
+        }}
         onOk={() => anularForm.submit()}
         okText="Anular"
         okButtonProps={{ danger: true, loading }}
@@ -424,7 +543,8 @@ export default function SolicitudActionButtons({
         destroyOnHidden={false}
       >
         <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
-          Ingrese el motivo de la anulación (mínimo 10 caracteres). Esta acción no se puede deshacer.
+          Ingrese el motivo de la anulación (mínimo 10 caracteres). Esta acción no se puede
+          deshacer.
         </Typography.Paragraph>
         <Form form={anularForm} layout="vertical" onFinish={handleAnular}>
           <Form.Item
@@ -435,7 +555,12 @@ export default function SolicitudActionButtons({
               { min: 10, message: 'Mínimo 10 caracteres.' },
             ]}
           >
-            <TextArea rows={4} placeholder="Describa el motivo de la anulación..." maxLength={500} showCount />
+            <TextArea
+              rows={4}
+              placeholder="Describa el motivo de la anulación..."
+              maxLength={500}
+              showCount
+            />
           </Form.Item>
         </Form>
       </Modal>
@@ -444,7 +569,10 @@ export default function SolicitudActionButtons({
       <Modal
         title="Confirmar Recepción"
         open={recepcionOpen}
-        onCancel={() => { setRecepcionOpen(false); recepcionForm.resetFields() }}
+        onCancel={() => {
+          setRecepcionOpen(false);
+          recepcionForm.resetFields();
+        }}
         onOk={() => recepcionForm.submit()}
         okText="Confirmar"
         okButtonProps={{ loading }}
@@ -478,30 +606,39 @@ export default function SolicitudActionButtons({
                   label="Tipo de problema"
                   rules={[{ required: true, message: 'Seleccione el tipo de problema' }]}
                 >
-                  <Select placeholder="Seleccionar tipo de problema" options={[
-                    { value: 'faltante', label: 'Faltante' },
-                    { value: 'dañado', label: 'Dañado' },
-                    { value: 'diferente', label: 'Diferente al pedido' },
-                    { value: 'otro', label: 'Otro' },
-                  ]} />
+                  <Select
+                    placeholder="Seleccionar tipo de problema"
+                    options={[
+                      { value: 'faltante', label: 'Faltante' },
+                      { value: 'dañado', label: 'Dañado' },
+                      { value: 'diferente', label: 'Diferente al pedido' },
+                      { value: 'otro', label: 'Otro' },
+                    ]}
+                  />
                 </Form.Item>
               )
             }
           </Form.Item>
           <Form.Item name="observaciones" label="Observaciones">
-            <TextArea rows={3} placeholder="Ingrese observaciones si las hubiera..." maxLength={500} showCount />
+            <TextArea
+              rows={3}
+              placeholder="Ingrese observaciones si las hubiera..."
+              maxLength={500}
+              showCount
+            />
           </Form.Item>
-          <Form.Item name="remito" label="Remito / comprobante" valuePropName="fileList" getValueFromEvent={(e: any) => Array.isArray(e) ? e : e?.fileList}>
-            <Upload
-              beforeUpload={() => false}
-              maxCount={1}
-              accept=".pdf,.jpg,.jpeg,.png"
-            >
+          <Form.Item
+            name="remito"
+            label="Remito / comprobante"
+            valuePropName="fileList"
+            getValueFromEvent={(e: any) => (Array.isArray(e) ? e : e?.fileList)}
+          >
+            <Upload beforeUpload={() => false} maxCount={1} accept=".pdf,.jpg,.jpeg,.png">
               <Button icon={<UploadOutlined />}>Adjuntar remito</Button>
             </Upload>
           </Form.Item>
         </Form>
       </Modal>
     </>
-  )
+  );
 }

@@ -1,12 +1,12 @@
-'use client'
+'use client';
 
-import { Input } from 'antd'
+import { Input } from 'antd';
 
 interface Props {
-  value?: string
-  onChange?: (value: string) => void
-  disabled?: boolean
-  placeholder?: string
+  value?: string;
+  onChange?: (value: string) => void;
+  disabled?: boolean;
+  placeholder?: string;
 }
 
 /**
@@ -14,15 +14,20 @@ interface Props {
  * Accepts only digits; hyphens are inserted automatically after position 2 and 6.
  */
 function formatPhone(raw: string): string {
-  const digits = raw.replace(/\D/g, '').slice(0, 10)
-  if (digits.length <= 2) return digits
-  if (digits.length <= 6) return `${digits.slice(0, 2)}-${digits.slice(2)}`
-  return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6)}`
+  const digits = raw.replace(/\D/g, '').slice(0, 10);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6)}`;
 }
 
-export default function PhoneInput({ value, onChange, disabled, placeholder = 'XX-XXXX-XXXX' }: Props) {
+export default function PhoneInput({
+  value,
+  onChange,
+  disabled,
+  placeholder = 'XX-XXXX-XXXX',
+}: Props) {
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    onChange?.(formatPhone(e.target.value))
+    onChange?.(formatPhone(e.target.value));
   }
 
   return (
@@ -34,5 +39,5 @@ export default function PhoneInput({ value, onChange, disabled, placeholder = 'X
       disabled={disabled}
       inputMode="numeric"
     />
-  )
+  );
 }

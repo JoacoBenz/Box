@@ -8,7 +8,12 @@ const COOKIE_NAME = 'admin_tenant_id';
  * If the logged-in user is admin and has a tenant override cookie/param, use that.
  * Otherwise, use their own tenant.
  */
-export async function getEffectiveTenantId(request?: Request | { nextUrl: { searchParams: URLSearchParams } }): Promise<{ session: Awaited<ReturnType<typeof getServerSession>>; effectiveTenantId: number | null }> {
+export async function getEffectiveTenantId(
+  request?: Request | { nextUrl: { searchParams: URLSearchParams } },
+): Promise<{
+  session: Awaited<ReturnType<typeof getServerSession>>;
+  effectiveTenantId: number | null;
+}> {
   const session = await getServerSession();
 
   let overrideId: number | null = null;
@@ -43,7 +48,10 @@ export async function getEffectiveTenantId(request?: Request | { nextUrl: { sear
 /**
  * For server components: read the admin tenant override from cookies.
  */
-export async function getServerTenantId(session: { tenantId: number; roles: string[] }): Promise<number | null> {
+export async function getServerTenantId(session: {
+  tenantId: number;
+  roles: string[];
+}): Promise<number | null> {
   if (!session.roles.includes('super_admin')) return session.tenantId;
 
   const cookieStore = await cookies();

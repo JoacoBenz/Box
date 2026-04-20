@@ -5,11 +5,17 @@ const prisma = new PrismaClient({ adapter: new PrismaPg(process.env.DATABASE_URL
 
 async function main() {
   const tenant = await prisma.tenants.findFirst({ where: { nombre: { contains: 'Test' } } });
-  if (!tenant) { console.log('❌ Tenant "Escuela Test" not found'); return; }
+  if (!tenant) {
+    console.log('❌ Tenant "Escuela Test" not found');
+    return;
+  }
   console.log('✅ Tenant:', tenant.id, tenant.nombre);
 
   // Enable Google SSO
-  for (const [clave, valor] of [['sso_google_habilitado', 'true'], ['sso_dominio', 'gmail.com']] as const) {
+  for (const [clave, valor] of [
+    ['sso_google_habilitado', 'true'],
+    ['sso_dominio', 'gmail.com'],
+  ] as const) {
     await prisma.configuracion.upsert({
       where: { tenant_id_clave: { tenant_id: tenant.id, clave } },
       update: { valor },
@@ -40,7 +46,9 @@ async function main() {
   // Assign admin role
   const rol = await prisma.roles.findFirst({ where: { nombre: 'admin' } });
   if (rol) {
-    const existing = await prisma.usuarios_roles.findFirst({ where: { usuario_id: user.id, rol_id: rol.id } });
+    const existing = await prisma.usuarios_roles.findFirst({
+      where: { usuario_id: user.id, rol_id: rol.id },
+    });
     if (!existing) {
       await prisma.usuarios_roles.create({ data: { usuario_id: user.id, rol_id: rol.id } });
       console.log('✅ Role assigned: admin');
@@ -52,4 +60,6 @@ async function main() {
   console.log('\n🎉 Google SSO ready! Try logging in with joakobenz@gmail.com');
 }
 
-main().catch(e => console.error('❌', e)).finally(() => prisma.$disconnect());
+main()
+  .catch((e) => console.error('❌', e))
+  .finally(() => prisma.$disconnect());

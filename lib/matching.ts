@@ -14,18 +14,22 @@ export function calcularMatching(
   solicitud: { items_solicitud?: Array<{ cantidad: any; precio_estimado: any }> },
   compra: { monto_total: any } | null,
   itemsRecibidos: Array<{ item_solicitud_id: number; cantidad_recibida: any }>,
-  itemsSolicitud: Array<{ id: number; cantidad: any; precio_estimado: any }>
+  itemsSolicitud: Array<{ id: number; cantidad: any; precio_estimado: any }>,
 ): MatchingResult {
   const discrepancies: string[] = [];
-  const montoSolicitud = itemsSolicitud.reduce((acc, item) => acc + Number(item.cantidad) * Number(item.precio_estimado ?? 0), 0);
+  const montoSolicitud = itemsSolicitud.reduce(
+    (acc, item) => acc + Number(item.cantidad) * Number(item.precio_estimado ?? 0),
+    0,
+  );
   const montoCompra = compra ? Number(compra.monto_total) : 0;
 
   // 1. Price variance: compra vs solicitud estimate
   if (montoSolicitud > 0 && montoCompra > 0) {
     const varianza = Math.abs(montoCompra - montoSolicitud) / montoSolicitud;
-    if (varianza > 0.1) { // >10% variance
+    if (varianza > 0.1) {
+      // >10% variance
       discrepancies.push(
-        `Varianza de precio: estimado $${montoSolicitud.toLocaleString()}, comprado $${montoCompra.toLocaleString()} (${(varianza * 100).toFixed(1)}%)`
+        `Varianza de precio: estimado $${montoSolicitud.toLocaleString()}, comprado $${montoCompra.toLocaleString()} (${(varianza * 100).toFixed(1)}%)`,
       );
     }
   }
@@ -46,11 +50,11 @@ export function calcularMatching(
 
     if (received < ordered) {
       discrepancies.push(
-        `Ítem #${item.id}: pedido ${ordered}, recibido ${received} (faltante: ${ordered - received})`
+        `Ítem #${item.id}: pedido ${ordered}, recibido ${received} (faltante: ${ordered - received})`,
       );
     } else if (received > ordered) {
       discrepancies.push(
-        `Ítem #${item.id}: pedido ${ordered}, recibido ${received} (excedente: ${received - ordered})`
+        `Ítem #${item.id}: pedido ${ordered}, recibido ${received} (excedente: ${received - ordered})`,
       );
     }
   }

@@ -28,10 +28,7 @@ export async function crearNotificacion(data: NotificationData): Promise<void> {
   }
 }
 
-export async function notificarAdmins(
-  titulo: string,
-  mensaje: string,
-): Promise<void> {
+export async function notificarAdmins(titulo: string, mensaje: string): Promise<void> {
   try {
     const admins = await prisma.usuarios.findMany({
       where: {
@@ -63,7 +60,7 @@ export async function notificarPorRol(
   rolNombre: string,
   titulo: string,
   mensaje: string,
-  solicitudId?: number
+  solicitudId?: number,
 ): Promise<void> {
   try {
     const usuarios = await prisma.usuarios.findMany({

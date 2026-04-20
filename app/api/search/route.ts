@@ -18,7 +18,11 @@ export const GET = withAdminOverride({}, async (request, { db }) => {
         ],
       },
       select: {
-        id: true, numero: true, titulo: true, estado: true, urgencia: true,
+        id: true,
+        numero: true,
+        titulo: true,
+        estado: true,
+        urgencia: true,
       },
       take: 10,
       orderBy: { updated_at: 'desc' },

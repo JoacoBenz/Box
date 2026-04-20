@@ -47,57 +47,97 @@ export default function RegistroPage() {
 
   if (registrado) {
     return (
-      <Card style={{ width: 'min(480px, calc(100vw - 32px))', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+      <Card
+        style={{
+          width: 'min(480px, calc(100vw - 32px))',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+        }}
+      >
         <Result
           status="success"
           title="Verificá tu email"
           subTitle="Te enviamos un email de verificación. Revisá tu bandeja de entrada (y spam) para completar el registro."
-          extra={<Link href="/login"><Button type="primary">Volver al inicio</Button></Link>}
+          extra={
+            <Link href="/login">
+              <Button type="primary">Volver al inicio</Button>
+            </Link>
+          }
         />
       </Card>
     );
   }
 
   return (
-    <Card style={{ width: 'min(480px, calc(100vw - 32px))', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+    <Card
+      style={{ width: 'min(480px, calc(100vw - 32px))', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}
+    >
       <Space orientation="vertical" size="large" style={{ width: '100%' }}>
         <div style={{ textAlign: 'center' }}>
-          <Title level={3} style={{ marginBottom: 4 }}>Registrar Organización</Title>
+          <Title level={3} style={{ marginBottom: 4 }}>
+            Registrar Organización
+          </Title>
           <Text type="secondary">Creá el espacio de tu organización</Text>
         </div>
 
         {error && <Alert title={error} type="error" showIcon />}
 
         <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off" {...formProps}>
-          <Form.Item name="nombreOrganizacion" label="Nombre de la organización" rules={[{ required: true, min: 3, message: 'Mínimo 3 caracteres' }]}>
+          <Form.Item
+            name="nombreOrganizacion"
+            label="Nombre de la organización"
+            rules={[{ required: true, min: 3, message: 'Mínimo 3 caracteres' }]}
+          >
             <Input placeholder="Mi Empresa S.A." size="large" />
           </Form.Item>
 
-          <Form.Item name="nombreUsuario" label="Tu nombre" rules={[{ required: true, min: 2, message: 'Mínimo 2 caracteres' }]}>
+          <Form.Item
+            name="nombreUsuario"
+            label="Tu nombre"
+            rules={[{ required: true, min: 2, message: 'Mínimo 2 caracteres' }]}
+          >
             <Input placeholder="María González" size="large" />
           </Form.Item>
 
-          <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email', message: 'Email inválido' }]}>
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[{ required: true, type: 'email', message: 'Email inválido' }]}
+          >
             <Input placeholder="admin@empresa.com" size="large" />
           </Form.Item>
 
-          <Form.Item name="password" label="Contraseña" rules={[
-            { required: true, message: 'La contraseña es obligatoria' },
-            { min: 10, message: 'Mínimo 10 caracteres' },
-            { pattern: /[A-Z]/, message: 'Debe contener al menos una mayúscula' },
-            { pattern: /[a-z]/, message: 'Debe contener al menos una minúscula' },
-            { pattern: /[0-9]/, message: 'Debe contener al menos un número' },
-            { pattern: /[^A-Za-z0-9]/, message: 'Debe contener al menos un carácter especial' },
-          ]}>
+          <Form.Item
+            name="password"
+            label="Contraseña"
+            rules={[
+              { required: true, message: 'La contraseña es obligatoria' },
+              { min: 10, message: 'Mínimo 10 caracteres' },
+              { pattern: /[A-Z]/, message: 'Debe contener al menos una mayúscula' },
+              { pattern: /[a-z]/, message: 'Debe contener al menos una minúscula' },
+              { pattern: /[0-9]/, message: 'Debe contener al menos un número' },
+              { pattern: /[^A-Za-z0-9]/, message: 'Debe contener al menos un carácter especial' },
+            ]}
+          >
             <Input.Password placeholder="Mínimo 10 caracteres" size="large" />
           </Form.Item>
 
-          <Form.Item name="confirmarPassword" label="Confirmar contraseña" rules={[{ required: true, message: 'Confirmá tu contraseña' }]}>
+          <Form.Item
+            name="confirmarPassword"
+            label="Confirmar contraseña"
+            rules={[{ required: true, message: 'Confirmá tu contraseña' }]}
+          >
             <Input.Password placeholder="••••••••" size="large" />
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0 }}>
-            <Button type="primary" htmlType="submit" block size="large" loading={loading} disabled={hasErrors || loading}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              block
+              size="large"
+              loading={loading}
+              disabled={hasErrors || loading}
+            >
               Registrar Organización
             </Button>
           </Form.Item>

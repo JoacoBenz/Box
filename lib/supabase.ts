@@ -7,7 +7,9 @@ function getSupabaseAdmin(): SupabaseClient {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error('Supabase env vars (NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) are not configured');
+      throw new Error(
+        'Supabase env vars (NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) are not configured',
+      );
     }
     _supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false },
@@ -21,15 +23,15 @@ export async function uploadFile(
   tenantId: number,
   entidad: string,
   entidadId: number,
-  file: File
+  file: File,
 ): Promise<{ path: string; url: string }> {
   const timestamp = Date.now();
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const path = `${tenantId}/${entidad}/${entidadId}/${timestamp}_${safeName}`;
 
   const buffer = await file.arrayBuffer();
-  const { error } = await getSupabaseAdmin().storage
-    .from('compras-escolar')
+  const { error } = await getSupabaseAdmin()
+    .storage.from('compras-escolar')
     .upload(path, buffer, { contentType: file.type });
 
   if (error) throw new Error(`Error subiendo archivo: ${error.message}`);
@@ -43,8 +45,8 @@ export async function getSignedUrl(path: string): Promise<string> {
   if (path.includes('..') || path.startsWith('/')) {
     throw new Error('Ruta de archivo inválida');
   }
-  const { data, error } = await getSupabaseAdmin().storage
-    .from('compras-escolar')
+  const { data, error } = await getSupabaseAdmin()
+    .storage.from('compras-escolar')
     .createSignedUrl(path, 300); // 5 minutes instead of 1 hour
 
   if (error || !data) throw new Error('Error generando URL de descarga');
@@ -53,9 +55,7 @@ export async function getSignedUrl(path: string): Promise<string> {
 
 // Delete a file from storage
 export async function deleteFile(path: string): Promise<void> {
-  const { error } = await getSupabaseAdmin().storage
-    .from('compras-escolar')
-    .remove([path]);
+  const { error } = await getSupabaseAdmin().storage.from('compras-escolar').remove([path]);
 
   if (error) throw new Error(`Error eliminando archivo: ${error.message}`);
 }

@@ -1,84 +1,102 @@
-'use client'
+'use client';
 
-import { useEffect, useState, useCallback } from 'react'
-import { App, Table, Tag, Button, Space, Modal, Form, Input, Select, Popconfirm, Typography } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
-import { useFormValid } from '@/hooks/useFormValid'
+import { useEffect, useState, useCallback } from 'react';
+import {
+  App,
+  Table,
+  Tag,
+  Button,
+  Space,
+  Modal,
+  Form,
+  Input,
+  Select,
+  Popconfirm,
+  Typography,
+} from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
+import { useFormValid } from '@/hooks/useFormValid';
 
-const { Title } = Typography
+const { Title } = Typography;
 
 interface CentroCosto {
-  id: number
-  nombre: string
-  codigo: string
-  area_id: number | null
+  id: number;
+  nombre: string;
+  codigo: string;
+  area_id: number | null;
 }
 
 interface Usuario {
-  id: number
-  nombre: string
-  email: string
-  activo: boolean
-  centro_costo: { id: number; nombre: string; codigo: string } | null
+  id: number;
+  nombre: string;
+  email: string;
+  activo: boolean;
+  centro_costo: { id: number; nombre: string; codigo: string } | null;
 }
 
 export default function MiAreaUsuariosPage() {
-  const { message } = App.useApp()
-  const [usuarios, setUsuarios] = useState<Usuario[]>([])
-  const [centrosCosto, setCentrosCosto] = useState<CentroCosto[]>([])
-  const [loading, setLoading] = useState(true)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editing, setEditing] = useState<Usuario | null>(null)
-  const [saving, setSaving] = useState(false)
-  const [form] = Form.useForm()
-  const { hasErrors, formProps } = useFormValid(form)
-  const [sessionAreaId, setSessionAreaId] = useState<number | null>(null)
-  const [areaNombre, setAreaNombre] = useState('')
+  const { message } = App.useApp();
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [centrosCosto, setCentrosCosto] = useState<CentroCosto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<Usuario | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [form] = Form.useForm();
+  const { hasErrors, formProps } = useFormValid(form);
+  const [sessionAreaId, setSessionAreaId] = useState<number | null>(null);
+  const [areaNombre, setAreaNombre] = useState('');
 
   const fetchData = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await fetch('/api/usuarios?pageSize=100')
+      const res = await fetch('/api/usuarios?pageSize=100');
       if (res.ok) {
-        const data = await res.json()
-        setUsuarios(data.data ?? [])
+        const data = await res.json();
+        setUsuarios(data.data ?? []);
       }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    fetch('/api/auth/session').then(r => r.json()).then(s => {
-      setSessionAreaId(s?.user?.areaId ?? null)
-      setAreaNombre(s?.user?.areaNombre ?? 'mi área')
-    }).catch(() => {})
-    fetch('/api/centros-costo').then(r => r.ok ? r.json() : []).then(setCentrosCosto).catch(() => {})
-    fetchData()
-  }, [fetchData])
+    fetch('/api/auth/session')
+      .then((r) => r.json())
+      .then((s) => {
+        setSessionAreaId(s?.user?.areaId ?? null);
+        setAreaNombre(s?.user?.areaNombre ?? 'mi área');
+      })
+      .catch(() => {});
+    fetch('/api/centros-costo')
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setCentrosCosto)
+      .catch(() => {});
+    fetchData();
+  }, [fetchData]);
 
-  const filteredCentros = centrosCosto.filter(cc => cc.area_id === sessionAreaId)
+  const filteredCentros = centrosCosto.filter((cc) => cc.area_id === sessionAreaId);
 
   function openCreate() {
-    setEditing(null)
-    form.resetFields()
-    setModalOpen(true)
+    setEditing(null);
+    form.resetFields();
+    setModalOpen(true);
   }
 
   function openEdit(u: Usuario) {
-    setEditing(u)
+    setEditing(u);
     form.setFieldsValue({
       nombre: u.nombre,
       email: u.email,
       centro_costo_id: u.centro_costo?.id ?? null,
-    })
-    setModalOpen(true)
+    });
+    setModalOpen(true);
   }
 
   async function handleSave() {
     try {
-      const values = await form.validateFields()
-      setSaving(true)
+      const values = await form.validateFields();
+      setSaving(true);
 
       const payload = {
         nombre: values.nombre,
@@ -87,31 +105,31 @@ export default function MiAreaUsuariosPage() {
         centro_costo_id: values.centro_costo_id ?? null,
         roles: ['solicitante'],
         ...(editing ? {} : { password: values.password }),
-      }
+      };
 
-      const url = editing ? `/api/usuarios/${editing.id}` : '/api/usuarios'
-      const method = editing ? 'PATCH' : 'POST'
+      const url = editing ? `/api/usuarios/${editing.id}` : '/api/usuarios';
+      const method = editing ? 'PATCH' : 'POST';
 
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-      })
+      });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err?.error?.message ?? 'Error al guardar')
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error?.message ?? 'Error al guardar');
       }
 
-      message.success(editing ? 'Usuario actualizado' : 'Usuario creado')
-      setModalOpen(false)
-      form.resetFields()
-      fetchData()
+      message.success(editing ? 'Usuario actualizado' : 'Usuario creado');
+      setModalOpen(false);
+      form.resetFields();
+      fetchData();
     } catch (err: any) {
-      if (err?.errorFields) return
-      message.error(err?.message ?? 'Error inesperado')
+      if (err?.errorFields) return;
+      message.error(err?.message ?? 'Error inesperado');
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
   }
 
@@ -121,15 +139,15 @@ export default function MiAreaUsuariosPage() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ activo: !u.activo }),
-      })
+      });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err?.error?.message ?? 'Error')
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error?.message ?? 'Error');
       }
-      message.success(u.activo ? 'Usuario desactivado' : 'Usuario activado')
-      fetchData()
+      message.success(u.activo ? 'Usuario desactivado' : 'Usuario activado');
+      fetchData();
     } catch (err: any) {
-      message.error(err?.message ?? 'Error inesperado')
+      message.error(err?.message ?? 'Error inesperado');
     }
   }
 
@@ -148,7 +166,9 @@ export default function MiAreaUsuariosPage() {
       dataIndex: 'activo',
       key: 'activo',
       width: 100,
-      render: (v: boolean) => <Tag color={v ? 'green' : 'default'}>{v ? 'Activo' : 'Inactivo'}</Tag>,
+      render: (v: boolean) => (
+        <Tag color={v ? 'green' : 'default'}>{v ? 'Activo' : 'Inactivo'}</Tag>
+      ),
     },
     {
       title: 'Acciones',
@@ -156,23 +176,34 @@ export default function MiAreaUsuariosPage() {
       width: 180,
       render: (_: unknown, r: Usuario) => (
         <Space>
-          <Button size="small" onClick={() => openEdit(r)}>Editar</Button>
+          <Button size="small" onClick={() => openEdit(r)}>
+            Editar
+          </Button>
           <Popconfirm
             title={r.activo ? '¿Desactivar este usuario?' : '¿Activar este usuario?'}
             onConfirm={() => handleToggleActive(r)}
             okText="Sí"
             cancelText="No"
           >
-            <Button size="small" danger={r.activo}>{r.activo ? 'Desactivar' : 'Activar'}</Button>
+            <Button size="small" danger={r.activo}>
+              {r.activo ? 'Desactivar' : 'Activar'}
+            </Button>
           </Popconfirm>
         </Space>
       ),
     },
-  ]
+  ];
 
   return (
     <div className="page-content">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 16,
+        }}
+      >
         <div>
           <Title level={3} style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>
             Usuarios de {areaNombre}
@@ -197,7 +228,10 @@ export default function MiAreaUsuariosPage() {
       <Modal
         title={editing ? 'Editar Solicitante' : 'Nuevo Solicitante'}
         open={modalOpen}
-        onCancel={() => { setModalOpen(false); form.resetFields() }}
+        onCancel={() => {
+          setModalOpen(false);
+          form.resetFields();
+        }}
         onOk={handleSave}
         okText={editing ? 'Guardar' : 'Crear'}
         okButtonProps={{ loading: saving, disabled: hasErrors }}
@@ -235,7 +269,10 @@ export default function MiAreaUsuariosPage() {
                 { pattern: /[A-Z]/, message: 'Debe contener al menos una mayúscula' },
                 { pattern: /[a-z]/, message: 'Debe contener al menos una minúscula' },
                 { pattern: /[0-9]/, message: 'Debe contener al menos un número' },
-                { pattern: /[^A-Za-z0-9]/, message: 'Debe contener al menos un carácter especial (!@#$%...)' },
+                {
+                  pattern: /[^A-Za-z0-9]/,
+                  message: 'Debe contener al menos un carácter especial (!@#$%...)',
+                },
               ]}
             >
               <Input.Password placeholder="Mínimo 10 caracteres, mayúscula, minúscula, número y especial" />
@@ -249,7 +286,7 @@ export default function MiAreaUsuariosPage() {
                 showSearch
                 optionFilterProp="label"
                 placeholder="Seleccionar centro de costo"
-                options={filteredCentros.map(cc => ({
+                options={filteredCentros.map((cc) => ({
                   value: cc.id,
                   label: `${cc.codigo} — ${cc.nombre}`,
                 }))}
@@ -259,5 +296,5 @@ export default function MiAreaUsuariosPage() {
         </Form>
       </Modal>
     </div>
-  )
+  );
 }

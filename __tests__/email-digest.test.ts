@@ -115,9 +115,7 @@ describe('computeMonto', () => {
   });
 
   it('handles string numbers (Decimal from Prisma)', () => {
-    const items = [
-      { precio_estimado: '150.50', cantidad: '2' },
-    ];
+    const items = [{ precio_estimado: '150.50', cantidad: '2' }];
     expect(computeMonto(items)).toBe(301);
   });
 });
@@ -224,7 +222,7 @@ describe('ROLE_CONFIGS', () => {
   });
 
   it('maps correct estados', () => {
-    const map = Object.fromEntries(ROLE_CONFIGS.map(c => [c.roleName, c.estado]));
+    const map = Object.fromEntries(ROLE_CONFIGS.map((c) => [c.roleName, c.estado]));
     expect(map).toEqual({
       responsable_area: 'pendiente_validacion',
       director: 'validada',
@@ -263,7 +261,7 @@ describe('URGENCIA_COLORS', () => {
 // ─── buildEmailHtml ───
 
 describe('buildEmailHtml', () => {
-  const config = ROLE_CONFIGS.find(c => c.roleName === 'director')!;
+  const config = ROLE_CONFIGS.find((c) => c.roleName === 'director')!;
 
   const solicitudes: SolicitudRow[] = [
     {
@@ -318,7 +316,13 @@ describe('buildEmailHtml', () => {
   });
 
   it('contains CTA link and label', () => {
-    const html = buildEmailHtml('Joaquín', solicitudes, 'Escuela Test', config, 'https://app.box.com');
+    const html = buildEmailHtml(
+      'Joaquín',
+      solicitudes,
+      'Escuela Test',
+      config,
+      'https://app.box.com',
+    );
     expect(html).toContain('https://app.box.com/aprobaciones');
     expect(html).toContain('Ir a Aprobaciones');
   });
@@ -338,7 +342,13 @@ describe('buildEmailHtml', () => {
   });
 
   it('contains perfil link for opt-out', () => {
-    const html = buildEmailHtml('Joaquín', solicitudes, 'Escuela Test', config, 'https://app.box.com');
+    const html = buildEmailHtml(
+      'Joaquín',
+      solicitudes,
+      'Escuela Test',
+      config,
+      'https://app.box.com',
+    );
     expect(html).toContain('https://app.box.com/perfil');
   });
 

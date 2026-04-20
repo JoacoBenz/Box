@@ -16,7 +16,7 @@ async function main() {
 
   // Get all roles
   const roles = await prisma.roles.findMany();
-  const roleMap = Object.fromEntries(roles.map(r => [r.nombre, r.id]));
+  const roleMap = Object.fromEntries(roles.map((r) => [r.nombre, r.id]));
 
   if (!roleMap.solicitante || !roleMap.director) {
     throw new Error('Roles not found. Run prisma/seed.ts first.');
@@ -78,13 +78,48 @@ async function main() {
 
   // 4. Create users — one per role
   const usersData = [
-    { nombre: 'Ana Directora',     email: 'directora@escuelatest.com',    area: 'Dirección',       roles: ['director', 'solicitante'] },
-    { nombre: 'Carlos Admin',      email: 'admin@escuelatest.com',        area: 'Administración',  roles: ['admin', 'solicitante'] },
-    { nombre: 'María Responsable', email: 'responsable@escuelatest.com',  area: 'Docentes',        roles: ['responsable_area', 'solicitante'] },
-    { nombre: 'Pedro Compras',     email: 'compras@escuelatest.com',      area: 'Administración',  roles: ['compras', 'solicitante'] },
-    { nombre: 'Laura Tesorería',   email: 'tesoreria@escuelatest.com',    area: 'Administración',  roles: ['tesoreria', 'solicitante'] },
-    { nombre: 'Juan Solicitante',  email: 'solicitante@escuelatest.com',  area: 'Docentes',        roles: ['solicitante'] },
-    { nombre: 'Luis Mantenimiento', email: 'mantenimiento@escuelatest.com', area: 'Mantenimiento', roles: ['solicitante'] },
+    {
+      nombre: 'Ana Directora',
+      email: 'directora@escuelatest.com',
+      area: 'Dirección',
+      roles: ['director', 'solicitante'],
+    },
+    {
+      nombre: 'Carlos Admin',
+      email: 'admin@escuelatest.com',
+      area: 'Administración',
+      roles: ['admin', 'solicitante'],
+    },
+    {
+      nombre: 'María Responsable',
+      email: 'responsable@escuelatest.com',
+      area: 'Docentes',
+      roles: ['responsable_area', 'solicitante'],
+    },
+    {
+      nombre: 'Pedro Compras',
+      email: 'compras@escuelatest.com',
+      area: 'Administración',
+      roles: ['compras', 'solicitante'],
+    },
+    {
+      nombre: 'Laura Tesorería',
+      email: 'tesoreria@escuelatest.com',
+      area: 'Administración',
+      roles: ['tesoreria', 'solicitante'],
+    },
+    {
+      nombre: 'Juan Solicitante',
+      email: 'solicitante@escuelatest.com',
+      area: 'Docentes',
+      roles: ['solicitante'],
+    },
+    {
+      nombre: 'Luis Mantenimiento',
+      email: 'mantenimiento@escuelatest.com',
+      area: 'Mantenimiento',
+      roles: ['solicitante'],
+    },
   ];
 
   for (const u of usersData) {
@@ -119,7 +154,10 @@ async function main() {
       await prisma.areas.update({ where: { id: area.id }, data: { responsable_id: user.id } });
     }
     if (u.roles.includes('director')) {
-      await prisma.areas.update({ where: { id: areas['Dirección'].id }, data: { responsable_id: user.id } });
+      await prisma.areas.update({
+        where: { id: areas['Dirección'].id },
+        data: { responsable_id: user.id },
+      });
     }
 
     console.log(`  ${u.nombre} <${u.email}> → [${u.roles.join(', ')}] (${u.area})`);

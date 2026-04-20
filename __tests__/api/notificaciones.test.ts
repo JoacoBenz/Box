@@ -1,9 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { mockSession, mockDb, mockPrismaGlobal } = vi.hoisted(() => {
-  const mockSession = { userId: 1, tenantId: 1, roles: ['solicitante'], nombre: 'Test', email: 'test@test.com', areaId: 1 };
+  const mockSession = {
+    userId: 1,
+    tenantId: 1,
+    roles: ['solicitante'],
+    nombre: 'Test',
+    email: 'test@test.com',
+    areaId: 1,
+  };
   const mockDb = {
-    notificaciones: { findMany: vi.fn(), findFirst: vi.fn(), count: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
+    notificaciones: {
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      count: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+    },
   };
   const mockPrismaGlobal = {
     notificaciones: { updateMany: vi.fn() },
@@ -17,14 +30,29 @@ vi.mock('@/lib/permissions', () => ({
   verificarRol: vi.fn().mockReturnValue(true),
   verificarSegregacion: vi.fn().mockReturnValue({ permitido: true }),
   verificarResponsableDeArea: vi.fn().mockResolvedValue(true),
-  apiError: vi.fn((code: string, msg: string, status: number) => new Response(JSON.stringify({ error: { code, message: msg } }), { status })),
+  apiError: vi.fn(
+    (code: string, msg: string, status: number) =>
+      new Response(JSON.stringify({ error: { code, message: msg } }), { status }),
+  ),
   isOnlyResponsable: vi.fn().mockReturnValue(false),
 }));
-vi.mock('@/lib/audit', () => ({ registrarAuditoria: vi.fn(), getClientIp: vi.fn(() => '1.2.3.4') }));
-vi.mock('@/lib/notifications', () => ({ crearNotificacion: vi.fn(), notificarPorRol: vi.fn(), notificarAdmins: vi.fn() }));
+vi.mock('@/lib/audit', () => ({
+  registrarAuditoria: vi.fn(),
+  getClientIp: vi.fn(() => '1.2.3.4'),
+}));
+vi.mock('@/lib/notifications', () => ({
+  crearNotificacion: vi.fn(),
+  notificarPorRol: vi.fn(),
+  notificarAdmins: vi.fn(),
+}));
 vi.mock('@/lib/logger', () => ({ logApiError: vi.fn() }));
-vi.mock('@/lib/tenant-override', () => ({ getEffectiveTenantId: vi.fn().mockResolvedValue({ session: mockSession, effectiveTenantId: 1 }) }));
-vi.mock('@/lib/tenant-config', () => ({ getTenantConfigBool: vi.fn().mockResolvedValue(true), getTenantConfigNumber: vi.fn().mockResolvedValue(0) }));
+vi.mock('@/lib/tenant-override', () => ({
+  getEffectiveTenantId: vi.fn().mockResolvedValue({ session: mockSession, effectiveTenantId: 1 }),
+}));
+vi.mock('@/lib/tenant-config', () => ({
+  getTenantConfigBool: vi.fn().mockResolvedValue(true),
+  getTenantConfigNumber: vi.fn().mockResolvedValue(0),
+}));
 vi.mock('@/lib/validators', async () => await vi.importActual('@/lib/validators'));
 vi.mock('@/types', () => ({ default: {} }));
 
@@ -34,7 +62,9 @@ import { PATCH } from '@/app/api/notificaciones/[id]/route';
 import { PATCH as PATCHAll } from '@/app/api/notificaciones/marcar-todas/route';
 
 describe('GET /api/notificaciones', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('returns notifications', async () => {
     const notifs = [{ id: 1, titulo: 'Test', leida: false }];
@@ -48,7 +78,9 @@ describe('GET /api/notificaciones', () => {
 });
 
 describe('GET /api/notificaciones/count', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('returns unread count', async () => {
     mockDb.notificaciones.count.mockResolvedValue(5);
@@ -61,24 +93,36 @@ describe('GET /api/notificaciones/count', () => {
 });
 
 describe('PATCH /api/notificaciones/[id]', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('marks notification as read', async () => {
-    mockDb.notificaciones.findFirst.mockResolvedValue({ id: 1, usuario_destino_id: 1, leida: false });
+    mockDb.notificaciones.findFirst.mockResolvedValue({
+      id: 1,
+      usuario_destino_id: 1,
+      leida: false,
+    });
     mockDb.notificaciones.update.mockResolvedValue({});
     const req = new Request('http://localhost/api/notificaciones/1', { method: 'PATCH' });
     const res = await PATCH(req, { params: Promise.resolve({ id: '1' }) });
     expect(res.status).toBe(200);
-    expect(mockDb.notificaciones.update).toHaveBeenCalledWith(expect.objectContaining({ data: { leida: true } }));
+    expect(mockDb.notificaciones.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { leida: true } }),
+    );
   });
 });
 
 describe('PATCH /api/notificaciones/marcar-todas', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('marks all as read', async () => {
     mockPrismaGlobal.notificaciones.updateMany.mockResolvedValue({ count: 3 });
-    const req = new Request('http://localhost/api/notificaciones/marcar-todas', { method: 'PATCH' });
+    const req = new Request('http://localhost/api/notificaciones/marcar-todas', {
+      method: 'PATCH',
+    });
     const res = await PATCHAll(req, {});
     expect(res.status).toBe(200);
   });

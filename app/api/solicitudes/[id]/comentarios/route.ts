@@ -43,13 +43,22 @@ export const POST = withTenant(async (request, { session, db }, params) => {
 
   // Permission check: user must be involved with this solicitud
   const { userId, roles } = session;
-  const hasGlobalAccess = roles.includes('director') || roles.includes('tesoreria') || roles.includes('compras') || roles.includes('admin') || roles.includes('super_admin');
+  const hasGlobalAccess =
+    roles.includes('director') ||
+    roles.includes('tesoreria') ||
+    roles.includes('compras') ||
+    roles.includes('admin') ||
+    roles.includes('super_admin');
   if (!hasGlobalAccess) {
     const isOwner = solicitud.solicitante_id === userId;
-    const isResponsable = roles.includes('responsable_area') && await (async () => {
-      const area = await prisma.areas.findFirst({ where: { id: solicitud.area_id, tenant_id: session.tenantId, responsable_id: userId } });
-      return !!area;
-    })();
+    const isResponsable =
+      roles.includes('responsable_area') &&
+      (await (async () => {
+        const area = await prisma.areas.findFirst({
+          where: { id: solicitud.area_id, tenant_id: session.tenantId, responsable_id: userId },
+        });
+        return !!area;
+      })());
     if (!isOwner && !isResponsable) {
       return apiError('FORBIDDEN', 'No tenés acceso a esta solicitud', 403);
     }
@@ -83,14 +92,20 @@ export const POST = withTenant(async (request, { session, db }, params) => {
     where: {
       tenant_id: session.tenantId,
       activo: true,
-      usuarios_roles: { some: { rol: { nombre: { in: ['responsable_area', 'director', 'compras', 'tesoreria'] } } } },
+      usuarios_roles: {
+        some: { rol: { nombre: { in: ['responsable_area', 'director', 'compras', 'tesoreria'] } } },
+      },
     },
-    select: { id: true, area_id: true, usuarios_roles: { select: { rol: { select: { nombre: true } } } } },
+    select: {
+      id: true,
+      area_id: true,
+      usuarios_roles: { select: { rol: { select: { nombre: true } } } },
+    },
   });
 
   for (const u of usersWithRoles) {
     if (u.id === userId) continue; // Don't notify the commenter
-    const uRoles = u.usuarios_roles.map(ur => ur.rol.nombre);
+    const uRoles = u.usuarios_roles.map((ur) => ur.rol.nombre);
     // Responsable: only if they belong to the solicitud's area
     if (uRoles.includes('responsable_area') && u.area_id === solicitud.area_id) {
       destinatarios.add(u.id);
@@ -110,7 +125,7 @@ export const POST = withTenant(async (request, { session, db }, params) => {
       titulo,
       mensaje: notifMensaje,
       solicitudId: solicitudId,
-    })
+    }),
   );
   Promise.all(notifPromises).catch((err) => {
     logApiError('comentarios', 'notifications', err, userId, session.tenantId);
@@ -118,8 +133,11 @@ export const POST = withTenant(async (request, { session, db }, params) => {
 
   // Audit log
   registrarAuditoria({
-    tenantId: session.tenantId, usuarioId: userId,
-    accion: 'crear_comentario', entidad: 'comentario', entidadId: comentario.id,
+    tenantId: session.tenantId,
+    usuarioId: userId,
+    accion: 'crear_comentario',
+    entidad: 'comentario',
+    entidadId: comentario.id,
     datosNuevos: { solicitudId, mensaje: msgTexto },
   }).catch(() => {}); // Non-critical, fire and forget
 

@@ -19,7 +19,7 @@ setInterval(_cleanupExpired, 60_000);
 function checkMemoryFallback(
   key: string,
   maxAttempts: number,
-  windowMs: number
+  windowMs: number,
 ): { allowed: boolean; remaining: number; resetInMs: number } {
   const now = Date.now();
   const entry = memoryAttempts.get(key);
@@ -43,7 +43,7 @@ function checkMemoryFallback(
 export async function checkRateLimitDb(
   key: string,
   maxAttempts: number,
-  windowMs: number
+  windowMs: number,
 ): Promise<{ allowed: boolean; remaining: number; resetInMs: number }> {
   try {
     const windowStart = new Date(Date.now() - windowMs);
@@ -76,7 +76,7 @@ export async function checkRateLimitDb(
 export function checkRateLimit(
   key: string,
   maxAttempts: number,
-  windowMs: number
+  windowMs: number,
 ): { allowed: boolean; remaining: number; resetInMs: number } {
   return checkMemoryFallback(key, maxAttempts, windowMs);
 }

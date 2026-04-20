@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     // Add expired status
     const now = new Date();
-    const result = registros.map(r => ({
+    const result = registros.map((r) => ({
       ...r,
       expirado: r.expira_el < now,
     }));

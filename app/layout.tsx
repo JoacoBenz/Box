@@ -19,7 +19,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
           (function() {
             try {
               if (!localStorage.getItem('theme_v2')) {
@@ -30,7 +32,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               document.documentElement.setAttribute('data-theme', t);
             } catch(e) {}
           })();
-        `}} />
+        `,
+          }}
+        />
       </head>
       <body>
         <AntdRegistry>

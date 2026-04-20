@@ -1,60 +1,72 @@
-'use client'
+'use client';
 
-import { useState, useCallback, useRef } from 'react'
-import { AutoComplete, Typography } from 'antd'
+import { useState, useCallback, useRef } from 'react';
+import { AutoComplete, Typography } from 'antd';
 
-const { Text } = Typography
+const { Text } = Typography;
 
 interface Producto {
-  id: number
-  nombre: string
-  area: { id: number; nombre: string } | null
-  unidad_defecto: string
-  precio_referencia: string | number | null
-  link_producto: string | null
+  id: number;
+  nombre: string;
+  area: { id: number; nombre: string } | null;
+  unidad_defecto: string;
+  precio_referencia: string | number | null;
+  link_producto: string | null;
 }
 
 interface Props {
-  onSelect?: (producto: Producto) => void
-  placeholder?: string
-  disabled?: boolean
+  onSelect?: (producto: Producto) => void;
+  placeholder?: string;
+  disabled?: boolean;
   /** Controlled by Form.Item */
-  value?: string
-  onChange?: (value: string) => void
+  value?: string;
+  onChange?: (value: string) => void;
 }
 
-export default function ProductoSelect({ onSelect, placeholder = 'Buscar producto o escribir descripción...', disabled, value, onChange }: Props) {
-  const [options, setOptions] = useState<Producto[]>([])
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+export default function ProductoSelect({
+  onSelect,
+  placeholder = 'Buscar producto o escribir descripción...',
+  disabled,
+  value,
+  onChange,
+}: Props) {
+  const [options, setOptions] = useState<Producto[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchProductos = useCallback(async (search: string) => {
     if (!search || search.length < 2) {
-      setOptions([])
-      return
+      setOptions([]);
+      return;
     }
     try {
-      const res = await fetch(`/api/productos?q=${encodeURIComponent(search)}&limit=10`)
+      const res = await fetch(`/api/productos?q=${encodeURIComponent(search)}&limit=10`);
       if (res.ok) {
-        setOptions(await res.json())
+        setOptions(await res.json());
       }
     } catch {
       // ignore
     }
-  }, [])
+  }, []);
 
-  const handleSearch = useCallback((val: string) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => fetchProductos(val), 300)
-  }, [fetchProductos])
+  const handleSearch = useCallback(
+    (val: string) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => fetchProductos(val), 300);
+    },
+    [fetchProductos],
+  );
 
-  const handleSelect = useCallback((_val: string, option: any) => {
-    const producto = options.find(p => p.id === option.key)
-    if (producto) {
-      onSelect?.(producto)
-    }
-    // Clear dropdown options after selection to prevent label overlap
-    setOptions([])
-  }, [options, onSelect])
+  const handleSelect = useCallback(
+    (_val: string, option: any) => {
+      const producto = options.find((p) => p.id === option.key);
+      if (producto) {
+        onSelect?.(producto);
+      }
+      // Clear dropdown options after selection to prevent label overlap
+      setOptions([]);
+    },
+    [options, onSelect],
+  );
 
   return (
     <AutoComplete
@@ -65,7 +77,7 @@ export default function ProductoSelect({ onSelect, placeholder = 'Buscar product
       placeholder={placeholder}
       disabled={disabled}
       style={{ width: '100%' }}
-      options={options.map(p => ({
+      options={options.map((p) => ({
         key: p.id,
         value: p.nombre,
         label: (
@@ -87,5 +99,5 @@ export default function ProductoSelect({ onSelect, placeholder = 'Buscar product
         ),
       }))}
     />
-  )
+  );
 }

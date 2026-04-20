@@ -119,7 +119,9 @@ describe('areaSchema', () => {
   });
 
   it('accepts area with null responsable_id', () => {
-    expect(areaSchema.safeParse({ nombre: 'Informática', responsable_id: null }).success).toBe(true);
+    expect(areaSchema.safeParse({ nombre: 'Informática', responsable_id: null }).success).toBe(
+      true,
+    );
   });
 
   it('rejects area name too short', () => {
@@ -169,7 +171,14 @@ describe('usuarioSchema', () => {
   });
 
   it('accepts all valid roles', () => {
-    const allRoles = ['solicitante', 'responsable_area', 'director', 'tesoreria', 'compras', 'admin'];
+    const allRoles = [
+      'solicitante',
+      'responsable_area',
+      'director',
+      'tesoreria',
+      'compras',
+      'admin',
+    ];
     expect(usuarioSchema.safeParse({ ...valid, roles: allRoles }).success).toBe(true);
   });
 
@@ -272,18 +281,26 @@ describe('solicitudSchema', () => {
   });
 
   it('accepts max 100 items', () => {
-    const items = Array.from({ length: 100 }, (_, i) => ({ ...validItem, descripcion: `Item ${i + 10}` }));
+    const items = Array.from({ length: 100 }, (_, i) => ({
+      ...validItem,
+      descripcion: `Item ${i + 10}`,
+    }));
     expect(solicitudSchema.safeParse({ ...valid, items }).success).toBe(true);
   });
 
   it('rejects more than 100 items', () => {
-    const items = Array.from({ length: 101 }, (_, i) => ({ ...validItem, descripcion: `Item ${i + 10}` }));
+    const items = Array.from({ length: 101 }, (_, i) => ({
+      ...validItem,
+      descripcion: `Item ${i + 10}`,
+    }));
     expect(solicitudSchema.safeParse({ ...valid, items }).success).toBe(false);
   });
 
   // ── Optional fields ──
   it('accepts optional proveedor_sugerido', () => {
-    expect(solicitudSchema.safeParse({ ...valid, proveedor_sugerido: 'Amazon' }).success).toBe(true);
+    expect(solicitudSchema.safeParse({ ...valid, proveedor_sugerido: 'Amazon' }).success).toBe(
+      true,
+    );
   });
 
   it('accepts optional proveedor_id', () => {
@@ -295,12 +312,14 @@ describe('solicitudSchema', () => {
   });
 
   it('accepts null optional fields', () => {
-    expect(solicitudSchema.safeParse({
-      ...valid,
-      proveedor_sugerido: null,
-      proveedor_id: null,
-      centro_costo_id: null,
-    }).success).toBe(true);
+    expect(
+      solicitudSchema.safeParse({
+        ...valid,
+        proveedor_sugerido: null,
+        proveedor_id: null,
+        centro_costo_id: null,
+      }).success,
+    ).toBe(true);
   });
 });
 
@@ -319,40 +338,50 @@ describe('compraSchema', () => {
   });
 
   it('accepts valid compra with transferencia + referencia', () => {
-    expect(compraSchema.safeParse({
-      ...valid,
-      medio_pago: 'transferencia',
-      referencia_bancaria: 'TRF-123456',
-    }).success).toBe(true);
+    expect(
+      compraSchema.safeParse({
+        ...valid,
+        medio_pago: 'transferencia',
+        referencia_bancaria: 'TRF-123456',
+      }).success,
+    ).toBe(true);
   });
 
   it('rejects transferencia without referencia_bancaria', () => {
-    expect(compraSchema.safeParse({
-      ...valid,
-      medio_pago: 'transferencia',
-    }).success).toBe(false);
+    expect(
+      compraSchema.safeParse({
+        ...valid,
+        medio_pago: 'transferencia',
+      }).success,
+    ).toBe(false);
   });
 
   it('rejects cheque without referencia_bancaria', () => {
-    expect(compraSchema.safeParse({
-      ...valid,
-      medio_pago: 'cheque',
-    }).success).toBe(false);
+    expect(
+      compraSchema.safeParse({
+        ...valid,
+        medio_pago: 'cheque',
+      }).success,
+    ).toBe(false);
   });
 
   it('accepts cheque with referencia_bancaria', () => {
-    expect(compraSchema.safeParse({
-      ...valid,
-      medio_pago: 'cheque',
-      referencia_bancaria: 'CHQ-789',
-    }).success).toBe(true);
+    expect(
+      compraSchema.safeParse({
+        ...valid,
+        medio_pago: 'cheque',
+        referencia_bancaria: 'CHQ-789',
+      }).success,
+    ).toBe(true);
   });
 
   it('accepts tarjeta without referencia_bancaria', () => {
-    expect(compraSchema.safeParse({
-      ...valid,
-      medio_pago: 'tarjeta',
-    }).success).toBe(true);
+    expect(
+      compraSchema.safeParse({
+        ...valid,
+        medio_pago: 'tarjeta',
+      }).success,
+    ).toBe(true);
   });
 
   it('rejects zero monto', () => {
@@ -395,31 +424,39 @@ describe('compraSchema', () => {
 
   // ── Numero factura ──
   it('accepts valid numero_factura format', () => {
-    expect(compraSchema.safeParse({
-      ...valid,
-      numero_factura: 'A-0001-00012345',
-    }).success).toBe(true);
+    expect(
+      compraSchema.safeParse({
+        ...valid,
+        numero_factura: 'A-0001-00012345',
+      }).success,
+    ).toBe(true);
   });
 
   it('rejects invalid numero_factura format', () => {
-    expect(compraSchema.safeParse({
-      ...valid,
-      numero_factura: '12345',
-    }).success).toBe(false);
+    expect(
+      compraSchema.safeParse({
+        ...valid,
+        numero_factura: '12345',
+      }).success,
+    ).toBe(false);
   });
 
   it('accepts empty string numero_factura', () => {
-    expect(compraSchema.safeParse({
-      ...valid,
-      numero_factura: '',
-    }).success).toBe(true);
+    expect(
+      compraSchema.safeParse({
+        ...valid,
+        numero_factura: '',
+      }).success,
+    ).toBe(true);
   });
 
   it('accepts null numero_factura', () => {
-    expect(compraSchema.safeParse({
-      ...valid,
-      numero_factura: null,
-    }).success).toBe(true);
+    expect(
+      compraSchema.safeParse({
+        ...valid,
+        numero_factura: null,
+      }).success,
+    ).toBe(true);
   });
 });
 
@@ -436,98 +473,112 @@ describe('recepcionSchema', () => {
         conforme: false,
         tipo_problema: 'faltante',
         observaciones: 'Faltaron 3 resmas del pedido',
-      }).success
+      }).success,
     ).toBe(true);
   });
 
   it('rejects non-conforme without tipo_problema', () => {
-    expect(recepcionSchema.safeParse({
-      solicitud_id: 1,
-      conforme: false,
-      observaciones: 'Faltaron 3 resmas del pedido',
-    }).success).toBe(false);
+    expect(
+      recepcionSchema.safeParse({
+        solicitud_id: 1,
+        conforme: false,
+        observaciones: 'Faltaron 3 resmas del pedido',
+      }).success,
+    ).toBe(false);
   });
 
   it('rejects non-conforme without observaciones', () => {
-    expect(recepcionSchema.safeParse({
-      solicitud_id: 1,
-      conforme: false,
-      tipo_problema: 'faltante',
-    }).success).toBe(false);
+    expect(
+      recepcionSchema.safeParse({
+        solicitud_id: 1,
+        conforme: false,
+        tipo_problema: 'faltante',
+      }).success,
+    ).toBe(false);
   });
 
   it('rejects non-conforme with short observaciones (< 10)', () => {
-    expect(recepcionSchema.safeParse({
-      solicitud_id: 1,
-      conforme: false,
-      tipo_problema: 'dañado',
-      observaciones: 'Roto',
-    }).success).toBe(false);
+    expect(
+      recepcionSchema.safeParse({
+        solicitud_id: 1,
+        conforme: false,
+        tipo_problema: 'dañado',
+        observaciones: 'Roto',
+      }).success,
+    ).toBe(false);
   });
 
   it('accepts all tipo_problema values', () => {
     for (const tipo of ['faltante', 'dañado', 'diferente', 'otro']) {
-      expect(recepcionSchema.safeParse({
-        solicitud_id: 1,
-        conforme: false,
-        tipo_problema: tipo,
-        observaciones: 'Descripción del problema encontrado',
-      }).success).toBe(true);
+      expect(
+        recepcionSchema.safeParse({
+          solicitud_id: 1,
+          conforme: false,
+          tipo_problema: tipo,
+          observaciones: 'Descripción del problema encontrado',
+        }).success,
+      ).toBe(true);
     }
   });
 
   it('rejects invalid tipo_problema', () => {
-    expect(recepcionSchema.safeParse({
-      solicitud_id: 1,
-      conforme: false,
-      tipo_problema: 'incorrecto',
-      observaciones: 'Descripción del problema encontrado',
-    }).success).toBe(false);
+    expect(
+      recepcionSchema.safeParse({
+        solicitud_id: 1,
+        conforme: false,
+        tipo_problema: 'incorrecto',
+        observaciones: 'Descripción del problema encontrado',
+      }).success,
+    ).toBe(false);
   });
 
   // ── Items-level reception ──
   it('accepts reception with items', () => {
-    expect(recepcionSchema.safeParse({
-      solicitud_id: 1,
-      conforme: true,
-      items: [
-        { item_solicitud_id: 1, cantidad_recibida: 10, conforme: true },
-        { item_solicitud_id: 2, cantidad_recibida: 5, conforme: true },
-      ],
-    }).success).toBe(true);
+    expect(
+      recepcionSchema.safeParse({
+        solicitud_id: 1,
+        conforme: true,
+        items: [
+          { item_solicitud_id: 1, cantidad_recibida: 10, conforme: true },
+          { item_solicitud_id: 2, cantidad_recibida: 5, conforme: true },
+        ],
+      }).success,
+    ).toBe(true);
   });
 
   it('accepts reception with non-conforme items', () => {
-    expect(recepcionSchema.safeParse({
-      solicitud_id: 1,
-      conforme: false,
-      tipo_problema: 'dañado',
-      observaciones: 'Algunos items llegaron dañados del envío',
-      items: [
-        { item_solicitud_id: 1, cantidad_recibida: 10, conforme: true },
-        { item_solicitud_id: 2, cantidad_recibida: 3, conforme: false, observaciones: 'Dañados' },
-      ],
-    }).success).toBe(true);
+    expect(
+      recepcionSchema.safeParse({
+        solicitud_id: 1,
+        conforme: false,
+        tipo_problema: 'dañado',
+        observaciones: 'Algunos items llegaron dañados del envío',
+        items: [
+          { item_solicitud_id: 1, cantidad_recibida: 10, conforme: true },
+          { item_solicitud_id: 2, cantidad_recibida: 3, conforme: false, observaciones: 'Dañados' },
+        ],
+      }).success,
+    ).toBe(true);
   });
 
   it('rejects item with zero cantidad_recibida', () => {
-    expect(recepcionSchema.safeParse({
-      solicitud_id: 1,
-      conforme: true,
-      items: [
-        { item_solicitud_id: 1, cantidad_recibida: 0 },
-      ],
-    }).success).toBe(false);
+    expect(
+      recepcionSchema.safeParse({
+        solicitud_id: 1,
+        conforme: true,
+        items: [{ item_solicitud_id: 1, cantidad_recibida: 0 }],
+      }).success,
+    ).toBe(false);
   });
 
   it('rejects item with negative cantidad_recibida', () => {
-    expect(recepcionSchema.safeParse({
-      solicitud_id: 1,
-      conforme: true,
-      items: [
-        { item_solicitud_id: 1, cantidad_recibida: -5 },
-      ],
-    }).success).toBe(false);
+    expect(
+      recepcionSchema.safeParse({
+        solicitud_id: 1,
+        conforme: true,
+        items: [{ item_solicitud_id: 1, cantidad_recibida: -5 }],
+      }).success,
+    ).toBe(false);
   });
 });
 
@@ -538,15 +589,17 @@ describe('proveedorSchema', () => {
   });
 
   it('accepts proveedor with all fields', () => {
-    expect(proveedorSchema.safeParse({
-      nombre: 'Librería Central',
-      cuit: '20-12345678-9',
-      datos_bancarios: 'CBU 0000000000000000000000',
-      link_pagina: 'https://libreriacentral.com',
-      telefono: '11-1234-5678',
-      email: 'ventas@libreriacentral.com',
-      direccion: 'Av. Corrientes 1234, CABA',
-    }).success).toBe(true);
+    expect(
+      proveedorSchema.safeParse({
+        nombre: 'Librería Central',
+        cuit: '20-12345678-9',
+        datos_bancarios: 'CBU 0000000000000000000000',
+        link_pagina: 'https://libreriacentral.com',
+        telefono: '11-1234-5678',
+        email: 'ventas@libreriacentral.com',
+        direccion: 'Av. Corrientes 1234, CABA',
+      }).success,
+    ).toBe(true);
   });
 
   it('rejects short proveedor name', () => {
@@ -572,20 +625,28 @@ describe('proveedorSchema', () => {
 
   // ── Telefono validation ──
   it('accepts valid phone format (XX-XXXX-XXXX)', () => {
-    expect(proveedorSchema.safeParse({ nombre: 'Test', telefono: '11-1234-5678' }).success).toBe(true);
+    expect(proveedorSchema.safeParse({ nombre: 'Test', telefono: '11-1234-5678' }).success).toBe(
+      true,
+    );
   });
 
   it('rejects invalid phone format', () => {
-    expect(proveedorSchema.safeParse({ nombre: 'Test', telefono: '1112345678' }).success).toBe(false);
+    expect(proveedorSchema.safeParse({ nombre: 'Test', telefono: '1112345678' }).success).toBe(
+      false,
+    );
   });
 
   // ── URL validation ──
   it('rejects invalid link_pagina URL', () => {
-    expect(proveedorSchema.safeParse({ nombre: 'Test', link_pagina: 'not-a-url' }).success).toBe(false);
+    expect(proveedorSchema.safeParse({ nombre: 'Test', link_pagina: 'not-a-url' }).success).toBe(
+      false,
+    );
   });
 
   it('accepts valid link_pagina URL', () => {
-    expect(proveedorSchema.safeParse({ nombre: 'Test', link_pagina: 'https://example.com' }).success).toBe(true);
+    expect(
+      proveedorSchema.safeParse({ nombre: 'Test', link_pagina: 'https://example.com' }).success,
+    ).toBe(true);
   });
 });
 
@@ -598,11 +659,13 @@ describe('centroCostoSchema', () => {
   });
 
   it('accepts with presupuestos', () => {
-    expect(centroCostoSchema.safeParse({
-      ...valid,
-      presupuesto_anual: 1_000_000,
-      presupuesto_mensual: 100_000,
-    }).success).toBe(true);
+    expect(
+      centroCostoSchema.safeParse({
+        ...valid,
+        presupuesto_anual: 1_000_000,
+        presupuesto_mensual: 100_000,
+      }).success,
+    ).toBe(true);
   });
 
   it('rejects short nombre', () => {
@@ -630,7 +693,9 @@ describe('centroCostoSchema', () => {
   });
 
   it('rejects excesive presupuesto_anual', () => {
-    expect(centroCostoSchema.safeParse({ ...valid, presupuesto_anual: 1_000_000_000 }).success).toBe(false);
+    expect(
+      centroCostoSchema.safeParse({ ...valid, presupuesto_anual: 1_000_000_000 }).success,
+    ).toBe(false);
   });
 
   it('accepts zero presupuesto', () => {
@@ -653,56 +718,85 @@ describe('procesarComprasSchema', () => {
   });
 
   it('rejects invalid priority', () => {
-    expect(procesarComprasSchema.safeParse({ ...base, prioridad_compra: 'baja' }).success).toBe(false);
+    expect(procesarComprasSchema.safeParse({ ...base, prioridad_compra: 'baja' }).success).toBe(
+      false,
+    );
   });
 
   it('accepts with optional observaciones', () => {
-    expect(procesarComprasSchema.safeParse({
-      ...base,
-      prioridad_compra: 'urgente',
-      observaciones: 'Priorizar esta compra',
-    }).success).toBe(true);
+    expect(
+      procesarComprasSchema.safeParse({
+        ...base,
+        prioridad_compra: 'urgente',
+        observaciones: 'Priorizar esta compra',
+      }).success,
+    ).toBe(true);
   });
 
   it('accepts with valid dia_pago_programado', () => {
-    expect(procesarComprasSchema.safeParse({
-      prioridad_compra: 'programado',
-      dia_pago_programado: '2026-04-15',
-    }).success).toBe(true);
+    expect(
+      procesarComprasSchema.safeParse({
+        prioridad_compra: 'programado',
+        dia_pago_programado: '2026-04-15',
+      }).success,
+    ).toBe(true);
   });
 
   it('rejects invalid dia_pago_programado', () => {
-    expect(procesarComprasSchema.safeParse({
-      prioridad_compra: 'programado',
-      dia_pago_programado: 'no-es-fecha',
-    }).success).toBe(false);
+    expect(
+      procesarComprasSchema.safeParse({
+        prioridad_compra: 'programado',
+        dia_pago_programado: 'no-es-fecha',
+      }).success,
+    ).toBe(false);
   });
 });
 
 // ─── devolucionSchema ────────────────────────────────────────────────────────
 describe('devolucionSchema', () => {
   it('accepts valid reason (>= 10 chars)', () => {
-    expect(devolucionSchema.safeParse({ observaciones: 'Falta justificación del pedido', origen: 'responsable' }).success).toBe(true);
+    expect(
+      devolucionSchema.safeParse({
+        observaciones: 'Falta justificación del pedido',
+        origen: 'responsable',
+      }).success,
+    ).toBe(true);
   });
 
   it('accepts director origen', () => {
-    expect(devolucionSchema.safeParse({ observaciones: 'Falta justificación del pedido', origen: 'director' }).success).toBe(true);
+    expect(
+      devolucionSchema.safeParse({
+        observaciones: 'Falta justificación del pedido',
+        origen: 'director',
+      }).success,
+    ).toBe(true);
   });
 
   it('rejects invalid origen', () => {
-    expect(devolucionSchema.safeParse({ observaciones: 'Falta justificación del pedido', origen: 'invalid' }).success).toBe(false);
+    expect(
+      devolucionSchema.safeParse({
+        observaciones: 'Falta justificación del pedido',
+        origen: 'invalid',
+      }).success,
+    ).toBe(false);
   });
 
   it('rejects missing origen', () => {
-    expect(devolucionSchema.safeParse({ observaciones: 'Falta justificación del pedido' }).success).toBe(false);
+    expect(
+      devolucionSchema.safeParse({ observaciones: 'Falta justificación del pedido' }).success,
+    ).toBe(false);
   });
 
   it('rejects too short reason (< 10 chars)', () => {
-    expect(devolucionSchema.safeParse({ observaciones: 'No', origen: 'responsable' }).success).toBe(false);
+    expect(devolucionSchema.safeParse({ observaciones: 'No', origen: 'responsable' }).success).toBe(
+      false,
+    );
   });
 
   it('rejects whitespace-only reason', () => {
-    expect(devolucionSchema.safeParse({ observaciones: '          ', origen: 'responsable' }).success).toBe(false);
+    expect(
+      devolucionSchema.safeParse({ observaciones: '          ', origen: 'responsable' }).success,
+    ).toBe(false);
   });
 
   it('rejects missing observaciones', () => {
@@ -713,7 +807,9 @@ describe('devolucionSchema', () => {
 // ─── rechazoSchema ───────────────────────────────────────────────────────────
 describe('rechazoSchema', () => {
   it('accepts valid motivo (>= 10 chars)', () => {
-    expect(rechazoSchema.safeParse({ motivo: 'Presupuesto insuficiente para esta compra' }).success).toBe(true);
+    expect(
+      rechazoSchema.safeParse({ motivo: 'Presupuesto insuficiente para esta compra' }).success,
+    ).toBe(true);
   });
 
   it('rejects short motivo (< 10 chars)', () => {

@@ -6,12 +6,16 @@ import { apiError } from './permissions';
  */
 export function checkOptimisticLock(
   expectedUpdatedAt: string | undefined | null,
-  currentUpdatedAt: Date
+  currentUpdatedAt: Date,
 ): Response | null {
   if (!expectedUpdatedAt) return null;
   const current = currentUpdatedAt.toISOString();
   if (current !== expectedUpdatedAt) {
-    return apiError('CONFLICT', 'Esta solicitud fue modificada por otro usuario. Recargá la página.', 409);
+    return apiError(
+      'CONFLICT',
+      'Esta solicitud fue modificada por otro usuario. Recargá la página.',
+      409,
+    );
   }
   return null;
 }

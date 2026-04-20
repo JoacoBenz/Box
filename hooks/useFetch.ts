@@ -23,10 +23,7 @@ interface UseFetchReturn<T> {
  * @param url - API endpoint URL (pass null to skip fetching)
  * @param options - Configuration options
  */
-export function useFetch<T>(
-  url: string | null,
-  options?: UseFetchOptions
-): UseFetchReturn<T> {
+export function useFetch<T>(url: string | null, options?: UseFetchOptions): UseFetchReturn<T> {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(!options?.skip && url !== null);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +82,7 @@ interface UsePollingOptions {
  */
 export function usePollingFetch<T>(
   url: string | null,
-  options?: UsePollingOptions
+  options?: UsePollingOptions,
 ): UseFetchReturn<T> {
   const result = useFetch<T>(url, { skip: options?.skip });
   const intervalMs = options?.interval ?? 30000;

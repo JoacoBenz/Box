@@ -21,8 +21,10 @@ export default function LoginPage() {
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(() => {
     const err = searchParams.get('error');
-    if (err === 'OAuthAccountNotLinked') return 'Esta cuenta OAuth no está vinculada a un usuario. Contactá a tu administrador.';
-    if (err === 'AccessDenied') return 'Acceso denegado. Tu organización no tiene SSO habilitado para este proveedor.';
+    if (err === 'OAuthAccountNotLinked')
+      return 'Esta cuenta OAuth no está vinculada a un usuario. Contactá a tu administrador.';
+    if (err === 'AccessDenied')
+      return 'Acceso denegado. Tu organización no tiene SSO habilitado para este proveedor.';
     if (err) return 'Error al iniciar sesión';
     return null;
   });
@@ -104,29 +106,67 @@ export default function LoginPage() {
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
             <span style={{ fontSize: 36 }}>📦</span>
-            <span style={{ fontWeight: 800, fontSize: 22, letterSpacing: '-0.5px', color: '#00C2CB' }}>Box</span>
+            <span
+              style={{ fontWeight: 800, fontSize: 22, letterSpacing: '-0.5px', color: '#00C2CB' }}
+            >
+              Box
+            </span>
           </div>
-          <Title level={3} style={{ marginBottom: 4, fontWeight: 700 }}>Gestión de Compras</Title>
-          <Text type="secondary" style={{ fontSize: 14 }}>Ingresá con tu cuenta</Text>
+          <Title level={3} style={{ marginBottom: 4, fontWeight: 700 }}>
+            Gestión de Compras
+          </Title>
+          <Text type="secondary" style={{ fontSize: 14 }}>
+            Ingresá con tu cuenta
+          </Text>
         </div>
 
-        {error && <Alert title={error} type="error" showIcon style={{ marginBottom: 20, borderRadius: 10 }} />}
+        {error && (
+          <Alert
+            title={error}
+            type="error"
+            showIcon
+            style={{ marginBottom: 20, borderRadius: 10 }}
+          />
+        )}
 
-        <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off" size="large" {...formProps}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={onFinish}
+          autoComplete="off"
+          size="large"
+          {...formProps}
+        >
           <div className="anim-field-1">
-            <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email', message: 'Ingresá un email válido' }]}>
-              <Input prefix={<UserOutlined style={{ color: tokens.textMuted }} />} placeholder="tu@empresa.com" />
+            <Form.Item
+              name="email"
+              label="Email"
+              rules={[{ required: true, type: 'email', message: 'Ingresá un email válido' }]}
+            >
+              <Input
+                prefix={<UserOutlined style={{ color: tokens.textMuted }} />}
+                placeholder="tu@empresa.com"
+              />
             </Form.Item>
           </div>
 
           <div className="anim-field-2">
-            <Form.Item name="password" label="Contraseña" rules={[{ required: true, message: 'Ingresá tu contraseña' }]}>
-              <Input.Password prefix={<LockOutlined style={{ color: tokens.textMuted }} />} placeholder="••••••••" />
+            <Form.Item
+              name="password"
+              label="Contraseña"
+              rules={[{ required: true, message: 'Ingresá tu contraseña' }]}
+            >
+              <Input.Password
+                prefix={<LockOutlined style={{ color: tokens.textMuted }} />}
+                placeholder="••••••••"
+              />
             </Form.Item>
           </div>
 
           <div style={{ textAlign: 'right', marginTop: -8, marginBottom: 8 }}>
-            <Link href="/recuperar" style={{ fontSize: 13, color: tokens.forgotPasswordColor }}>¿Olvidaste tu contraseña?</Link>
+            <Link href="/recuperar" style={{ fontSize: 13, color: tokens.forgotPasswordColor }}>
+              ¿Olvidaste tu contraseña?
+            </Link>
           </div>
 
           <div className="anim-field-3">
@@ -156,8 +196,24 @@ export default function LoginPage() {
         </Form>
 
         <div style={{ position: 'relative', textAlign: 'center', margin: '20px 0' }}>
-          <div style={{ borderTop: `1px solid ${tokens.loginDivider}`, position: 'absolute', top: '50%', left: 0, right: 0 }} />
-          <Text type="secondary" style={{ fontSize: 12, background: tokens.loginContinueBg, padding: '0 12px', position: 'relative' }}>
+          <div
+            style={{
+              borderTop: `1px solid ${tokens.loginDivider}`,
+              position: 'absolute',
+              top: '50%',
+              left: 0,
+              right: 0,
+            }}
+          />
+          <Text
+            type="secondary"
+            style={{
+              fontSize: 12,
+              background: tokens.loginContinueBg,
+              padding: '0 12px',
+              position: 'relative',
+            }}
+          >
             o continuar con
           </Text>
         </div>
@@ -179,7 +235,10 @@ export default function LoginPage() {
             size="large"
             icon={<WindowsOutlined />}
             loading={oauthLoading === 'microsoft'}
-            onClick={() => { setOauthLoading('microsoft'); signIn('microsoft-entra-id', { callbackUrl: '/' }); }}
+            onClick={() => {
+              setOauthLoading('microsoft');
+              signIn('microsoft-entra-id', { callbackUrl: '/' });
+            }}
             style={{ height: 44, fontWeight: 600, borderRadius: 10 }}
           >
             Microsoft
@@ -187,11 +246,21 @@ export default function LoginPage() {
         </div>
 
         <div style={{ textAlign: 'center', paddingTop: 16 }}>
-          <Text type="secondary" style={{ fontSize: 13 }}>¿Tu organización aún no está registrada?</Text>
-          <Link href="/registro" style={{ fontSize: 13, fontWeight: 600 }}> Registrarse</Link>
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            ¿Tu organización aún no está registrada?
+          </Text>
+          <Link href="/registro" style={{ fontSize: 13, fontWeight: 600 }}>
+            {' '}
+            Registrarse
+          </Link>
           <br />
-          <Text type="secondary" style={{ fontSize: 13 }}>¿Querés unirte a una organización existente?</Text>
-          <Link href="/unirse" style={{ fontSize: 13, fontWeight: 600 }}> Unirse</Link>
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            ¿Querés unirte a una organización existente?
+          </Text>
+          <Link href="/unirse" style={{ fontSize: 13, fontWeight: 600 }}>
+            {' '}
+            Unirse
+          </Link>
         </div>
       </Card>
     </>

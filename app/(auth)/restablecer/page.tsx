@@ -20,12 +20,24 @@ export default function RestablecerPage() {
 
   if (!token) {
     return (
-      <Card style={{ width: 420, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: 'none', borderRadius: 20 }} styles={{ body: { padding: '40px 36px' } }}>
+      <Card
+        style={{
+          width: 420,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+          border: 'none',
+          borderRadius: 20,
+        }}
+        styles={{ body: { padding: '40px 36px' } }}
+      >
         <Result
           status="error"
           title="Enlace inválido"
           subTitle="Este enlace no contiene un token válido."
-          extra={<Link href="/recuperar"><Button type="primary">Solicitar nuevo enlace</Button></Link>}
+          extra={
+            <Link href="/recuperar">
+              <Button type="primary">Solicitar nuevo enlace</Button>
+            </Link>
+          }
         />
       </Card>
     );
@@ -53,12 +65,24 @@ export default function RestablecerPage() {
 
   if (success) {
     return (
-      <Card style={{ width: 420, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: 'none', borderRadius: 20 }} styles={{ body: { padding: '40px 36px' } }}>
+      <Card
+        style={{
+          width: 420,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+          border: 'none',
+          borderRadius: 20,
+        }}
+        styles={{ body: { padding: '40px 36px' } }}
+      >
         <Result
           status="success"
           title="Contraseña restablecida"
           subTitle="Ya podés iniciar sesión con tu nueva contraseña."
-          extra={<Link href="/login"><Button type="primary">Ir al login</Button></Link>}
+          extra={
+            <Link href="/login">
+              <Button type="primary">Ir al login</Button>
+            </Link>
+          }
         />
       </Card>
     );
@@ -66,17 +90,40 @@ export default function RestablecerPage() {
 
   return (
     <Card
-      style={{ width: 420, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: 'none', borderRadius: 20 }}
+      style={{
+        width: 420,
+        boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+        border: 'none',
+        borderRadius: 20,
+      }}
       styles={{ body: { padding: '40px 36px' } }}
     >
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
-        <Title level={3} style={{ marginBottom: 4, fontWeight: 700 }}>Nueva contraseña</Title>
-        <Text type="secondary" style={{ fontSize: 14 }}>Mínimo 10 caracteres, mayúscula, minúscula, número y especial</Text>
+        <Title level={3} style={{ marginBottom: 4, fontWeight: 700 }}>
+          Nueva contraseña
+        </Title>
+        <Text type="secondary" style={{ fontSize: 14 }}>
+          Mínimo 10 caracteres, mayúscula, minúscula, número y especial
+        </Text>
       </div>
 
-      {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16, borderRadius: 10 }} />}
+      {error && (
+        <Alert
+          type="error"
+          message={error}
+          showIcon
+          style={{ marginBottom: 16, borderRadius: 10 }}
+        />
+      )}
 
-      <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off" size="large" {...formProps}>
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={onFinish}
+        autoComplete="off"
+        size="large"
+        {...formProps}
+      >
         <Form.Item
           name="password"
           label="Nueva contraseña"
@@ -89,7 +136,10 @@ export default function RestablecerPage() {
             { pattern: /[^A-Za-z0-9]/, message: 'Debe contener al menos un carácter especial' },
           ]}
         >
-          <Input.Password prefix={<LockOutlined style={{ color: '#a0aec0' }} />} placeholder="••••••••••" />
+          <Input.Password
+            prefix={<LockOutlined style={{ color: '#a0aec0' }} />}
+            placeholder="••••••••••"
+          />
         </Form.Item>
 
         <Form.Item
@@ -106,7 +156,10 @@ export default function RestablecerPage() {
             }),
           ]}
         >
-          <Input.Password prefix={<LockOutlined style={{ color: '#a0aec0' }} />} placeholder="••••••••••" />
+          <Input.Password
+            prefix={<LockOutlined style={{ color: '#a0aec0' }} />}
+            placeholder="••••••••••"
+          />
         </Form.Item>
 
         <Form.Item style={{ marginBottom: 16 }}>

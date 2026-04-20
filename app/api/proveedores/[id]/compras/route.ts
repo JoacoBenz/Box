@@ -3,10 +3,7 @@ import { getServerSession } from '@/lib/auth';
 import { tenantPrisma, prisma } from '@/lib/prisma';
 import { getEffectiveTenantId } from '@/lib/tenant-override';
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { effectiveTenantId } = await getEffectiveTenantId(request);
   const { id } = await params;
   const proveedorId = Number(id);

@@ -15,7 +15,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
-      return Response.json({ error: { code: 'VALIDATION_ERROR', message: 'Email inválido' } }, { status: 400 });
+      return Response.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'Email inválido' } },
+        { status: 400 },
+      );
     }
 
     const { email } = parsed.data;
@@ -23,7 +26,10 @@ export async function POST(request: NextRequest) {
     const rateLimit = await checkRateLimitDb(`forgot:${email}`, 3, 3_600_000);
     if (!rateLimit.allowed) {
       // Still return success to not reveal rate limiting per email
-      return Response.json({ message: 'Si el email está registrado, te enviamos un enlace para restablecer tu contraseña.' });
+      return Response.json({
+        message:
+          'Si el email está registrado, te enviamos un enlace para restablecer tu contraseña.',
+      });
     }
 
     const usuario = await prisma.usuarios.findFirst({
@@ -71,9 +77,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return Response.json({ message: 'Si el email está registrado, te enviamos un enlace para restablecer tu contraseña.' });
+    return Response.json({
+      message: 'Si el email está registrado, te enviamos un enlace para restablecer tu contraseña.',
+    });
   } catch (error) {
     logApiError('/api/auth/forgot-password', 'POST', error);
-    return Response.json({ message: 'Si el email está registrado, te enviamos un enlace para restablecer tu contraseña.' });
+    return Response.json({
+      message: 'Si el email está registrado, te enviamos un enlace para restablecer tu contraseña.',
+    });
   }
 }

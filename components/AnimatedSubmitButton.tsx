@@ -66,20 +66,47 @@ const STYLES = `
 `;
 
 const PaperPlaneIcon: React.FC = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="white"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M22 2L11 13" />
     <path d="M22 2L15 22L11 13L2 9L22 2Z" />
   </svg>
 );
 
 const CheckIcon: React.FC<{ color?: string }> = ({ color = 'white' }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="3"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M5 13l4 4L19 7" />
   </svg>
 );
 
 const XIcon: React.FC<{ color?: string }> = ({ color = 'white' }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="3"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M18 6L6 18" />
     <path d="M6 6l12 12" />
   </svg>
@@ -212,53 +239,51 @@ export default function AnimatedSubmitButton({
     ...style,
   };
 
-  const particles = variant === 'send' && state === 'flying'
-    ? [0, 1, 2, 3].map((i) => {
-        const delay = i * 180;
-        const offsetX = 30 + i * 30;
-        const offsetY = -(50 + i * 50);
-        return (
-          <span
-            key={i}
-            style={{
-              position: 'absolute',
-              width: 6 - i,
-              height: 6 - i,
-              borderRadius: '50%',
-              background: 'white',
-              left: '50%',
-              top: '50%',
-              marginLeft: offsetX,
-              marginTop: offsetY,
-              animation: `asb-particle 1000ms ${delay}ms ease-out forwards`,
-              opacity: 0,
-              pointerEvents: 'none',
-            }}
-          />
-        );
-      })
-    : null;
+  const particles =
+    variant === 'send' && state === 'flying'
+      ? [0, 1, 2, 3].map((i) => {
+          const delay = i * 180;
+          const offsetX = 30 + i * 30;
+          const offsetY = -(50 + i * 50);
+          return (
+            <span
+              key={i}
+              style={{
+                position: 'absolute',
+                width: 6 - i,
+                height: 6 - i,
+                borderRadius: '50%',
+                background: 'white',
+                left: '50%',
+                top: '50%',
+                marginLeft: offsetX,
+                marginTop: offsetY,
+                animation: `asb-particle 1000ms ${delay}ms ease-out forwards`,
+                opacity: 0,
+                pointerEvents: 'none',
+              }}
+            />
+          );
+        })
+      : null;
 
   const renderContent = () => {
     switch (state) {
       case 'idle':
-        return (
-          <span style={{ whiteSpace: 'nowrap' }}>
-            {children}
-          </span>
-        );
+        return <span style={{ whiteSpace: 'nowrap' }}>{children}</span>;
 
       case 'morphing':
-        return (
-          <span style={{ animation: 'asb-fade-out 150ms ease forwards' }}>
-            {children}
-          </span>
-        );
+        return <span style={{ animation: 'asb-fade-out 150ms ease forwards' }}>{children}</span>;
 
       case 'flying':
         if (variant === 'send') {
           return (
-            <span style={{ animation: 'asb-fly-away 1400ms cubic-bezier(0.25, 0, 0.15, 1) forwards', display: 'flex' }}>
+            <span
+              style={{
+                animation: 'asb-fly-away 1400ms cubic-bezier(0.25, 0, 0.15, 1) forwards',
+                display: 'flex',
+              }}
+            >
               <span style={{ animation: 'asb-fade-in 300ms ease forwards', display: 'flex' }}>
                 <PaperPlaneIcon />
               </span>

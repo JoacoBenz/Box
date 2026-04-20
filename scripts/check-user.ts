@@ -10,7 +10,9 @@ async function main() {
   });
   console.log('Found users:', users.length);
   for (const u of users) {
-    console.log(`  id=${u.id} tenant=${u.tenant_id} area=${u.area_id} oauth=${u.oauth_provider} roles=${u.usuarios_roles.map(r => r.rol.nombre).join(',')}`);
+    console.log(
+      `  id=${u.id} tenant=${u.tenant_id} area=${u.area_id} oauth=${u.oauth_provider} roles=${u.usuarios_roles.map((r) => r.rol.nombre).join(',')}`,
+    );
   }
   if (users.length > 0) {
     // Delete all
@@ -24,4 +26,6 @@ async function main() {
   }
 }
 
-main().catch(e => console.error('Error:', e)).finally(() => p.$disconnect());
+main()
+  .catch((e) => console.error('Error:', e))
+  .finally(() => p.$disconnect());
