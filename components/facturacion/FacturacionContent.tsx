@@ -15,7 +15,7 @@ import {
 } from 'antd';
 import { useSearchParams } from 'next/navigation';
 
-const { Title, Text, Paragraph } = Typography;
+const { Text } = Typography;
 
 type Subscription = {
   tenantId: number;
@@ -50,16 +50,12 @@ const ESTADO_TAG: Record<Subscription['estado'], { color: string; label: string 
   unpaid: { color: 'red', label: 'Impaga' },
 };
 
-type Props = {
-  /** When true, render a page-level heading ("Facturación"). Set false when embedded (e.g. inside tabs). */
-  showHeading?: boolean;
-};
-
 /**
- * Billing UI. Used standalone at /facturacion AND embedded inside the
- * /perfil page as a tab for director/admin users.
+ * Billing UI. Se renderiza embebida como tab dentro de /perfil para
+ * roles director/admin/super_admin. No usa heading propio porque vive
+ * bajo el <Tabs> del perfil.
  */
-export function FacturacionContent({ showHeading = true }: Props) {
+export function FacturacionContent() {
   const searchParams = useSearchParams();
   const reason = searchParams.get('reason');
   const checkout = searchParams.get('checkout');
@@ -154,15 +150,6 @@ export function FacturacionContent({ showHeading = true }: Props) {
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%', maxWidth: 900 }}>
-      {showHeading && (
-        <div>
-          <Title level={2} style={{ margin: 0 }}>
-            Facturación
-          </Title>
-          <Paragraph type="secondary">Gestioná tu plan, facturas y método de pago.</Paragraph>
-        </div>
-      )}
-
       {checkout === 'success' && (
         <Alert
           type="success"

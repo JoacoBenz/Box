@@ -270,7 +270,7 @@ export default function PerfilPage() {
 
   const facturacionTab = (
     <Suspense fallback={null}>
-      <FacturacionContent showHeading={false} />
+      <FacturacionContent />
     </Suspense>
   );
 

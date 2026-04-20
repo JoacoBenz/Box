@@ -82,7 +82,7 @@ export function SubscriptionBanner({ estado, trialDaysLeft, cancelAtPeriodEnd }:
               reactivarla desde el portal.
             </span>
             <Link href={BILLING_URL}>
-              <Button size="small">Ir a facturación</Button>
+              <Button size="small">Ir a Facturación</Button>
             </Link>
           </Space>
         }
