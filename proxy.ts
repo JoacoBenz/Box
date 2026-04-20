@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { getSubscriptionStatus } from '@/lib/subscription';
+import { BILLING_BASE_PATH, BILLING_TAB_KEY } from '@/lib/billing-links';
 
 // Next.js 16 proxy (middleware) always runs on Node.js runtime, so Prisma
 // is safe to call for the subscription check below.
@@ -26,7 +27,8 @@ const PUBLIC_ROUTES = [
  * and Stripe callbacks must be able to notify the app.
  */
 const SUBSCRIPTION_EXEMPT_ROUTES = [
-  '/facturacion',
+  '/perfil',
+  '/facturacion', // legacy redirect kept for old deep-links / Stripe return_url
   '/api/stripe',
   '/api/auth',
   '/api/health',
@@ -91,7 +93,8 @@ export async function proxy(request: NextRequest) {
   if (!isSubscriptionExempt) {
     const subscription = await getSubscriptionStatus(token.tenantId);
     if (!subscription || !subscription.hasAccess) {
-      const url = new URL('/facturacion', request.url);
+      const url = new URL(BILLING_BASE_PATH, request.url);
+      url.searchParams.set('tab', BILLING_TAB_KEY);
       url.searchParams.set('reason', subscription ? subscription.estado : 'no_subscription');
       return NextResponse.redirect(url);
     }

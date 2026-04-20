@@ -1,7 +1,9 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
+  Alert,
   Card,
   Form,
   Input,
@@ -22,6 +24,7 @@ import {
 } from '@ant-design/icons';
 import { useFormValid } from '@/hooks/useFormValid';
 import { FacturacionContent } from '@/components/facturacion/FacturacionContent';
+import { BILLING_TAB_KEY, isBillingBlockedReason, isBillingReason } from '@/lib/billing-links';
 
 const { Title } = Typography;
 
@@ -45,6 +48,18 @@ const ROL_LABELS: Record<string, string> = {
 };
 
 export default function PerfilPage() {
+  const searchParams = useSearchParams();
+  // Support deep-links from Stripe checkout, SubscriptionBanner and the
+  // proxy (which redirects here on expired/canceled subs). Only known
+  // billing reasons open the Facturación tab — unrelated ?reason= values
+  // leave the default "Mi cuenta" tab selected.
+  const reasonParam = searchParams.get('reason');
+  const initialTab =
+    searchParams.get('tab') === BILLING_TAB_KEY ||
+    isBillingReason(reasonParam) ||
+    searchParams.get('checkout') === 'success'
+      ? BILLING_TAB_KEY
+      : 'cuenta';
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -255,7 +270,7 @@ export default function PerfilPage() {
 
   const facturacionTab = (
     <Suspense fallback={null}>
-      <FacturacionContent showHeading={false} />
+      <FacturacionContent />
     </Suspense>
   );
 
@@ -272,7 +287,7 @@ export default function PerfilPage() {
     ...(canManageBilling
       ? [
           {
-            key: 'facturacion',
+            key: BILLING_TAB_KEY,
             label: (
               <span>
                 <CreditCardOutlined /> Facturación
@@ -284,6 +299,11 @@ export default function PerfilPage() {
       : []),
   ];
 
+  // When the proxy redirects a user without billing permissions here
+  // because their tenant is blocked, explain the situation — the
+  // Facturación tab won't exist for them to "just fix it".
+  const blockedWithoutPermission = !canManageBilling && isBillingBlockedReason(reasonParam);
+
   return (
     <div className="page-content" style={{ maxWidth: 900 }}>
       <Title
@@ -292,7 +312,21 @@ export default function PerfilPage() {
       >
         Mi Perfil
       </Title>
-      <Tabs defaultActiveKey="cuenta" items={tabs} size="large" />
+      {blockedWithoutPermission && (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="Tu organización no tiene acceso activo al sistema"
+          description={
+            <>
+              La suscripción de <strong>{profile.organizacion ?? 'tu organización'}</strong> está
+              inactiva. Contactá a la dirección para reactivar el plan.
+            </>
+          }
+        />
+      )}
+      <Tabs defaultActiveKey={initialTab} items={tabs} size="large" />
     </div>
   );
 }

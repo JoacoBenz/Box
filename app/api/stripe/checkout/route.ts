@@ -3,6 +3,7 @@ import { getStripe, isStripeEnabled } from '@/lib/stripe';
 import { getSubscriptionStatusFresh } from '@/lib/subscription';
 import { prisma } from '@/lib/prisma';
 import { logApiError } from '@/lib/logger';
+import { BILLING_URL } from '@/lib/billing-links';
 
 /**
  * POST /api/stripe/checkout
@@ -48,8 +49,9 @@ export const POST = withAuth(
     }
 
     const body = await request.json().catch(() => ({}));
-    const returnUrl: string = body.return_url ?? `${request.headers.get('origin')}/facturacion`;
-    const cancelUrl: string = body.cancel_url ?? `${request.headers.get('origin')}/facturacion`;
+    const origin = request.headers.get('origin') ?? '';
+    const returnUrl: string = body.return_url ?? `${origin}${BILLING_URL}`;
+    const cancelUrl: string = body.cancel_url ?? `${origin}${BILLING_URL}`;
 
     try {
       // Reuse existing Stripe customer if we have one; otherwise create one.
@@ -71,12 +73,17 @@ export const POST = withAuth(
         });
       }
 
+      // returnUrl may already contain a query string (?tab=facturacion);
+      // append &checkout=success accordingly so we don't clobber it.
+      const successUrl = returnUrl.includes('?')
+        ? `${returnUrl}&checkout=success`
+        : `${returnUrl}?checkout=success`;
       const checkout = await stripe.checkout.sessions.create({
         mode: 'subscription',
         customer: customerId,
         line_items: [{ price: priceId, quantity: 1 }],
         client_reference_id: String(session.tenantId),
-        success_url: `${returnUrl}?checkout=success`,
+        success_url: successUrl,
         cancel_url: cancelUrl,
         metadata: { tenant_id: String(session.tenantId) },
       });

@@ -6,17 +6,21 @@ import { getPlanUsage } from '@/lib/plan-limits';
  * GET /api/stripe/subscription
  *
  * Returns current subscription snapshot + plan usage (areas, CCs, role counts)
- * for the /facturacion page.
+ * for the /facturacion page. Gated to billing-capable roles — the rest of
+ * the tenant has no business seeing plan limits / Stripe IDs.
  */
-export const GET = withAuth({}, async (_request, { session }) => {
-  const subscription = await getSubscriptionStatusFresh(session.tenantId);
-  if (!subscription) {
-    return Response.json(
-      { error: { code: 'NO_SUBSCRIPTION', message: 'Sin suscripción' } },
-      { status: 404 },
-    );
-  }
+export const GET = withAuth(
+  { roles: ['admin', 'director', 'super_admin'] },
+  async (_request, { session }) => {
+    const subscription = await getSubscriptionStatusFresh(session.tenantId);
+    if (!subscription) {
+      return Response.json(
+        { error: { code: 'NO_SUBSCRIPTION', message: 'Sin suscripción' } },
+        { status: 404 },
+      );
+    }
 
-  const usage = await getPlanUsage(session.tenantId);
-  return Response.json({ subscription, usage });
-});
+    const usage = await getPlanUsage(session.tenantId);
+    return Response.json({ subscription, usage });
+  },
+);

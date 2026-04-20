@@ -223,7 +223,7 @@ describe('proxy (Next.js 16 middleware)', () => {
       expect(res.status).toBe(200);
     });
 
-    it('redirects to /facturacion when subscription is canceled', async () => {
+    it('redirects to /perfil?tab=facturacion when subscription is canceled', async () => {
       mockedGetSubscription.mockResolvedValue({
         ...activeSubscription(),
         estado: 'canceled',
@@ -231,18 +231,30 @@ describe('proxy (Next.js 16 middleware)', () => {
       });
       const res = await proxy(makeRequest('/solicitudes'));
       expect(res.status).toBe(307);
-      expect(res.headers.get('location')).toContain('/facturacion');
+      expect(res.headers.get('location')).toContain('/perfil');
+      expect(res.headers.get('location')).toContain('tab=facturacion');
       expect(res.headers.get('location')).toContain('reason=canceled');
     });
 
-    it('redirects to /facturacion when tenant has no subscription row', async () => {
+    it('redirects to /perfil?tab=facturacion when tenant has no subscription row', async () => {
       mockedGetSubscription.mockResolvedValue(null);
       const res = await proxy(makeRequest('/solicitudes'));
       expect(res.status).toBe(307);
+      expect(res.headers.get('location')).toContain('tab=facturacion');
       expect(res.headers.get('location')).toContain('reason=no_subscription');
     });
 
-    it('lets /facturacion through even when subscription is canceled', async () => {
+    it('lets /perfil through even when subscription is canceled', async () => {
+      mockedGetSubscription.mockResolvedValue({
+        ...activeSubscription(),
+        estado: 'canceled',
+        hasAccess: false,
+      });
+      const res = await proxy(makeRequest('/perfil'));
+      expect(res.status).toBe(200);
+    });
+
+    it('keeps the legacy /facturacion route exempt (redirects to /perfil at page-level)', async () => {
       mockedGetSubscription.mockResolvedValue({
         ...activeSubscription(),
         estado: 'canceled',
