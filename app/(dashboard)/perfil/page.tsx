@@ -45,14 +45,27 @@ const ROL_LABELS: Record<string, string> = {
   solicitante: 'Solicitante',
 };
 
+/** Reasons that specifically indicate a billing redirect from the proxy. */
+const BILLING_REASONS = new Set([
+  'trialing',
+  'active',
+  'past_due',
+  'canceled',
+  'unpaid',
+  'no_subscription',
+]);
+
 export default function PerfilPage() {
   const searchParams = useSearchParams();
   // Support deep-links from Stripe checkout, SubscriptionBanner and the
-  // proxy (which redirects here on expired/canceled subs).
+  // proxy (which redirects here on expired/canceled subs). Only known
+  // billing reasons open the Facturación tab — unrelated ?reason= values
+  // leave the default "Mi cuenta" tab selected.
+  const reasonParam = searchParams.get('reason');
   const initialTab =
     searchParams.get('tab') === 'facturacion' ||
-    searchParams.get('reason') ||
-    searchParams.get('checkout')
+    (reasonParam && BILLING_REASONS.has(reasonParam)) ||
+    searchParams.get('checkout') === 'success'
       ? 'facturacion'
       : 'cuenta';
   const [profile, setProfile] = useState<Profile | null>(null);
