@@ -63,6 +63,7 @@ describe('proxy (Next.js 16 middleware)', () => {
       '/api/registro',
       '/api/unirse',
       '/api/health',
+      '/api/mercadopago/webhook',
     ];
 
     for (const path of publicPaths) {

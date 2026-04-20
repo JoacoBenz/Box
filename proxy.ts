@@ -19,6 +19,7 @@ const PUBLIC_ROUTES = [
   '/api/registro',
   '/api/unirse',
   '/api/health',
+  '/api/mercadopago/webhook',
 ];
 
 /**
