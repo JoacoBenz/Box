@@ -1,6 +1,5 @@
 import { prisma } from './prisma';
 import { cached, invalidateTenantCache } from './cache';
-import type Stripe from 'stripe';
 
 export type SubscriptionEstado = 'trialing' | 'active' | 'past_due' | 'canceled' | 'unpaid';
 
@@ -12,8 +11,8 @@ export type SubscriptionSnapshot = {
   trialEndsAt: Date | null;
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
-  stripeCustomerId: string | null;
-  stripeSubscriptionId: string | null;
+  mpPreapprovalId: string | null;
+  mpPayerEmail: string | null;
   /** true when the tenant can still use the product right now. */
   hasAccess: boolean;
   /** days left in trial, >=0, or null if not trialing. */
@@ -69,7 +68,7 @@ async function fetchSnapshot(tenantId: number): Promise<SubscriptionSnapshot | n
       hasAccess = true;
       break;
     case 'past_due': {
-      // Allow a short grace window after the failed payment before blocking.
+      // Short grace window tras fallo de cobro antes de bloquear.
       const anchor = sub.current_period_end?.getTime() ?? sub.updated_at.getTime();
       hasAccess = now < anchor + GRACE_DAYS_PAST_DUE * 24 * 60 * 60 * 1000;
       break;
@@ -93,124 +92,115 @@ async function fetchSnapshot(tenantId: number): Promise<SubscriptionSnapshot | n
     trialEndsAt: sub.trial_ends_at,
     currentPeriodEnd: sub.current_period_end,
     cancelAtPeriodEnd: sub.cancel_at_period_end,
-    stripeCustomerId: sub.stripe_customer_id,
-    stripeSubscriptionId: sub.stripe_subscription_id,
+    mpPreapprovalId: sub.mp_preapproval_id,
+    mpPayerEmail: sub.mp_payer_email,
     hasAccess,
     trialDaysLeft,
   };
 }
 
-/** Cached read of a tenant's subscription. Use from the proxy (hot path). */
+/** Cached read de una suscripción. Usado por el proxy (hot path). */
 export async function getSubscriptionStatus(
   tenantId: number,
 ): Promise<SubscriptionSnapshot | null> {
   return cached(`t:${tenantId}:subscription`, CACHE_TTL_MS, () => fetchSnapshot(tenantId));
 }
 
-/** Uncached read — use in handlers that mutate subscription state. */
+/** Uncached read — usar en handlers que mutan estado. */
 export function getSubscriptionStatusFresh(tenantId: number): Promise<SubscriptionSnapshot | null> {
   return fetchSnapshot(tenantId);
 }
 
 /**
- * Map a Stripe Subscription object to our DB columns. Keeps the webhook
- * handler pure: given any sub from Stripe, it knows exactly what to write.
+ * Mapea un estado de MP Preapproval a nuestro estado interno.
+ *
+ * MP preapproval.status:
+ *   - pending   : el usuario todavía no autorizó → tratamos como trialing
+ *   - authorized: autorizada y cobrando → active
+ *   - paused    : MP pausó por fallo recurrente → past_due
+ *   - cancelled : cancelada → canceled
+ *   - expired   : tarjeta expiró, cuenta caducada → unpaid
  */
-export function stripeSubscriptionToColumns(sub: Stripe.Subscription) {
-  const estado = mapStripeStatus(sub.status);
-  // Stripe periods live on the subscription items since API 2025-09-30;
-  // fall back to the root for older shapes to stay compatible.
-  const stripeAny = sub as unknown as {
-    current_period_start?: number;
-    current_period_end?: number;
-  };
-  const firstItem = sub.items?.data?.[0] as unknown as
-    | { current_period_start?: number; current_period_end?: number }
-    | undefined;
-  const periodStart = firstItem?.current_period_start ?? stripeAny.current_period_start;
-  const periodEnd = firstItem?.current_period_end ?? stripeAny.current_period_end;
-  return {
-    estado,
-    stripe_subscription_id: sub.id,
-    stripe_customer_id: typeof sub.customer === 'string' ? sub.customer : sub.customer.id,
-    current_period_start: periodStart ? new Date(periodStart * 1000) : null,
-    current_period_end: periodEnd ? new Date(periodEnd * 1000) : null,
-    cancel_at_period_end: sub.cancel_at_period_end,
-    canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000) : null,
-  };
-}
-
-function mapStripeStatus(status: Stripe.Subscription.Status): SubscriptionEstado {
+export function mapMpPreapprovalStatus(status: string): SubscriptionEstado {
   switch (status) {
-    case 'trialing':
-      return 'trialing';
-    case 'active':
+    case 'authorized':
       return 'active';
-    case 'past_due':
-      return 'past_due';
-    case 'canceled':
-      return 'canceled';
-    case 'unpaid':
-    case 'incomplete':
-    case 'incomplete_expired':
     case 'paused':
+      return 'past_due';
+    case 'cancelled':
+      return 'canceled';
+    case 'expired':
       return 'unpaid';
+    case 'pending':
     default:
-      return 'unpaid';
+      return 'trialing';
   }
-}
-
-/** Mark a subscription as canceled (e.g. customer.subscription.deleted event). */
-export async function markSubscriptionCanceled(stripeSubscriptionId: string): Promise<void> {
-  const sub = await prisma.suscripciones.findUnique({
-    where: { stripe_subscription_id: stripeSubscriptionId },
-    select: { tenant_id: true },
-  });
-  if (!sub) return;
-  await prisma.suscripciones.update({
-    where: { stripe_subscription_id: stripeSubscriptionId },
-    data: { estado: 'canceled', canceled_at: new Date() },
-  });
-  invalidateTenantCache(sub.tenant_id);
-}
-
-/** Apply a Stripe Subscription snapshot to the matching suscripciones row. */
-export async function syncSubscriptionFromStripe(sub: Stripe.Subscription): Promise<void> {
-  const data = stripeSubscriptionToColumns(sub);
-  const existing = await prisma.suscripciones.findUnique({
-    where: { stripe_subscription_id: sub.id },
-    select: { tenant_id: true },
-  });
-  if (!existing) {
-    // No-op: we only update subs we already own. Orphan webhooks can happen
-    // during dev / across Stripe accounts; swallowing is safer than guessing
-    // the tenant.
-    return;
-  }
-  await prisma.suscripciones.update({
-    where: { stripe_subscription_id: sub.id },
-    data,
-  });
-  invalidateTenantCache(existing.tenant_id);
 }
 
 /**
- * Invoked on checkout.session.completed. Ties a freshly paid Stripe sub to
- * the tenant that was trialing, using client_reference_id carried through
- * checkout.
+ * Invoked on preapproval authorization (webhook subscription_preapproval
+ * con status=authorized). Ata una Preapproval recién creada al tenant que
+ * estaba en trial, usando external_reference.
  */
-export async function attachStripeSubscriptionToTenant(args: {
+export async function attachMpPreapprovalToTenant(args: {
   tenantId: number;
-  stripeCustomerId: string;
-  stripeSubscriptionId: string;
+  mpPreapprovalId: string;
+  payerEmail: string | null;
+  currentPeriodStart: Date | null;
+  currentPeriodEnd: Date | null;
 }): Promise<void> {
   await prisma.suscripciones.update({
     where: { tenant_id: args.tenantId },
     data: {
-      stripe_customer_id: args.stripeCustomerId,
-      stripe_subscription_id: args.stripeSubscriptionId,
+      mp_preapproval_id: args.mpPreapprovalId,
+      mp_payer_email: args.payerEmail,
       estado: 'active',
+      current_period_start: args.currentPeriodStart,
+      current_period_end: args.currentPeriodEnd,
+      cancel_at_period_end: false,
+      canceled_at: null,
     },
   });
   invalidateTenantCache(args.tenantId);
+}
+
+/**
+ * Aplica un snapshot de preapproval de MP a la fila correspondiente.
+ * Si no tenemos el preapproval en DB (orphan webhook), no-op.
+ */
+export async function syncSubscriptionFromMp(args: {
+  mpPreapprovalId: string;
+  status: string;
+  nextPaymentDate: Date | null;
+  canceledAt: Date | null;
+}): Promise<void> {
+  const existing = await prisma.suscripciones.findUnique({
+    where: { mp_preapproval_id: args.mpPreapprovalId },
+    select: { tenant_id: true },
+  });
+  if (!existing) return;
+
+  await prisma.suscripciones.update({
+    where: { mp_preapproval_id: args.mpPreapprovalId },
+    data: {
+      estado: mapMpPreapprovalStatus(args.status),
+      current_period_end: args.nextPaymentDate,
+      canceled_at: args.canceledAt,
+    },
+  });
+  invalidateTenantCache(existing.tenant_id);
+}
+
+/** Marca una suscripción como cancelada por preapproval ID. */
+export async function markSubscriptionCanceled(mpPreapprovalId: string): Promise<void> {
+  const sub = await prisma.suscripciones.findUnique({
+    where: { mp_preapproval_id: mpPreapprovalId },
+    select: { tenant_id: true },
+  });
+  if (!sub) return;
+  await prisma.suscripciones.update({
+    where: { mp_preapproval_id: mpPreapprovalId },
+    data: { estado: 'canceled', canceled_at: new Date() },
+  });
+  invalidateTenantCache(sub.tenant_id);
 }

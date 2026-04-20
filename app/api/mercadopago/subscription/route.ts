@@ -3,11 +3,10 @@ import { getSubscriptionStatusFresh } from '@/lib/subscription';
 import { getPlanUsage } from '@/lib/plan-limits';
 
 /**
- * GET /api/stripe/subscription
+ * GET /api/mercadopago/subscription
  *
- * Returns current subscription snapshot + plan usage (areas, CCs, role counts)
- * for the /facturacion page. Gated to billing-capable roles — the rest of
- * the tenant has no business seeing plan limits / Stripe IDs.
+ * Devuelve subscription + plan usage para la UI de /perfil?tab=facturacion.
+ * Gated a roles que toman decisiones de billing.
  */
 export const GET = withAuth(
   { roles: ['admin', 'director', 'super_admin'] },

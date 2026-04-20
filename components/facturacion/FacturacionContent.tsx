@@ -12,6 +12,7 @@ import {
   Alert,
   Spin,
   message,
+  Popconfirm,
 } from 'antd';
 import { useSearchParams } from 'next/navigation';
 
@@ -24,8 +25,8 @@ type Subscription = {
   trialEndsAt: string | null;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
-  stripeCustomerId: string | null;
-  stripeSubscriptionId: string | null;
+  mpPreapprovalId: string | null;
+  mpPayerEmail: string | null;
   hasAccess: boolean;
   trialDaysLeft: number | null;
 };
@@ -54,6 +55,11 @@ const ESTADO_TAG: Record<Subscription['estado'], { color: string; label: string 
  * Billing UI. Se renderiza embebida como tab dentro de /perfil para
  * roles director/admin/super_admin. No usa heading propio porque vive
  * bajo el <Tabs> del perfil.
+ *
+ * Integrada con Mercado Pago:
+ *  - "Activar plan" → crea Preapproval y redirige al init_point de MP.
+ *  - "Cancelar suscripción" → POST /api/mercadopago/cancelar (MP no tiene
+ *    customer portal como Stripe, cancelamos desde acá).
  */
 export function FacturacionContent() {
   const searchParams = useSearchParams();
@@ -63,29 +69,28 @@ export function FacturacionContent() {
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [usage, setUsage] = useState<Usage | null>(null);
-  const [busy, setBusy] = useState<'checkout' | 'portal' | null>(null);
+  const [busy, setBusy] = useState<'checkout' | 'cancel' | null>(null);
+
+  async function loadSubscription() {
+    try {
+      const res = await fetch('/api/mercadopago/subscription');
+      if (!res.ok) {
+        if (res.status === 404) setSubscription(null);
+        return;
+      }
+      const data = await res.json();
+      setSubscription(data.subscription);
+      setUsage(data.usage);
+    } catch (err) {
+      console.error('[facturacion] load error', err);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      try {
-        const res = await fetch('/api/stripe/subscription');
-        if (cancelled) return;
-        if (!res.ok) {
-          if (res.status === 404) {
-            setSubscription(null);
-          }
-          return;
-        }
-        const data = await res.json();
-        if (cancelled) return;
-        setSubscription(data.subscription);
-        setUsage(data.usage);
-      } catch (err) {
-        console.error('[facturacion] load error', err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      await loadSubscription();
+      if (!cancelled) setLoading(false);
     })();
     return () => {
       cancelled = true;
@@ -95,7 +100,7 @@ export function FacturacionContent() {
   async function handleCheckout() {
     setBusy('checkout');
     try {
-      const res = await fetch('/api/stripe/checkout', {
+      const res = await fetch('/api/mercadopago/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
@@ -114,23 +119,23 @@ export function FacturacionContent() {
     }
   }
 
-  async function handlePortal() {
-    setBusy('portal');
+  async function handleCancel() {
+    setBusy('cancel');
     try {
-      const res = await fetch('/api/stripe/portal', {
+      const res = await fetch('/api/mercadopago/cancelar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        message.error(data?.error?.message ?? 'No se pudo abrir el portal');
+        message.error(data?.error?.message ?? 'No se pudo cancelar');
         return;
       }
-      window.location.href = data.url;
+      message.success('Suscripción cancelada');
+      await loadSubscription();
     } catch (err) {
-      console.error('[facturacion] portal error', err);
-      message.error('No se pudo abrir el portal');
+      console.error('[facturacion] cancel error', err);
+      message.error('No se pudo cancelar');
     } finally {
       setBusy(null);
     }
@@ -154,8 +159,8 @@ export function FacturacionContent() {
         <Alert
           type="success"
           showIcon
-          message="Suscripción activada"
-          description="Gracias por sumarte. Ya tenés acceso completo."
+          message="Suscripción autorizada"
+          description="Tu pago con Mercado Pago fue autorizado. Ya tenés acceso completo."
         />
       )}
 
@@ -201,8 +206,13 @@ export function FacturacionContent() {
             )}
           </Descriptions.Item>
           {subscription?.currentPeriodEnd && (
-            <Descriptions.Item label="Próxima renovación">
+            <Descriptions.Item label="Próximo cobro">
               {new Date(subscription.currentPeriodEnd).toLocaleDateString('es-AR')}
+            </Descriptions.Item>
+          )}
+          {subscription?.mpPayerEmail && (
+            <Descriptions.Item label="Email del pagador">
+              <Text type="secondary">{subscription.mpPayerEmail}</Text>
             </Descriptions.Item>
           )}
         </Descriptions>
@@ -219,10 +229,19 @@ export function FacturacionContent() {
                 {subscription?.estado === 'trialing' ? 'Activar plan ahora' : 'Reactivar plan'}
               </Button>
             )}
-            {subscription?.stripeCustomerId && (
-              <Button size="large" loading={busy === 'portal'} onClick={handlePortal}>
-                Administrar suscripción
-              </Button>
+            {subscription?.estado === 'active' && subscription.mpPreapprovalId && (
+              <Popconfirm
+                title="Cancelar suscripción"
+                description="Tu cuenta pierde acceso al final del período actual. Podés reactivar cuando quieras."
+                okText="Sí, cancelar"
+                cancelText="Volver"
+                okButtonProps={{ danger: true }}
+                onConfirm={handleCancel}
+              >
+                <Button size="large" danger loading={busy === 'cancel'}>
+                  Cancelar suscripción
+                </Button>
+              </Popconfirm>
             )}
           </Space>
         </div>
