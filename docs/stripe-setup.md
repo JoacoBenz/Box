@@ -3,6 +3,24 @@
 Box cobra 152.000 ARS/mes con trial de 14 días sin tarjeta. Este doc describe
 cómo dejar la cuenta de Stripe lista para que la app pueda cobrar.
 
+## TL;DR — orden de deploy a producción
+
+Si ya tenés tenants en prod, **el orden importa**:
+
+```
+1. Backup de la DB (Supabase dashboard → Backups → Download)
+2. npx prisma migrate deploy                              # tablas planes + suscripciones (no rompe prod)
+3. npx prisma db seed                                     # seedea el plan box-principal (idempotente)
+4. DATABASE_URL=... npx tsx scripts/backfill-legacy-subscriptions.ts --dry-run   # verificá qué va a pasar
+5. DATABASE_URL=... npx tsx scripts/backfill-legacy-subscriptions.ts             # crea trial de 30d para cada tenant legacy
+6. Deployar el código nuevo a Vercel (con STRIPE_* vars cargadas)
+7. Smoke test: registrar un tenant nuevo, verificar que entra en trialing
+```
+
+El paso 5 (backfill) te da 30 días a cada cliente existente para adaptarse al
+cobro antes de que `proxy.ts` los bloquee. Comunicáles por mail antes de que
+se les termine el período.
+
 ## 1. Cuenta y activación de ARS
 
 1. Crear cuenta en https://dashboard.stripe.com. Para test mode no hace falta
