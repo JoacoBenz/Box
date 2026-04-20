@@ -3,6 +3,7 @@ import { getStripe, isStripeEnabled } from '@/lib/stripe';
 import { getSubscriptionStatusFresh } from '@/lib/subscription';
 import { prisma } from '@/lib/prisma';
 import { logApiError } from '@/lib/logger';
+import { BILLING_URL } from '@/lib/billing-links';
 
 /**
  * POST /api/stripe/checkout
@@ -48,10 +49,9 @@ export const POST = withAuth(
     }
 
     const body = await request.json().catch(() => ({}));
-    const returnUrl: string =
-      body.return_url ?? `${request.headers.get('origin')}/perfil?tab=facturacion`;
-    const cancelUrl: string =
-      body.cancel_url ?? `${request.headers.get('origin')}/perfil?tab=facturacion`;
+    const origin = request.headers.get('origin') ?? '';
+    const returnUrl: string = body.return_url ?? `${origin}${BILLING_URL}`;
+    const cancelUrl: string = body.cancel_url ?? `${origin}${BILLING_URL}`;
 
     try {
       // Reuse existing Stripe customer if we have one; otherwise create one.

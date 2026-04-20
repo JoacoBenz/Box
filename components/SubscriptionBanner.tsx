@@ -2,6 +2,7 @@
 
 import { Alert, Button, Space } from 'antd';
 import Link from 'next/link';
+import { BILLING_URL } from '@/lib/billing-links';
 
 type Props = {
   estado: 'trialing' | 'active' | 'past_due' | 'canceled' | 'unpaid';
@@ -34,7 +35,7 @@ export function SubscriptionBanner({ estado, trialDaysLeft, cancelAtPeriodEnd }:
                   : `Tu trial vence en ${trialDaysLeft} días.`}{' '}
               Activá tu plan para no perder acceso.
             </span>
-            <Link href="/perfil?tab=facturacion">
+            <Link href={BILLING_URL}>
               <Button type="primary" size="small">
                 Activar plan
               </Button>
@@ -57,7 +58,7 @@ export function SubscriptionBanner({ estado, trialDaysLeft, cancelAtPeriodEnd }:
               No pudimos cobrar tu suscripción. Actualizá el método de pago para evitar la
               suspensión del servicio.
             </span>
-            <Link href="/perfil?tab=facturacion">
+            <Link href={BILLING_URL}>
               <Button type="primary" size="small" danger>
                 Actualizar pago
               </Button>
@@ -80,7 +81,7 @@ export function SubscriptionBanner({ estado, trialDaysLeft, cancelAtPeriodEnd }:
               Tu suscripción quedó programada para cancelarse al final del período. Podés
               reactivarla desde el portal.
             </span>
-            <Link href="/perfil?tab=facturacion">
+            <Link href={BILLING_URL}>
               <Button size="small">Ir a facturación</Button>
             </Link>
           </Space>

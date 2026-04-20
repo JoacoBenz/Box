@@ -24,6 +24,7 @@ import {
 } from '@ant-design/icons';
 import { useFormValid } from '@/hooks/useFormValid';
 import { FacturacionContent } from '@/components/facturacion/FacturacionContent';
+import { BILLING_TAB_KEY, isBillingBlockedReason, isBillingReason } from '@/lib/billing-links';
 
 const { Title } = Typography;
 
@@ -46,16 +47,6 @@ const ROL_LABELS: Record<string, string> = {
   solicitante: 'Solicitante',
 };
 
-/** Reasons that specifically indicate a billing redirect from the proxy. */
-const BILLING_REASONS = new Set([
-  'trialing',
-  'active',
-  'past_due',
-  'canceled',
-  'unpaid',
-  'no_subscription',
-]);
-
 export default function PerfilPage() {
   const searchParams = useSearchParams();
   // Support deep-links from Stripe checkout, SubscriptionBanner and the
@@ -64,10 +55,10 @@ export default function PerfilPage() {
   // leave the default "Mi cuenta" tab selected.
   const reasonParam = searchParams.get('reason');
   const initialTab =
-    searchParams.get('tab') === 'facturacion' ||
-    (reasonParam && BILLING_REASONS.has(reasonParam)) ||
+    searchParams.get('tab') === BILLING_TAB_KEY ||
+    isBillingReason(reasonParam) ||
     searchParams.get('checkout') === 'success'
-      ? 'facturacion'
+      ? BILLING_TAB_KEY
       : 'cuenta';
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -296,7 +287,7 @@ export default function PerfilPage() {
     ...(canManageBilling
       ? [
           {
-            key: 'facturacion',
+            key: BILLING_TAB_KEY,
             label: (
               <span>
                 <CreditCardOutlined /> Facturación
@@ -311,10 +302,7 @@ export default function PerfilPage() {
   // When the proxy redirects a user without billing permissions here
   // because their tenant is blocked, explain the situation — the
   // Facturación tab won't exist for them to "just fix it".
-  const blockedWithoutPermission =
-    !canManageBilling &&
-    reasonParam &&
-    ['canceled', 'unpaid', 'no_subscription'].includes(reasonParam);
+  const blockedWithoutPermission = !canManageBilling && isBillingBlockedReason(reasonParam);
 
   return (
     <div className="page-content" style={{ maxWidth: 900 }}>

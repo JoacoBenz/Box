@@ -2,6 +2,7 @@ import { withAuth } from '@/lib/api-handler';
 import { getStripe, isStripeEnabled } from '@/lib/stripe';
 import { getSubscriptionStatusFresh } from '@/lib/subscription';
 import { logApiError } from '@/lib/logger';
+import { BILLING_URL } from '@/lib/billing-links';
 
 /**
  * POST /api/stripe/portal
@@ -34,8 +35,8 @@ export const POST = withAuth(
     }
 
     const body = await request.json().catch(() => ({}));
-    const returnUrl: string =
-      body.return_url ?? `${request.headers.get('origin')}/perfil?tab=facturacion`;
+    const origin = request.headers.get('origin') ?? '';
+    const returnUrl: string = body.return_url ?? `${origin}${BILLING_URL}`;
 
     try {
       const portal = await stripe.billingPortal.sessions.create({

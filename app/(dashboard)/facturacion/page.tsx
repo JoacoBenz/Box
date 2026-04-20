@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { billingUrl } from '@/lib/billing-links';
 
 /**
  * Legacy route — facturación ahora vive embebida como tab dentro de /perfil.
@@ -19,13 +20,12 @@ export default async function FacturacionRedirect({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const qs = new URLSearchParams();
-  qs.set('tab', 'facturacion');
+  const forwarded: Record<string, string> = {};
   for (const [key, value] of Object.entries(params)) {
     if (!FORWARDED_PARAMS.has(key)) continue;
     // Arrays (?key=a&key=b) tomamos el primer valor.
     const v = Array.isArray(value) ? value[0] : value;
-    if (typeof v === 'string' && v.length > 0) qs.set(key, v);
+    if (typeof v === 'string' && v.length > 0) forwarded[key] = v;
   }
-  redirect(`/perfil?${qs.toString()}`);
+  redirect(billingUrl(forwarded));
 }
