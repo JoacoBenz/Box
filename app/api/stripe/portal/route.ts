@@ -34,7 +34,8 @@ export const POST = withAuth(
     }
 
     const body = await request.json().catch(() => ({}));
-    const returnUrl: string = body.return_url ?? `${request.headers.get('origin')}/facturacion`;
+    const returnUrl: string =
+      body.return_url ?? `${request.headers.get('origin')}/perfil?tab=facturacion`;
 
     try {
       const portal = await stripe.billingPortal.sessions.create({

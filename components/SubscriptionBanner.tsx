@@ -34,7 +34,7 @@ export function SubscriptionBanner({ estado, trialDaysLeft, cancelAtPeriodEnd }:
                   : `Tu trial vence en ${trialDaysLeft} días.`}{' '}
               Activá tu plan para no perder acceso.
             </span>
-            <Link href="/facturacion">
+            <Link href="/perfil?tab=facturacion">
               <Button type="primary" size="small">
                 Activar plan
               </Button>
@@ -57,7 +57,7 @@ export function SubscriptionBanner({ estado, trialDaysLeft, cancelAtPeriodEnd }:
               No pudimos cobrar tu suscripción. Actualizá el método de pago para evitar la
               suspensión del servicio.
             </span>
-            <Link href="/facturacion">
+            <Link href="/perfil?tab=facturacion">
               <Button type="primary" size="small" danger>
                 Actualizar pago
               </Button>
@@ -80,7 +80,7 @@ export function SubscriptionBanner({ estado, trialDaysLeft, cancelAtPeriodEnd }:
               Tu suscripción quedó programada para cancelarse al final del período. Podés
               reactivarla desde el portal.
             </span>
-            <Link href="/facturacion">
+            <Link href="/perfil?tab=facturacion">
               <Button size="small">Ir a facturación</Button>
             </Link>
           </Space>

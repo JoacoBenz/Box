@@ -48,8 +48,10 @@ export const POST = withAuth(
     }
 
     const body = await request.json().catch(() => ({}));
-    const returnUrl: string = body.return_url ?? `${request.headers.get('origin')}/facturacion`;
-    const cancelUrl: string = body.cancel_url ?? `${request.headers.get('origin')}/facturacion`;
+    const returnUrl: string =
+      body.return_url ?? `${request.headers.get('origin')}/perfil?tab=facturacion`;
+    const cancelUrl: string =
+      body.cancel_url ?? `${request.headers.get('origin')}/perfil?tab=facturacion`;
 
     try {
       // Reuse existing Stripe customer if we have one; otherwise create one.
@@ -71,12 +73,17 @@ export const POST = withAuth(
         });
       }
 
+      // returnUrl may already contain a query string (?tab=facturacion);
+      // append &checkout=success accordingly so we don't clobber it.
+      const successUrl = returnUrl.includes('?')
+        ? `${returnUrl}&checkout=success`
+        : `${returnUrl}?checkout=success`;
       const checkout = await stripe.checkout.sessions.create({
         mode: 'subscription',
         customer: customerId,
         line_items: [{ price: priceId, quantity: 1 }],
         client_reference_id: String(session.tenantId),
-        success_url: `${returnUrl}?checkout=success`,
+        success_url: successUrl,
         cancel_url: cancelUrl,
         metadata: { tenant_id: String(session.tenantId) },
       });

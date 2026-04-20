@@ -26,7 +26,8 @@ const PUBLIC_ROUTES = [
  * and Stripe callbacks must be able to notify the app.
  */
 const SUBSCRIPTION_EXEMPT_ROUTES = [
-  '/facturacion',
+  '/perfil',
+  '/facturacion', // legacy redirect kept for old deep-links / Stripe return_url
   '/api/stripe',
   '/api/auth',
   '/api/health',
@@ -91,7 +92,8 @@ export async function proxy(request: NextRequest) {
   if (!isSubscriptionExempt) {
     const subscription = await getSubscriptionStatus(token.tenantId);
     if (!subscription || !subscription.hasAccess) {
-      const url = new URL('/facturacion', request.url);
+      const url = new URL('/perfil', request.url);
+      url.searchParams.set('tab', 'facturacion');
       url.searchParams.set('reason', subscription ? subscription.estado : 'no_subscription');
       return NextResponse.redirect(url);
     }

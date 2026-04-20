@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Card,
   Form,
@@ -45,6 +46,15 @@ const ROL_LABELS: Record<string, string> = {
 };
 
 export default function PerfilPage() {
+  const searchParams = useSearchParams();
+  // Support deep-links from Stripe checkout, SubscriptionBanner and the
+  // proxy (which redirects here on expired/canceled subs).
+  const initialTab =
+    searchParams.get('tab') === 'facturacion' ||
+    searchParams.get('reason') ||
+    searchParams.get('checkout')
+      ? 'facturacion'
+      : 'cuenta';
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -292,7 +302,7 @@ export default function PerfilPage() {
       >
         Mi Perfil
       </Title>
-      <Tabs defaultActiveKey="cuenta" items={tabs} size="large" />
+      <Tabs defaultActiveKey={initialTab} items={tabs} size="large" />
     </div>
   );
 }
