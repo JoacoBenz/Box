@@ -22,7 +22,7 @@
     "@prisma/pg-worker": "^6.9.0",
     "@sentry/nextjs": "^10.49.0",
     "@supabase/storage-js": "^2.100.1",
-    "@supabase/supabase-js": "^2.100.1",
+    "@supabase/supabase-js": "^2.104.0",
     "@types/nodemailer": "^8.0.0",
     "@types/pg": "^8.20.0",
     "antd": "^6.3.4",
