@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
           slug,
           email_contacto: pending.email,
           moneda: 'ARS',
-          estado: 'pendiente',
+          estado: 'activo',
         },
       });
 
@@ -183,13 +183,14 @@ export async function POST(request: NextRequest) {
     });
 
     await notificarAdmins(
-      'Nueva organización pendiente',
-      `"${pending.nombre_organizacion}" se registró y requiere aprobación.`,
+      'Nueva organización registrada',
+      `"${pending.nombre_organizacion}" se registró y arrancó su prueba de 14 días.`,
     );
 
     return Response.json(
       {
-        message: 'Email verificado. Tu organización fue registrada y está pendiente de aprobación.',
+        message:
+          'Email verificado. Tu organización fue registrada. Ya podés iniciar sesión y empezar a usar Box.',
       },
       { status: 201 },
     );
