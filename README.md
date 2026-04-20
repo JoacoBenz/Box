@@ -12,6 +12,7 @@ control presupuestario y auditoría.
 - **DB**: PostgreSQL (Supabase) via Prisma 7
 - **Storage**: Supabase Storage (facturas, adjuntos)
 - **Email**: Resend + Gmail SMTP (fallback)
+- **Billing**: Mercado Pago (Preapproval recurrente)
 - **Observability**: Sentry (opcional, free tier) + structured JSON logger
 - **Testing**: Vitest + coverage v8
 - **CI**: GitHub Actions (lint + format + test + build)
@@ -71,19 +72,21 @@ Sentry se activa automáticamente si `SENTRY_DSN` está seteado. Sin DSN, todo e
 código de captura es no-op. Para upload de source maps en prod, setear también
 `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`.
 
-### Stripe (billing)
+### Mercado Pago (billing)
 
-Box cobra 152.000 ARS/mes con trial de 14 días. La integración se activa cuando
+Box cobra 152.000 ARS/mes con Preapproval de Mercado Pago (recurrencia
+automática), trial de 14 días sin tarjeta. La integración se activa cuando
 las 3 vars están seteadas:
 
-- `STRIPE_SECRET_KEY` — `sk_live_...` en prod, `sk_test_...` en dev.
-- `STRIPE_PRICE_ID` — ID del Price que creaste en Stripe (ver `docs/stripe-setup.md`).
-- `STRIPE_WEBHOOK_SECRET` — `whsec_...` del endpoint de webhook.
+- `MP_ACCESS_TOKEN` — `TEST-...` en dev, `APP_USR-...` en prod.
+- `MP_PLAN_ID` — ID del Preapproval Plan que creaste en MP (ver `docs/mercadopago-setup.md`).
+- `MP_WEBHOOK_SECRET` — signing secret del webhook (de Dashboard → Webhooks).
 
-Sin esas 3 vars, los endpoints `/api/stripe/*` devuelven 503 y la UI de
-facturación muestra el estado del trial sin opción de pagar (útil para dev).
+Sin esas 3 vars, los endpoints `/api/mercadopago/*` devuelven 503 y la UI de
+facturación muestra el estado del trial sin opción de pagar (útil para dev
+y CI).
 
-Setup completo paso a paso: **`docs/stripe-setup.md`**.
+Setup completo paso a paso: **`docs/mercadopago-setup.md`**.
 
 ## Arquitectura
 
@@ -91,9 +94,9 @@ Setup completo paso a paso: **`docs/stripe-setup.md`**.
 app/                      # App Router (páginas + API routes)
   (auth)/                 # login, registro, recuperar, etc.
   (dashboard)/            # zona autenticada
-    facturacion/          # gestión de suscripción (plan, trial, uso vs límites)
+    facturacion/          # redirect legacy → /perfil?tab=facturacion
   api/                    # 60+ endpoints REST agrupados por dominio
-    stripe/               # webhook + checkout + portal + subscription
+    mercadopago/          # webhook + checkout + cancelar + subscription
   generated/prisma/       # Prisma client generado (gitignored)
 components/               # UI reusable (admin, layout, ThemeProvider, etc.)
   SubscriptionBanner.tsx  # banner de trial/past_due en el dashboard
@@ -104,7 +107,7 @@ lib/                      # Lógica de negocio, auth, permisos, validators
   logger.ts               # Structured logs + Sentry bridge
   permissions.ts          # Autorización + segregación de funciones
   plan-limits.ts          # canCreateArea / canAssignRole / getPlanUsage
-  stripe.ts               # Stripe SDK singleton (null si no hay SECRET_KEY)
+  mercadopago.ts          # MP SDK singleton + verificación de firma webhook
   subscription.ts         # estado machine + helpers de webhook sync
   validators.ts           # Schemas Zod
 prisma/                   # Schema + migraciones + seeds
@@ -174,8 +177,8 @@ Variables críticas en el panel de Vercel:
 - Supabase URLs + keys
 - Resend API key (si usás email)
 - Sentry vars (si activás)
-- Stripe: `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`
-  (ver `docs/stripe-setup.md` para crear el producto + webhook antes del deploy)
+- Mercado Pago: `MP_ACCESS_TOKEN`, `MP_PLAN_ID`, `MP_WEBHOOK_SECRET`
+  (ver `docs/mercadopago-setup.md` para crear el plan + webhook antes del deploy)
 
 ## Convenciones
 

@@ -19,6 +19,7 @@ const PUBLIC_ROUTES = [
   '/api/registro',
   '/api/unirse',
   '/api/health',
+  '/api/mercadopago/webhook',
 ];
 
 /**
@@ -28,8 +29,8 @@ const PUBLIC_ROUTES = [
  */
 const SUBSCRIPTION_EXEMPT_ROUTES = [
   '/perfil',
-  '/facturacion', // legacy redirect kept for old deep-links / Stripe return_url
-  '/api/stripe',
+  '/facturacion', // legacy redirect kept for old deep-links
+  '/api/mercadopago',
   '/api/auth',
   '/api/health',
   '/logout',

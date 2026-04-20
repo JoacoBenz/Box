@@ -34,8 +34,8 @@ function activeSubscription() {
     trialEndsAt: null,
     currentPeriodEnd: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
     cancelAtPeriodEnd: false,
-    stripeCustomerId: 'cus_x',
-    stripeSubscriptionId: 'sub_x',
+    mpPreapprovalId: 'preapp_x',
+    mpPayerEmail: 'payer@x.com',
     hasAccess: true,
     trialDaysLeft: null,
   };
@@ -63,6 +63,7 @@ describe('proxy (Next.js 16 middleware)', () => {
       '/api/registro',
       '/api/unirse',
       '/api/health',
+      '/api/mercadopago/webhook',
     ];
 
     for (const path of publicPaths) {
@@ -264,13 +265,13 @@ describe('proxy (Next.js 16 middleware)', () => {
       expect(res.status).toBe(200);
     });
 
-    it('lets /api/stripe/* through even when subscription is canceled', async () => {
+    it('lets /api/mercadopago/* through even when subscription is canceled', async () => {
       mockedGetSubscription.mockResolvedValue({
         ...activeSubscription(),
         estado: 'canceled',
         hasAccess: false,
       });
-      const res = await proxy(makeRequest('/api/stripe/checkout'));
+      const res = await proxy(makeRequest('/api/mercadopago/checkout'));
       expect(res.status).toBe(200);
     });
 
