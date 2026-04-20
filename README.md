@@ -71,28 +71,91 @@ Sentry se activa automáticamente si `SENTRY_DSN` está seteado. Sin DSN, todo e
 código de captura es no-op. Para upload de source maps en prod, setear también
 `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`.
 
+### Stripe (billing)
+
+Box cobra 152.000 ARS/mes con trial de 14 días. La integración se activa cuando
+las 3 vars están seteadas:
+
+- `STRIPE_SECRET_KEY` — `sk_live_...` en prod, `sk_test_...` en dev.
+- `STRIPE_PRICE_ID` — ID del Price que creaste en Stripe (ver `docs/stripe-setup.md`).
+- `STRIPE_WEBHOOK_SECRET` — `whsec_...` del endpoint de webhook.
+
+Sin esas 3 vars, los endpoints `/api/stripe/*` devuelven 503 y la UI de
+facturación muestra el estado del trial sin opción de pagar (útil para dev).
+
+Setup completo paso a paso: **`docs/stripe-setup.md`**.
+
 ## Arquitectura
 
 ```
 app/                      # App Router (páginas + API routes)
   (auth)/                 # login, registro, recuperar, etc.
   (dashboard)/            # zona autenticada
+    facturacion/          # gestión de suscripción (plan, trial, uso vs límites)
   api/                    # 60+ endpoints REST agrupados por dominio
+    stripe/               # webhook + checkout + portal + subscription
   generated/prisma/       # Prisma client generado (gitignored)
 components/               # UI reusable (admin, layout, ThemeProvider, etc.)
+  SubscriptionBanner.tsx  # banner de trial/past_due en el dashboard
 hooks/                    # React hooks (useFetch, isMobile, useTheme)
 lib/                      # Lógica de negocio, auth, permisos, validators
   api-handler.ts          # Wrapper con auth + rate limit + Zod
   auth.ts                 # NextAuth config
   logger.ts               # Structured logs + Sentry bridge
   permissions.ts          # Autorización + segregación de funciones
+  plan-limits.ts          # canCreateArea / canAssignRole / getPlanUsage
+  stripe.ts               # Stripe SDK singleton (null si no hay SECRET_KEY)
+  subscription.ts         # estado machine + helpers de webhook sync
   validators.ts           # Schemas Zod
 prisma/                   # Schema + migraciones + seeds
-proxy.ts                  # Middleware Next.js 16 (auth + roles + tenant guard)
+proxy.ts                  # Middleware Next.js 16 (auth + roles + tenant + sub guard)
 instrumentation.ts        # Sentry server/edge init
 instrumentation-client.ts # Sentry client init
 __tests__/                # Vitest (unit + integration)
 ```
+
+## Billing (plan único con trial)
+
+### Plan `box-principal`
+
+| Dimensión | Límite |
+|---|---|
+| Precio | 152.000 ARS / mes |
+| Trial | 14 días sin tarjeta |
+| Áreas | 3 por tenant |
+| Centros de costo | 2 por área (6 en total) |
+| `responsable_area` | 1 por área |
+| `director` / `tesoreria` / `admin` / `compras` | 1 por tenant cada uno |
+| `solicitante` | ilimitado |
+
+El plan se seedea via `prisma/seed.ts` y vía la propia migración `20260418000000_add_billing`.
+
+### Máquina de estados
+
+```
+registro verificado → trialing (14d, sin Stripe customer todavía)
+    ↓ admin click "Activar plan"
+    → Stripe Checkout
+    ↓ webhook checkout.session.completed
+    → active (Stripe customer + subscription ligados)
+    ↓ invoice.payment_failed (Stripe retry windows)
+    → past_due (gracia de 3 días desde current_period_end)
+    ↓ invoice.paid
+    → active
+    ↓ customer.subscription.deleted
+    → canceled (sin acceso hasta reactivar)
+```
+
+`proxy.ts` gatea el dashboard: los estados que NO tienen acceso (`trialing`
+vencido, `past_due` fuera de gracia, `canceled`, `unpaid`) redirigen a
+`/facturacion?reason=<estado>`. Rutas exentas: `/facturacion`, `/api/stripe/*`,
+`/api/auth/*`, `/api/health`, `/logout`.
+
+### Enforcement de caps
+
+Los POST de áreas, centros de costo y usuarios verifican el plan antes de crear.
+Al exceder devuelven 403 con código `PLAN_LIMIT_AREAS` / `PLAN_LIMIT_CC_POR_AREA`
+/ `PLAN_LIMIT_DIRECTOR` etc. El frontend los traduce a mensajes legibles.
 
 ## Multi-tenancy
 
@@ -111,6 +174,8 @@ Variables críticas en el panel de Vercel:
 - Supabase URLs + keys
 - Resend API key (si usás email)
 - Sentry vars (si activás)
+- Stripe: `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`
+  (ver `docs/stripe-setup.md` para crear el producto + webhook antes del deploy)
 
 ## Convenciones
 
