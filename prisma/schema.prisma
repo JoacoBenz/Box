@@ -52,7 +52,7 @@ model planes {
   limite_admin            Int      @default(1)
   limite_compras          Int      @default(1)
   // solicitante: sin límite (no hay columna)
-  stripe_price_id         String?  @db.VarChar(255)
+  mp_plan_id              String?  @db.VarChar(255) // MP Preapproval Plan ID (opcional, solo si usamos plans)
   activo                  Boolean  @default(true)
   created_at              DateTime @default(now())
   updated_at              DateTime @updatedAt
@@ -61,20 +61,20 @@ model planes {
 }
 
 model suscripciones {
-  id                     Int       @id @default(autoincrement())
-  tenant_id              Int       @unique
-  plan_id                Int
-  estado                 String    @db.VarChar(20) // 'trialing' | 'active' | 'past_due' | 'canceled' | 'unpaid'
-  stripe_customer_id     String?   @unique @db.VarChar(255)
-  stripe_subscription_id String?   @unique @db.VarChar(255)
-  trial_starts_at        DateTime?
-  trial_ends_at          DateTime?
-  current_period_start   DateTime?
-  current_period_end     DateTime?
-  cancel_at_period_end   Boolean   @default(false)
-  canceled_at            DateTime?
-  created_at             DateTime  @default(now())
-  updated_at             DateTime  @updatedAt
+  id                   Int       @id @default(autoincrement())
+  tenant_id            Int       @unique
+  plan_id              Int
+  estado               String    @db.VarChar(20) // 'trialing' | 'active' | 'past_due' | 'canceled' | 'unpaid'
+  mp_preapproval_id    String?   @unique @db.VarChar(255)
+  mp_payer_email       String?   @db.VarChar(255)
+  trial_starts_at      DateTime?
+  trial_ends_at        DateTime?
+  current_period_start DateTime?
+  current_period_end   DateTime?
+  cancel_at_period_end Boolean   @default(false)
+  canceled_at          DateTime?
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
 
   tenant tenants @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   plan   planes  @relation(fields: [plan_id], references: [id])
