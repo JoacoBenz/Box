@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
+  Alert,
   Card,
   Form,
   Input,
@@ -307,6 +308,14 @@ export default function PerfilPage() {
       : []),
   ];
 
+  // When the proxy redirects a user without billing permissions here
+  // because their tenant is blocked, explain the situation — the
+  // Facturación tab won't exist for them to "just fix it".
+  const blockedWithoutPermission =
+    !canManageBilling &&
+    reasonParam &&
+    ['canceled', 'unpaid', 'no_subscription'].includes(reasonParam);
+
   return (
     <div className="page-content" style={{ maxWidth: 900 }}>
       <Title
@@ -315,6 +324,20 @@ export default function PerfilPage() {
       >
         Mi Perfil
       </Title>
+      {blockedWithoutPermission && (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="Tu organización no tiene acceso activo al sistema"
+          description={
+            <>
+              La suscripción de <strong>{profile.organizacion ?? 'tu organización'}</strong> está
+              inactiva. Contactá a la dirección para reactivar el plan.
+            </>
+          }
+        />
+      )}
       <Tabs defaultActiveKey={initialTab} items={tabs} size="large" />
     </div>
   );
