@@ -42,17 +42,17 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/node": "^20",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/node": "^25",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@vitest/coverage-v8": "^4.1.2",
-    "eslint": "^9",
+    "@vitest/coverage-v8": "^4.1.4",
+    "eslint": "^10",
     "eslint-config-next": "16.2.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "prettier": "^3.8.3",
-    "typescript": "^5",
+    "typescript": "^6",
     "vitest": "^4.1.2"
   },
   "lint-staged": {
