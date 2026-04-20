@@ -743,6 +743,52 @@ export default function LandingPage() {
         .lp-feature-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
         .lp-feature-desc { font-size: 15px; color: #777; line-height: 1.6; }
 
+        /* ---- PRICING ---- */
+        .lp-pricing-card {
+          max-width: 480px; margin: 0 auto;
+          padding: 40px 36px; border-radius: 24px;
+          background: linear-gradient(180deg, #fff 0%, #f0fdff 100%);
+          border: 2px solid rgba(0,194,203,0.2);
+          box-shadow: 0 20px 60px rgba(0,194,203,0.12);
+          position: relative; overflow: hidden;
+        }
+        .lp-pricing-card::before {
+          content: ''; position: absolute; top: -40px; right: -40px;
+          width: 150px; height: 150px; border-radius: 50%;
+          background: radial-gradient(circle, rgba(0,194,203,0.15), transparent 70%);
+          pointer-events: none;
+        }
+        .lp-pricing-header { text-align: center; margin-bottom: 28px; position: relative; z-index: 1; }
+        .lp-pricing-name { font-size: 14px; font-weight: 700; color: #0891b2; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .lp-pricing-price { display: flex; align-items: baseline; justify-content: center; gap: 6px; margin-bottom: 8px; }
+        .lp-pricing-amount { font-size: 56px; font-weight: 900; letter-spacing: -2px; color: #1a1a2e; line-height: 1; }
+        .lp-pricing-currency { font-size: 18px; font-weight: 700; color: #888; }
+        .lp-pricing-period { font-size: 15px; color: #888; }
+        .lp-pricing-trial { font-size: 14px; color: #16a34a; font-weight: 600; background: #f0fdf4; display: inline-block; padding: 6px 14px; border-radius: 100px; margin-top: 8px; }
+        .lp-pricing-features { list-style: none; padding: 0; margin: 0 0 28px; display: flex; flex-direction: column; gap: 12px; }
+        .lp-pricing-features li { display: flex; align-items: flex-start; gap: 10px; font-size: 15px; color: #333; }
+        .lp-pricing-check {
+          display: inline-flex; align-items: center; justify-content: center;
+          width: 22px; height: 22px; flex-shrink: 0;
+          border-radius: 50%; background: linear-gradient(135deg, #00C2CB, #0891b2);
+          color: #fff; font-size: 13px; font-weight: 800; margin-top: 1px;
+        }
+        .lp-pricing-cta {
+          display: block; text-align: center; text-decoration: none;
+          padding: 16px 24px; border-radius: 14px;
+          background: linear-gradient(135deg, #00C2CB, #0891b2);
+          color: #fff !important; font-weight: 700; font-size: 16px;
+          box-shadow: 0 8px 24px rgba(0,194,203,0.35);
+          transition: all 0.25s;
+        }
+        .lp-pricing-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,194,203,0.45); }
+        .lp-pricing-note { text-align: center; font-size: 13px; color: #888; margin-top: 14px; }
+        @media (max-width: 768px) {
+          .lp-pricing { padding-left: 16px !important; padding-right: 16px !important; }
+          .lp-pricing-card { padding: 28px 20px; }
+          .lp-pricing-amount { font-size: 44px; }
+        }
+
         /* ---- STEPS ---- */
         .lp-steps {
           padding: 60px 48px;
@@ -947,6 +993,63 @@ export default function LandingPage() {
             </AnimatedSection>
           ))}
         </div>
+      </section>
+
+      {/* PRICING */}
+      <section
+        className="lp-pricing"
+        style={{ padding: '60px 48px', background: '#fff', maxWidth: 1200, margin: '0 auto' }}
+      >
+        <AnimatedSection>
+          <h2 className="lp-section-title">Un solo plan, todo incluido</h2>
+          <p className="lp-section-sub">
+            Sin letra chica. Empezá gratis durante 14 días, después decidís.
+          </p>
+        </AnimatedSection>
+        <AnimatedSection delay={0.1}>
+          <div className="lp-pricing-card">
+            <div className="lp-pricing-header">
+              <div className="lp-pricing-name">Box Principal</div>
+              <div className="lp-pricing-price">
+                <span className="lp-pricing-amount">152.000</span>
+                <span className="lp-pricing-currency">ARS</span>
+                <span className="lp-pricing-period">/ mes</span>
+              </div>
+              <div className="lp-pricing-trial">14 días de prueba gratis · sin tarjeta</div>
+            </div>
+            <ul className="lp-pricing-features">
+              <li>
+                <span className="lp-pricing-check">✓</span>Hasta 3 áreas
+              </li>
+              <li>
+                <span className="lp-pricing-check">✓</span>2 centros de costo por área
+              </li>
+              <li>
+                <span className="lp-pricing-check">✓</span>Workflow completo: solicitud → aprobación
+                → compra → recepción
+              </li>
+              <li>
+                <span className="lp-pricing-check">✓</span>Reportes y exportación a Excel
+              </li>
+              <li>
+                <span className="lp-pricing-check">✓</span>SSO con Google y Microsoft
+              </li>
+              <li>
+                <span className="lp-pricing-check">✓</span>Auditoría completa de cambios
+              </li>
+              <li>
+                <span className="lp-pricing-check">✓</span>Soporte por email
+              </li>
+              <li>
+                <span className="lp-pricing-check">✓</span>Cancelás cuando quieras
+              </li>
+            </ul>
+            <Link href="/registro" className="lp-pricing-cta">
+              Empezar prueba de 14 días
+            </Link>
+            <div className="lp-pricing-note">Activás cuando quieras desde Facturación.</div>
+          </div>
+        </AnimatedSection>
       </section>
 
       {/* STEPS */}

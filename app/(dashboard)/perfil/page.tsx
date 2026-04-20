@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import {
   Card,
   Form,
@@ -10,11 +10,18 @@ import {
   Tag,
   Descriptions,
   message,
-  Divider,
   Switch,
+  Tabs,
 } from 'antd';
-import { UserOutlined, LockOutlined, SaveOutlined, MailOutlined } from '@ant-design/icons';
+import {
+  UserOutlined,
+  LockOutlined,
+  SaveOutlined,
+  MailOutlined,
+  CreditCardOutlined,
+} from '@ant-design/icons';
 import { useFormValid } from '@/hooks/useFormValid';
+import { FacturacionContent } from '@/components/facturacion/FacturacionContent';
 
 const { Title } = Typography;
 
@@ -105,15 +112,13 @@ export default function PerfilPage() {
   if (loading) return <div style={{ padding: 24 }}>Cargando...</div>;
   if (!profile) return <div style={{ padding: 24 }}>Error al cargar el perfil</div>;
 
-  return (
-    <div className="page-content" style={{ maxWidth: 640 }}>
-      <Title
-        level={3}
-        style={{ margin: 0, marginBottom: 16, fontWeight: 700, color: 'var(--text-primary)' }}
-      >
-        Mi Perfil
-      </Title>
+  const canManageBilling =
+    profile.roles.includes('director') ||
+    profile.roles.includes('admin') ||
+    profile.roles.includes('super_admin');
 
+  const cuentaTab = (
+    <>
       <Card style={{ marginBottom: 16 }}>
         <Descriptions column={1} size="small">
           <Descriptions.Item label="Email">{profile.email}</Descriptions.Item>
@@ -245,6 +250,49 @@ export default function PerfilPage() {
           </Form>
         </Card>
       )}
+    </>
+  );
+
+  const facturacionTab = (
+    <Suspense fallback={null}>
+      <FacturacionContent showHeading={false} />
+    </Suspense>
+  );
+
+  const tabs = [
+    {
+      key: 'cuenta',
+      label: (
+        <span>
+          <UserOutlined /> Mi cuenta
+        </span>
+      ),
+      children: cuentaTab,
+    },
+    ...(canManageBilling
+      ? [
+          {
+            key: 'facturacion',
+            label: (
+              <span>
+                <CreditCardOutlined /> Facturación
+              </span>
+            ),
+            children: facturacionTab,
+          },
+        ]
+      : []),
+  ];
+
+  return (
+    <div className="page-content" style={{ maxWidth: 900 }}>
+      <Title
+        level={3}
+        style={{ margin: 0, marginBottom: 16, fontWeight: 700, color: 'var(--text-primary)' }}
+      >
+        Mi Perfil
+      </Title>
+      <Tabs defaultActiveKey="cuenta" items={tabs} size="large" />
     </div>
   );
 }
