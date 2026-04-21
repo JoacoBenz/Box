@@ -1,0 +1,149 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+const mocks = vi.hoisted(() => {
+  const session = {
+    userId: 1,
+    tenantId: 4,
+    roles: ['director'] as string[],
+    nombre: 'Director Test',
+    email: 'director@escuela.edu.ar',
+    areaId: 1,
+  };
+  return {
+    session,
+    getServerSession: vi.fn().mockResolvedValue(session),
+    isMpEnabled: vi.fn().mockReturnValue(true),
+    getSubscriptionStatusFresh: vi.fn(),
+    prisma: {
+      tenants: { findUnique: vi.fn() },
+    },
+  };
+});
+
+vi.mock('@/lib/auth', () => ({ getServerSession: mocks.getServerSession }));
+vi.mock('@/lib/prisma', () => ({
+  prisma: mocks.prisma,
+  tenantPrisma: vi.fn(() => mocks.prisma),
+}));
+vi.mock('@/lib/permissions', () => ({
+  verificarRol: vi.fn().mockReturnValue(true),
+  apiError: vi.fn(
+    (code: string, msg: string, status: number) =>
+      new Response(JSON.stringify({ error: { code, message: msg } }), { status }),
+  ),
+}));
+vi.mock('@/lib/audit', () => ({ getClientIp: vi.fn(() => '1.2.3.4') }));
+vi.mock('@/lib/tenant-override', () => ({
+  getEffectiveTenantId: vi.fn(),
+}));
+vi.mock('@/lib/mercadopago', () => ({
+  isMpEnabled: mocks.isMpEnabled,
+}));
+vi.mock('@/lib/subscription', () => ({
+  getSubscriptionStatusFresh: mocks.getSubscriptionStatusFresh,
+}));
+vi.mock('@/lib/logger', () => ({ logApiError: vi.fn() }));
+
+const ORIGINAL_ENV = { ...process.env };
+
+beforeEach(() => {
+  process.env = { ...ORIGINAL_ENV, MP_ACCESS_TOKEN: 'TEST-token', MP_PLAN_ID: 'plan_abc123' };
+  vi.clearAllMocks();
+  mocks.isMpEnabled.mockReturnValue(true);
+  mocks.getServerSession.mockResolvedValue(mocks.session);
+  mocks.prisma.tenants.findUnique.mockResolvedValue({
+    nombre: 'Escuela Test',
+    email_contacto: 'contacto@escuela.edu.ar',
+  });
+});
+
+import { POST } from '@/app/api/mercadopago/checkout/route';
+
+function makeRequest() {
+  return new Request('http://localhost/api/mercadopago/checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  });
+}
+
+describe('POST /api/mercadopago/checkout', () => {
+  it('devuelve 503 cuando MP no está configurado', async () => {
+    mocks.isMpEnabled.mockReturnValue(false);
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(503);
+    const json = await res.json();
+    expect(json.error.code).toBe('MP_DISABLED');
+  });
+
+  it('devuelve 404 cuando el tenant no tiene suscripción', async () => {
+    mocks.getSubscriptionStatusFresh.mockResolvedValue(null);
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(404);
+    const json = await res.json();
+    expect(json.error.code).toBe('NO_SUBSCRIPTION');
+  });
+
+  it('devuelve 400 cuando la suscripción ya está activa', async () => {
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'active' });
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error.code).toBe('ALREADY_ACTIVE');
+  });
+
+  it('devuelve 400 cuando no hay email del pagador', async () => {
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing' });
+    mocks.session.email = '';
+    mocks.getServerSession.mockResolvedValue({ ...mocks.session, email: '' });
+    mocks.prisma.tenants.findUnique.mockResolvedValue({
+      nombre: 'Escuela Test',
+      email_contacto: '',
+    });
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error.code).toBe('NO_EMAIL');
+    mocks.session.email = 'director@escuela.edu.ar';
+  });
+
+  it('devuelve URL de checkout con plan_id, external_reference y payer_email', async () => {
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing' });
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.url).toContain('mercadopago.com.ar/subscriptions/checkout');
+    expect(json.url).toContain('preapproval_plan_id=plan_abc123');
+    expect(json.url).toContain('external_reference=4');
+    expect(json.url).toContain('payer_email=director%40escuela.edu.ar');
+  });
+
+  it('usa email del tenant cuando session.email no existe', async () => {
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing' });
+    mocks.getServerSession.mockResolvedValue({ ...mocks.session, email: null });
+    mocks.prisma.tenants.findUnique.mockResolvedValue({
+      nombre: 'Escuela Test',
+      email_contacto: 'admin@escuela.edu.ar',
+    });
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.url).toContain('payer_email=admin%40escuela.edu.ar');
+  });
+
+  it('funciona para suscripciones canceladas (reactivación)', async () => {
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'canceled' });
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.url).toContain('mercadopago.com.ar/subscriptions/checkout');
+  });
+
+  it('funciona para suscripciones unpaid (reactivación)', async () => {
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'unpaid' });
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.url).toContain('mercadopago.com.ar/subscriptions/checkout');
+  });
+});
