@@ -47,8 +47,10 @@ export const POST = withAuth(
     }
 
     const body = await request.json().catch(() => ({}));
-    const origin = request.headers.get('origin') ?? '';
-    const backUrl: string = body.back_url ?? `${origin}${BILLING_URL}&checkout=success`;
+    const origin = process.env.NEXT_PUBLIC_APP_URL || request.headers.get('origin') || '';
+    const backUrl: string = body.back_url ?? (origin.includes('localhost')
+      ? 'https://example.com/perfil'
+      : `${origin}${BILLING_URL}&checkout=success`);
 
     try {
       const tenant = await prisma.tenants.findUnique({
