@@ -1,9 +1,8 @@
 import { withAuth } from '@/lib/api-handler';
-import { getPreApproval, isMpEnabled } from '@/lib/mercadopago';
+import { isMpEnabled } from '@/lib/mercadopago';
 import { getSubscriptionStatusFresh } from '@/lib/subscription';
 import { prisma } from '@/lib/prisma';
 import { logApiError } from '@/lib/logger';
-import { BILLING_URL } from '@/lib/billing-links';
 
 /**
  * POST /api/mercadopago/checkout
@@ -24,7 +23,6 @@ export const POST = withAuth(
         { status: 503 },
       );
     }
-    const preapproval = getPreApproval()!;
     const planId = process.env.MP_PLAN_ID!;
 
     const subscription = await getSubscriptionStatusFresh(session.tenantId);
@@ -46,10 +44,6 @@ export const POST = withAuth(
       );
     }
 
-    const body = await request.json().catch(() => ({}));
-    const origin = request.headers.get('origin') ?? '';
-    const backUrl: string = body.back_url ?? `${origin}${BILLING_URL}&checkout=success`;
-
     try {
       const tenant = await prisma.tenants.findUnique({
         where: { id: session.tenantId },
@@ -64,24 +58,12 @@ export const POST = withAuth(
         );
       }
 
-      const created = await preapproval.create({
-        body: {
-          preapproval_plan_id: planId,
-          reason: `Box — ${tenant?.nombre ?? 'suscripción'}`,
-          payer_email: payerEmail,
-          back_url: backUrl,
-          external_reference: String(session.tenantId),
-          status: 'pending',
-        },
-      });
+      const checkoutUrl = new URL('https://www.mercadopago.com.ar/subscriptions/checkout');
+      checkoutUrl.searchParams.set('preapproval_plan_id', planId);
+      checkoutUrl.searchParams.set('external_reference', String(session.tenantId));
+      checkoutUrl.searchParams.set('payer_email', payerEmail);
 
-      if (!created?.init_point) {
-        return Response.json(
-          { error: { code: 'CHECKOUT_ERROR', message: 'MP no devolvió init_point' } },
-          { status: 502 },
-        );
-      }
-      return Response.json({ url: created.init_point });
+      return Response.json({ url: checkoutUrl.toString() });
     } catch (err: any) {
       logApiError('/api/mercadopago/checkout', 'POST', err);
       const detail = err?.message ?? err?.cause?.message ?? String(err);
