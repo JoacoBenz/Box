@@ -10,6 +10,32 @@ interface LogEntry {
   [key: string]: unknown;
 }
 
+function formatError(error: unknown): unknown {
+  if (error instanceof Error) {
+    // Error con posibles propiedades extras (ej: APIError de SDKs).
+    const extra: Record<string, unknown> = {};
+    for (const key of Object.getOwnPropertyNames(error)) {
+      if (key === 'message' || key === 'stack' || key === 'name') continue;
+      extra[key] = (error as unknown as Record<string, unknown>)[key];
+    }
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      ...(Object.keys(extra).length > 0 ? { extra } : {}),
+    };
+  }
+  if (typeof error === 'object' && error !== null) {
+    // Objetos planos (ej: errores de SDKs que throwean objetos no-Error).
+    try {
+      return JSON.parse(JSON.stringify(error));
+    } catch {
+      return String(error);
+    }
+  }
+  return String(error);
+}
+
 function log(entry: LogEntry): void {
   const output = JSON.stringify(entry);
   switch (entry.level) {
@@ -110,7 +136,7 @@ export function logApiError(
     method,
     userId,
     tenantId,
-    error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error),
+    error: formatError(error),
   };
   log(entry);
   captureToSentry(error, entry);
@@ -132,7 +158,7 @@ export function logNotificationError(
     action,
     targetUserId,
     solicitudId,
-    error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error),
+    error: formatError(error),
   };
   log(entry);
   captureToSentry(error, entry);
