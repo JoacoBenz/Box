@@ -82,10 +82,11 @@ export const POST = withAuth(
         );
       }
       return Response.json({ url: created.init_point });
-    } catch (err) {
+    } catch (err: any) {
       logApiError('/api/mercadopago/checkout', 'POST', err);
+      const detail = err?.message ?? err?.cause?.message ?? String(err);
       return Response.json(
-        { error: { code: 'CHECKOUT_ERROR', message: 'No se pudo crear el checkout' } },
+        { error: { code: 'CHECKOUT_ERROR', message: 'No se pudo crear el checkout', detail } },
         { status: 500 },
       );
     }
