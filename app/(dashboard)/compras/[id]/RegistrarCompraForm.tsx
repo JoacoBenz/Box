@@ -128,7 +128,9 @@ export default function RegistrarCompraForm({ solicitud, archivos = [] }: Props)
 
       if (fileList.length === 0) {
         message.error('Debe adjuntar el comprobante de compra');
-        return;
+        // Throw so the animated button shows the error state instead of
+        // completing a misleading success animation.
+        throw new Error('missing-comprobante');
       }
 
       setLoading(true);
@@ -162,8 +164,16 @@ export default function RegistrarCompraForm({ solicitud, archivos = [] }: Props)
       await new Promise((r) => setTimeout(r, 3500));
       router.push('/compras');
     } catch (err: any) {
-      if (err?.errorFields) return;
-      message.error(err?.message ?? 'Error inesperado');
+      if (err?.errorFields) {
+        // antd validation — already shown inline.
+        throw err;
+      }
+      // Surfaced already via message.error above (or form validation). Re-throw
+      // so the animated submit button renders its red error state.
+      if (err?.message && err.message !== 'missing-comprobante') {
+        message.error(err.message);
+      }
+      throw err;
     } finally {
       setLoading(false);
     }

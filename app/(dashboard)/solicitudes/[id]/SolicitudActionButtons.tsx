@@ -138,12 +138,16 @@ export default function SolicitudActionButtons({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        Modal.error({ title: 'Error', content: data?.error?.message ?? `Error ${res.status}` });
-      } else {
-        router.refresh();
+        const msg = data?.error?.message ?? `Error ${res.status}`;
+        Modal.error({ title: 'Error', content: msg });
+        // Throw so AnimatedSubmitButton renders its error state.
+        throw new Error(msg);
       }
-    } catch {
+      router.refresh();
+    } catch (err) {
+      if (err instanceof Error) throw err;
       Modal.error({ title: 'Error', content: 'Error de red. Intente nuevamente.' });
+      throw new Error('network-error');
     } finally {
       setLoading(false);
     }

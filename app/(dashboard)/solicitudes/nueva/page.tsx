@@ -197,8 +197,13 @@ export default function NuevaSolicitudPage() {
       if (accion === 'enviar') await new Promise((r) => setTimeout(r, 3500));
       router.push('/solicitudes');
     } catch (err: any) {
-      if (err?.errorFields) return; // antd validation errors — already shown
+      if (err?.errorFields) {
+        // antd validation — already shown inline; re-throw so the animated
+        // submit button renders its error state instead of a success check.
+        throw err;
+      }
       message.error(err?.message ?? 'Error inesperado');
+      throw err;
     } finally {
       setLoading(null);
     }

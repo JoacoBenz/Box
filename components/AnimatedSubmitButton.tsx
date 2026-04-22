@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useTheme } from '@/components/ThemeProvider';
 
-type AnimationState = 'idle' | 'morphing' | 'flying' | 'success' | 'done';
+type AnimationState = 'idle' | 'morphing' | 'flying' | 'success' | 'error' | 'done';
 type Variant = 'send' | 'approve' | 'reject';
 
 interface AnimatedSubmitButtonProps {
@@ -159,13 +159,24 @@ export default function AnimatedSubmitButton({
       setIdleDims({ width: rect.width, height: rect.height });
     }
 
-    // Fire the async action (non-blocking for animation)
+    // Fire the async action — the animation branches on its outcome so the
+    // user sees a red error state if the backend rejects (validation, budget
+    // block, network, etc.) instead of a misleading success check.
     const actionPromise = onClick();
+    // Swallow unhandledrejection warnings; we handle the error below.
+    actionPromise.catch(() => {});
 
     if (reducedMotion) {
-      setState('success');
-      await actionPromise;
-      schedule(() => setState('idle'), 800);
+      try {
+        await actionPromise;
+        setState('success');
+      } catch {
+        setState('error');
+      }
+      schedule(() => {
+        setState('idle');
+        setIdleDims(null);
+      }, 1200);
       return;
     }
 
@@ -175,36 +186,51 @@ export default function AnimatedSubmitButton({
     // Step 2: after morph, show icon and fly/bounce/shake
     schedule(() => setState('flying'), 700);
 
-    // Step 3: success state
+    // Let the fly animation play out before committing to success/error so
+    // a fast rejection doesn't visually snap-cut mid-flight.
     const flyDuration = variant === 'send' ? 1400 : variant === 'approve' ? 900 : 700;
-    schedule(() => setState('success'), 700 + flyDuration);
+    const flyDone = new Promise<void>((resolve) => schedule(resolve, 700 + flyDuration));
 
-    // Step 4: done -> wait for animation to finish, THEN let the action resolve
-    const totalAnimTime = 700 + flyDuration + 1200;
-    schedule(async () => {
-      await actionPromise;
-      setState('idle');
-      setIdleDims(null);
-    }, totalAnimTime);
+    try {
+      await Promise.all([flyDone, actionPromise]);
+      setState('success');
+      schedule(() => {
+        setState('idle');
+        setIdleDims(null);
+      }, 1200);
+    } catch {
+      await flyDone;
+      setState('error');
+      // Error state stays on screen a beat longer than success — the user is
+      // likely reading the accompanying message/modal.
+      schedule(() => {
+        setState('idle');
+        setIdleDims(null);
+      }, 1600);
+    }
   }, [state, disabled, onClick, reducedMotion, variant, schedule]);
 
   const height = idleDims?.height ?? 40;
   const width = idleDims?.width ?? 120;
 
   const isCircle = state === 'morphing' || state === 'flying';
+  const isTerminal = state === 'success' || state === 'error';
 
-  const variantColors: Record<Variant, { gradient: string; successBg: string }> = {
+  const variantColors: Record<Variant, { gradient: string; successBg: string; errorBg: string }> = {
     send: {
       gradient: tokens.logoGradient,
       successBg: '#22c55e',
+      errorBg: tokens.colorError,
     },
     approve: {
       gradient: tokens.logoGradient,
       successBg: '#22c55e',
+      errorBg: tokens.colorError,
     },
     reject: {
       gradient: tokens.logoGradient,
       successBg: tokens.colorError,
+      errorBg: tokens.colorError,
     },
   };
 
@@ -222,9 +248,10 @@ export default function AnimatedSubmitButton({
     lineHeight: '22px',
     padding: state === 'idle' ? '4px 15px' : 0,
     color: 'white',
-    background: state === 'success' ? colors.successBg : colors.gradient,
-    borderRadius: isCircle || state === 'success' ? '50%' : 6,
-    width: isCircle || state === 'success' ? height : width,
+    background:
+      state === 'success' ? colors.successBg : state === 'error' ? colors.errorBg : colors.gradient,
+    borderRadius: isCircle || isTerminal ? '50%' : 6,
+    width: isCircle || isTerminal ? height : width,
     height: height,
     minHeight: height,
     overflow: 'hidden',
@@ -308,6 +335,18 @@ export default function AnimatedSubmitButton({
         return (
           <span style={{ animation: 'asb-check-bounce 500ms ease forwards', display: 'flex' }}>
             <CheckIcon color="white" />
+          </span>
+        );
+
+      case 'error':
+        return (
+          <span
+            style={{
+              animation: 'asb-check-bounce 400ms ease forwards, asb-shake 600ms 400ms ease',
+              display: 'flex',
+            }}
+          >
+            <XIcon color="white" />
           </span>
         );
 

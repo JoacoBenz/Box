@@ -195,8 +195,12 @@ export default function EditarSolicitudPage() {
       if (accion === 'enviar') await new Promise((r) => setTimeout(r, 3500));
       router.push(`/solicitudes/${id}`);
     } catch (err: any) {
-      if (err?.errorFields) return;
+      if (err?.errorFields) {
+        // antd validation — already shown inline.
+        throw err;
+      }
       message.error(err?.message ?? 'Error inesperado');
+      throw err;
     } finally {
       setLoading(null);
     }
