@@ -10,6 +10,9 @@ import {
   ShoppingCartOutlined,
   TeamOutlined,
   ApartmentOutlined,
+  BankOutlined,
+  KeyOutlined,
+  SafetyOutlined,
   WarningOutlined,
   CloseCircleOutlined,
   ArrowRightOutlined,
@@ -453,13 +456,13 @@ export default function DashboardPage() {
     data.solicitudesAprobadas !== undefined || data.solicitudesEnCompras !== undefined;
   const hasTesoreria = data.pendientesComprar !== undefined;
   const hasAdmin = data.adminPlatform !== undefined;
+  const hasOrgAdmin = data.orgAdmin !== undefined;
 
   // Determine which analytics charts to show per role
-  // Admin sees platform-level metrics, not org-level analytics
-  const showGastoPorArea = !hasDirector && hasTesoreria && !hasAdmin;
-  const showTendenciaMensual = hasAnalytics && !hasDirector && !hasAdmin;
-  const showGastoPorMedioPago = hasCompras || (hasTesoreria && !hasAdmin);
-  const showTopProveedores = hasCompras || (hasTesoreria && !hasAdmin);
+  const showGastoPorArea = !hasDirector && !hasOrgAdmin && hasTesoreria && !hasAdmin;
+  const showTendenciaMensual = hasAnalytics && !hasDirector && !hasOrgAdmin && !hasAdmin;
+  const showGastoPorMedioPago = hasCompras || (hasTesoreria && !hasAdmin && !hasOrgAdmin);
+  const showTopProveedores = hasCompras || (hasTesoreria && !hasAdmin && !hasOrgAdmin);
   const showSolicitudesPorEstado = false; // now handled per-role in their own sections
   const showSolicitudesPorUrgencia = false;
 
@@ -485,6 +488,107 @@ export default function DashboardPage() {
           onAreaChange={handleDirectorAreaChange}
           onRefresh={() => fetchDashboard(directorAreaId)}
         />
+      )}
+
+      {/* ═══════════════════════════════════════════════════ */}
+      {/* ── ORG ADMIN DASHBOARD ───────────────────────── */}
+      {/* ═══════════════════════════════════════════════════ */}
+      {hasOrgAdmin && !hasDirector && (
+        <DirectorDashboard
+          data={data}
+          directorAreaId={null}
+          onAreaChange={() => {}}
+        />
+      )}
+      {hasOrgAdmin && (
+        <div style={{ marginBottom: 28 }}>
+          <SectionTitle>Panel de Administracion</SectionTitle>
+          <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+            <Col xs={12} sm={8} lg={4}>
+              <MiniStatCard
+                title="Usuarios"
+                value={data.orgAdmin.usuariosActivos}
+                icon={<TeamOutlined />}
+                color="blue"
+                suffix={` / ${data.orgAdmin.totalUsuarios}`}
+              />
+            </Col>
+            <Col xs={12} sm={8} lg={4}>
+              <MiniStatCard
+                title="Areas"
+                value={data.orgAdmin.totalAreas}
+                icon={<ApartmentOutlined />}
+                color="green"
+              />
+            </Col>
+            <Col xs={12} sm={8} lg={4}>
+              <MiniStatCard
+                title="Centros Costo"
+                value={data.orgAdmin.totalCentrosCosto}
+                icon={<BankOutlined />}
+                color="purple"
+              />
+            </Col>
+            <Col xs={12} sm={8} lg={4}>
+              <MiniStatCard
+                title="Invitaciones"
+                value={data.orgAdmin.invitacionesActivas}
+                icon={<KeyOutlined />}
+                color="orange"
+              />
+            </Col>
+            <Col xs={12} sm={8} lg={4}>
+              <MiniStatCard
+                title="Solicitudes Activas"
+                value={data.orgAdmin.solicitudesActivas}
+                icon={<FileTextOutlined />}
+                color="blue"
+              />
+            </Col>
+            <Col xs={12} sm={8} lg={4}>
+              <MiniStatCard
+                title="Areas sin Resp."
+                value={data.orgAdmin.totalAreas - data.orgAdmin.areasConResponsable}
+                icon={<WarningOutlined />}
+                color={data.orgAdmin.totalAreas - data.orgAdmin.areasConResponsable > 0 ? 'orange' : 'green'}
+              />
+            </Col>
+          </Row>
+          {data.orgAdmin.ultimasAuditorias?.length > 0 && (
+            <Card
+              title={<span style={{ fontWeight: 700 }}>Actividad Reciente</span>}
+              extra={
+                <Link href="/auditoria" style={{ fontSize: 13 }}>
+                  Ver todo
+                </Link>
+              }
+              style={{ borderRadius: 16 }}
+              styles={{ body: { padding: '8px 16px' } }}
+            >
+              {data.orgAdmin.ultimasAuditorias.map((a: any, i: number) => (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '8px 0',
+                    borderBottom: i < data.orgAdmin.ultimasAuditorias.length - 1 ? '1px solid var(--border-color)' : 'none',
+                    fontSize: 13,
+                  }}
+                >
+                  <span>
+                    <strong>{a.usuario}</strong>{' '}
+                    <Tag style={{ fontSize: 11 }}>{a.accion.replace(/_/g, ' ')}</Tag>
+                  </span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
+                    {new Date(a.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              ))}
+            </Card>
+          )}
+        </div>
       )}
 
       {/* ═══════════════════════════════════════════════════ */}
@@ -557,12 +661,12 @@ export default function DashboardPage() {
         hasCompras ||
         hasTesoreria ||
         hasAdmin ||
-        (hasAnalytics && !hasDirector)) && (
+        (hasAnalytics && !hasDirector && !hasOrgAdmin)) && (
         <div style={{ marginBottom: 28 }}>
           <SectionTitle>Mis Métricas</SectionTitle>
           <Row gutter={[16, 16]}>
-            {/* === Gasto Año / Mes (shared by analytics roles, director has its own) === */}
-            {hasAnalytics && !hasDirector && (
+            {/* === Gasto Año / Mes (shared by analytics roles, director/admin have their own) === */}
+            {hasAnalytics && !hasDirector && !hasOrgAdmin && (
               <>
                 <Col xs={24} sm={12} lg={6}>
                   <StatCard

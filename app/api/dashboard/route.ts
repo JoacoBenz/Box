@@ -307,6 +307,53 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
     result.resumenPresupuesto = await getResumenPresupuesto(tenantId!);
   }
 
+  // ── Org Admin section (admin role, not super_admin platform metrics) ──
+  if (roles.includes('admin') && !roles.includes('director')) {
+    const [
+      totalUsuarios,
+      usuariosActivos,
+      totalAreas,
+      areasConResponsable,
+      totalCentrosCosto,
+      invitacionesActivas,
+      ultimasAuditorias,
+      solicitudesActivas,
+    ] = await Promise.all([
+      db.usuarios.count(),
+      db.usuarios.count({ where: { activo: true } }),
+      db.areas.count(),
+      db.areas.count({ where: { responsable_id: { not: null } } }),
+      db.centros_costo.count(),
+      db.codigos_invitacion
+        ? db.codigos_invitacion.count({ where: { activo: true, expira_el: { gte: new Date() } } }).catch(() => 0)
+        : Promise.resolve(0),
+      prisma.$queryRaw<{ accion: string; usuario: string; fecha: string }[]>`
+        SELECT al.accion, u.nombre AS usuario, al.created_at::text AS fecha
+        FROM audit_logs al
+        JOIN usuarios u ON al.usuario_id = u.id
+        WHERE al.tenant_id = ${tenantId}
+        ORDER BY al.created_at DESC
+        LIMIT 5
+      `,
+      db.solicitudes.count({
+        where: { estado: { notIn: ['cerrada', 'anulada', 'rechazada'] } },
+      }),
+    ]);
+
+    result.orgAdmin = {
+      totalUsuarios,
+      usuariosActivos,
+      totalAreas,
+      areasConResponsable,
+      totalCentrosCosto,
+      invitacionesActivas,
+      ultimasAuditorias,
+      solicitudesActivas,
+    };
+
+    result.resumenPresupuesto = await getResumenPresupuesto(tenantId!);
+  }
+
   // ── Compras section (cross-area — sees all solicitudes) ──
   if (roles.includes('compras')) {
     const areaFilter = {};
@@ -521,9 +568,9 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
     };
   }
 
-  // ── Analytics (director, tesoreria, compras — NOT admin, who has platform-level metrics) ──
+  // ── Analytics (director, admin, tesoreria, compras) ──
   const hasAnalytics =
-    roles.includes('director') || roles.includes('tesoreria') || roles.includes('compras');
+    roles.includes('director') || roles.includes('admin') || roles.includes('tesoreria') || roles.includes('compras');
   if (hasAnalytics) {
     // Area filter for director — applied to analytics queries
     const areaJoinFilter = directorAreaId
