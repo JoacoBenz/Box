@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { Card, Col, Row, Typography, Empty, Select } from 'antd';
+import { Card, Col, Row, Typography, Empty, Select, Progress, Table, Tag } from 'antd';
 import {
   PieChart,
   Pie,
@@ -229,6 +229,8 @@ export default function DirectorDashboard({
   );
 
   const totalMedio = gastoPorMedio.reduce((sum, m) => sum + m.value, 0);
+
+  const resumenPresupuesto: any[] = data.resumenPresupuesto ?? [];
 
   const areaFilterSelect = (
     <Select
@@ -549,6 +551,86 @@ export default function DirectorDashboard({
           </Card>
         </Col>
       </Row>
+
+      {/* ── Presupuesto por Área ── */}
+      {resumenPresupuesto.length > 0 && (
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col span={24}>
+            <Card
+              title={
+                <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
+                  Presupuesto por Área
+                </span>
+              }
+              style={{ borderRadius: 16 }}
+              styles={{ body: { padding: '12px 24px' } }}
+            >
+              <Table
+                rowKey="areaId"
+                dataSource={resumenPresupuesto}
+                pagination={false}
+                size="small"
+                columns={[
+                  {
+                    title: 'Área',
+                    dataIndex: 'areaNombre',
+                    key: 'areaNombre',
+                    width: 180,
+                  },
+                  {
+                    title: 'Presup. Mensual',
+                    key: 'mensual',
+                    width: 140,
+                    render: (_, r: any) =>
+                      r.presupuestoMensual !== null ? formatMoney(r.presupuestoMensual) : '—',
+                  },
+                  {
+                    title: 'Gastado (mes)',
+                    key: 'gastoMes',
+                    width: 130,
+                    render: (_, r: any) => formatMoney(r.gastoMensual),
+                  },
+                  {
+                    title: 'Uso Mensual',
+                    key: 'pctMensual',
+                    width: 180,
+                    render: (_, r: any) => {
+                      if (r.presupuestoMensual === null) return <Tag>Sin presupuesto</Tag>;
+                      const pct = r.porcentajeMensual;
+                      const color = pct >= 100 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#22c55e';
+                      return <Progress percent={Math.min(pct, 100)} size="small" strokeColor={color} format={() => `${pct}%`} />;
+                    },
+                  },
+                  {
+                    title: 'Presup. Anual',
+                    key: 'anual',
+                    width: 140,
+                    render: (_, r: any) =>
+                      r.presupuestoAnual !== null ? formatMoney(r.presupuestoAnual) : '—',
+                  },
+                  {
+                    title: 'Gastado (año)',
+                    key: 'gastoAnio',
+                    width: 130,
+                    render: (_, r: any) => formatMoney(r.gastoAnual),
+                  },
+                  {
+                    title: 'Uso Anual',
+                    key: 'pctAnual',
+                    width: 180,
+                    render: (_, r: any) => {
+                      if (r.presupuestoAnual === null) return <Tag>Sin presupuesto</Tag>;
+                      const pct = r.porcentajeAnual;
+                      const color = pct >= 100 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#22c55e';
+                      return <Progress percent={Math.min(pct, 100)} size="small" strokeColor={color} format={() => `${pct}%`} />;
+                    },
+                  },
+                ]}
+              />
+            </Card>
+          </Col>
+        </Row>
+      )}
     </>
   );
 }

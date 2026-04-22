@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { withAdminOverride } from '@/lib/api-handler';
 import { cached } from '@/lib/cache';
 import type { DashboardData } from '@/types/dashboard';
+import { getResumenPresupuesto } from '@/lib/budget-control';
 
 export const GET = withAdminOverride({}, async (request, { session, db, effectiveTenantId }) => {
   const { userId, areaId, roles } = session;
@@ -198,6 +199,13 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
     result.aprobadasSemana = aprobadasSemana;
     result.rechazadasSemana = rechazadasSemana;
     result.urgentesPendientesDir = urgentesPendientes;
+
+    result.resumenPresupuesto = await getResumenPresupuesto(tenantId!);
+  }
+
+  // ── Tesoreria budget summary ──
+  if (roles.includes('tesoreria') && !roles.includes('director')) {
+    result.resumenPresupuesto = await getResumenPresupuesto(tenantId!);
   }
 
   // ── Compras section (cross-area — sees all solicitudes) ──

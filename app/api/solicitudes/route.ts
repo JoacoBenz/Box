@@ -5,6 +5,7 @@ import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { solicitudSchema } from '@/lib/validators';
 import { getTenantConfigBool } from '@/lib/tenant-config';
 import { verificarResponsableDeArea } from '@/lib/permissions';
+import { verificarPresupuestoArea } from '@/lib/budget-control';
 
 async function generarNumeroSolicitud(tenantId: number): Promise<string> {
   const año = new Date().getFullYear();
@@ -298,5 +299,32 @@ export const POST = withAuth({ roles: ['solicitante'] }, async (request, { sessi
     ipAddress: ip,
   });
 
-  return Response.json(solicitud, { status: 201 });
+  let alertaPresupuesto: { porcentaje: number; mensaje: string } | null = null;
+  if (enviar) {
+    const montoEstimado = items.reduce((acc, item) => {
+      return acc + (item.precio_estimado ? Number(item.precio_estimado) * Number(item.cantidad) : 0);
+    }, 0);
+    if (montoEstimado > 0) {
+      const budget = await verificarPresupuestoArea(session.tenantId, session.areaId!, montoEstimado);
+      if (budget.status.presupuestoMensual !== null || budget.status.presupuestoAnual !== null) {
+        const pctMensual = budget.status.presupuestoMensual
+          ? Math.round(((budget.status.gastoMensual + montoEstimado) / budget.status.presupuestoMensual) * 100)
+          : 0;
+        const pctAnual = budget.status.presupuestoAnual
+          ? Math.round(((budget.status.gastoAnual + montoEstimado) / budget.status.presupuestoAnual) * 100)
+          : 0;
+        const pct = Math.max(pctMensual, pctAnual);
+        if (pct >= 70) {
+          alertaPresupuesto = {
+            porcentaje: pct,
+            mensaje: pct >= 100
+              ? `Esta solicitud excedería el presupuesto del área (${pct}% de uso)`
+              : `Esta solicitud llevaría el presupuesto del área al ${pct}% de uso`,
+          };
+        }
+      }
+    }
+  }
+
+  return Response.json({ ...solicitud, alertaPresupuesto }, { status: 201 });
 });

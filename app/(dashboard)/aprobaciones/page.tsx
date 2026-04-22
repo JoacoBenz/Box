@@ -199,7 +199,15 @@ export default function AprobacionesPage() {
           body: JSON.stringify({ updated_at: solicitud.updated_at }),
         });
         if (res.ok) {
+          const result = await res.json();
           message.success(`Solicitud ${solicitud.numero} aprobada`);
+          if (result.presupuestoAlerta) {
+            const isExceeded = result.presupuestoAlerta.porcentaje >= 100;
+            modal[isExceeded ? 'warning' : 'info']({
+              title: isExceeded ? 'Presupuesto excedido' : 'Alerta de presupuesto',
+              content: result.presupuestoAlerta.mensaje,
+            });
+          }
           setSolicitudes((prev) => prev.filter((s) => s.id !== solicitud.id));
           setSelectedRowKeys((prev) => prev.filter((k) => k !== solicitud.id));
         } else {

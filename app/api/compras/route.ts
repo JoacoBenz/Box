@@ -223,6 +223,33 @@ export const POST = withAuth(
       solicitud.id,
     );
 
+    // Budget threshold notifications after purchase
+    const postBudget = await verificarPresupuestoArea(
+      session.tenantId,
+      solicitud.area_id,
+      0,
+    );
+    const pctMensual = postBudget.status.presupuestoMensual
+      ? Math.round((postBudget.status.gastoMensual / postBudget.status.presupuestoMensual) * 100)
+      : 0;
+    const pctAnual = postBudget.status.presupuestoAnual
+      ? Math.round((postBudget.status.gastoAnual / postBudget.status.presupuestoAnual) * 100)
+      : 0;
+    const pctMax = Math.max(pctMensual, pctAnual);
+    if (pctMax >= 80) {
+      const tipo = pctMax >= 100 ? 'excedido' : 'alto';
+      const titulo = pctMax >= 100
+        ? `Presupuesto excedido: ${postBudget.status.area}`
+        : `Presupuesto al ${pctMax}%: ${postBudget.status.area}`;
+      const mensaje = pctMax >= 100
+        ? `El área "${postBudget.status.area}" superó su presupuesto (${pctMax}%) tras registrar la compra de "${solicitud.titulo}".`
+        : `El área "${postBudget.status.area}" alcanzó el ${pctMax}% de su presupuesto tras la compra de "${solicitud.titulo}".`;
+      await Promise.all([
+        notificarPorRol(session.tenantId, 'director', titulo, mensaje, solicitud.id),
+        notificarPorRol(session.tenantId, 'tesoreria', titulo, mensaje, solicitud.id),
+      ]);
+    }
+
     await registrarAuditoria({
       tenantId: session.tenantId,
       usuarioId: session.userId,
@@ -231,6 +258,17 @@ export const POST = withAuth(
       entidadId: compra.id,
       ipAddress: ip,
     });
-    return Response.json({ ...compra, warning: uploadWarning }, { status: 201 });
+
+    let presupuestoAlerta: { porcentaje: number; mensaje: string } | null = null;
+    if (pctMax >= 70) {
+      presupuestoAlerta = {
+        porcentaje: pctMax,
+        mensaje: pctMax >= 100
+          ? `El presupuesto del área quedó excedido (${pctMax}%)`
+          : `El presupuesto del área quedó al ${pctMax}%`,
+      };
+    }
+
+    return Response.json({ ...compra, warning: uploadWarning, presupuestoAlerta }, { status: 201 });
   },
 );

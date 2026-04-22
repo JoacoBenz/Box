@@ -5,7 +5,7 @@ import { registrarAuditoria } from '@/lib/audit';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { getTenantConfigBool } from '@/lib/tenant-config';
 import { canUserApproveAmount } from '@/lib/approval-limits';
-import { verificarPresupuesto } from '@/lib/budget-control';
+import { verificarPresupuesto, verificarPresupuestoArea } from '@/lib/budget-control';
 
 export const POST = withAuth(
   { roles: ['director'] },
@@ -153,6 +153,33 @@ export const POST = withAuth(
       entidadId: solicitudId,
       ipAddress: ip,
     });
-    return Response.json({ message: 'Solicitud aprobada' });
+
+    let presupuestoAlerta: { porcentaje: number; mensaje: string } | null = null;
+    if (montoTotal) {
+      const areaBudget = await verificarPresupuestoArea(
+        session.tenantId,
+        solicitud.area_id,
+        Number(montoTotal),
+      );
+      if (areaBudget.status.presupuestoMensual !== null || areaBudget.status.presupuestoAnual !== null) {
+        const pctMensual = areaBudget.status.presupuestoMensual
+          ? Math.round(((areaBudget.status.gastoMensual + Number(montoTotal)) / areaBudget.status.presupuestoMensual) * 100)
+          : 0;
+        const pctAnual = areaBudget.status.presupuestoAnual
+          ? Math.round(((areaBudget.status.gastoAnual + Number(montoTotal)) / areaBudget.status.presupuestoAnual) * 100)
+          : 0;
+        const pct = Math.max(pctMensual, pctAnual);
+        if (pct >= 70) {
+          presupuestoAlerta = {
+            porcentaje: pct,
+            mensaje: pct >= 100
+              ? `Al aprobar, el presupuesto del área quedará excedido (${pct}%)`
+              : `Al aprobar, el presupuesto del área quedará al ${pct}%`,
+          };
+        }
+      }
+    }
+
+    return Response.json({ message: 'Solicitud aprobada', presupuestoAlerta });
   },
 );
