@@ -38,6 +38,7 @@ const ROL_LABELS: Record<string, string> = {
   admin: 'Admin',
   director: 'Director',
   tesoreria: 'Tesorería',
+  compras: 'Compras',
   responsable_area: 'Responsable',
   solicitante: 'Solicitante',
 };

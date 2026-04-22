@@ -265,14 +265,20 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
           items_solicitud: { select: { precio_estimado: true, cantidad: true } },
         },
       }),
-      // 4. Average cycle time (last 90 days)
+      // 4. Average cycle time (last 90 days). fecha_compra is a DATE (interpreted
+      // as midnight), so we cast the timestamps to ::date to get whole-day diffs
+      // instead of negative fractional days for same-day approvals/purchases.
       prisma.$queryRaw<
-        { avg_total_days: string | null; avg_approval_days: string | null; avg_payment_days: string | null }[]
+        {
+          avg_total_days: string | null;
+          avg_approval_days: string | null;
+          avg_payment_days: string | null;
+        }[]
       >`
         SELECT
-          ROUND(AVG(EXTRACT(EPOCH FROM (c.fecha_compra - s.created_at)) / 86400))::text AS avg_total_days,
-          ROUND(AVG(EXTRACT(EPOCH FROM (s.fecha_aprobacion - s.created_at)) / 86400))::text AS avg_approval_days,
-          ROUND(AVG(EXTRACT(EPOCH FROM (c.fecha_compra - s.fecha_aprobacion)) / 86400))::text AS avg_payment_days
+          ROUND(AVG(c.fecha_compra - s.created_at::date))::text AS avg_total_days,
+          ROUND(AVG(s.fecha_aprobacion::date - s.created_at::date))::text AS avg_approval_days,
+          ROUND(AVG(c.fecha_compra - s.fecha_aprobacion::date))::text AS avg_payment_days
         FROM compras c
         JOIN solicitudes s ON c.solicitud_id = s.id AND c.tenant_id = s.tenant_id
         WHERE c.tenant_id = ${tenantId}
@@ -325,7 +331,9 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       tdb.areas.count({ where: { responsable_id: { not: null } } }),
       tdb.centros_costo.count(),
       tdb.codigos_invitacion
-        ? tdb.codigos_invitacion.count({ where: { activo: true, expira_el: { gte: new Date() } } }).catch(() => 0)
+        ? tdb.codigos_invitacion
+            .count({ where: { activo: true, expira_el: { gte: new Date() } } })
+            .catch(() => 0)
         : Promise.resolve(0),
       prisma.$queryRaw<{ accion: string; usuario: string; fecha: string }[]>`
         SELECT la.accion, u.nombre AS usuario, la.created_at::text AS fecha
@@ -386,9 +394,10 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
         dia_pago_programado: true,
       },
     });
-    // Tiempo promedio pipeline (last 90 days)
+    // Tiempo promedio pipeline (last 90 days). See note above: fecha_compra is
+    // DATE, fecha_aprobacion is timestamp; cast to ::date to avoid negative diffs.
     const tiempoPipeline = await prisma.$queryRaw<{ avg_days: string | null }[]>`
-      SELECT ROUND(AVG(EXTRACT(EPOCH FROM (c.fecha_compra - s.fecha_aprobacion)) / 86400))::text AS avg_days
+      SELECT ROUND(AVG(c.fecha_compra - s.fecha_aprobacion::date))::text AS avg_days
       FROM compras c
       JOIN solicitudes s ON c.solicitud_id = s.id AND c.tenant_id = s.tenant_id
       WHERE c.tenant_id = ${tenantId}
@@ -572,7 +581,10 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
 
   // ── Analytics (director, admin, tesoreria, compras) ──
   const hasAnalytics =
-    roles.includes('director') || roles.includes('admin') || roles.includes('tesoreria') || roles.includes('compras');
+    roles.includes('director') ||
+    roles.includes('admin') ||
+    roles.includes('tesoreria') ||
+    roles.includes('compras');
   if (hasAnalytics) {
     // Area filter for director — applied to analytics queries
     const areaJoinFilter = directorAreaId

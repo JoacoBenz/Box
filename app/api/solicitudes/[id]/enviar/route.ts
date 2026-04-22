@@ -4,6 +4,7 @@ import { apiError, verificarResponsableDeArea } from '@/lib/permissions';
 import { registrarAuditoria } from '@/lib/audit';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { getTenantConfigBool } from '@/lib/tenant-config';
+import { verificarPresupuestoSolicitanteArea } from '@/lib/budget-control';
 
 export const POST = withTenant(async (request, { session, db, ip }, params) => {
   const solicitudId = parseId(params.id);
@@ -26,6 +27,29 @@ export const POST = withTenant(async (request, { session, db, ip }, params) => {
   }
   if (solicitud.items_solicitud.length === 0) {
     return apiError('BAD_REQUEST', 'La solicitud debe tener al menos un ítem', 400);
+  }
+
+  // Re-check area budget before committing the solicitud to the pipeline.
+  // Budget state may have shifted since the draft was saved. We subtract this
+  // solicitud's own committed amount (already counted as pending when it's in
+  // devuelta_resp/devuelta_dir) to avoid double-counting.
+  const montoEstimado = solicitud.items_solicitud.reduce((acc, item) => {
+    return acc + (item.precio_estimado ? Number(item.precio_estimado) * Number(item.cantidad) : 0);
+  }, 0);
+  if (montoEstimado > 0) {
+    const alreadyCommitted = ['devuelta_resp', 'devuelta_dir'].includes(solicitud.estado);
+    const nuevoMonto = alreadyCommitted ? 0 : montoEstimado;
+    const budgetCheck = await verificarPresupuestoSolicitanteArea(
+      session.tenantId,
+      solicitud.area_id,
+      nuevoMonto,
+    );
+    if (!budgetCheck.permitido) {
+      return Response.json(
+        { error: { code: 'BUDGET_EXCEEDED', message: budgetCheck.mensaje } },
+        { status: 422 },
+      );
+    }
   }
 
   // Optimistic locking: verify no concurrent modification

@@ -30,7 +30,7 @@ type AdminApiHandler = (
 
 interface ApiHandlerOptions {
   roles?: RolNombre[]; // Required roles (any of these). Empty = authenticated only.
-  /** Rate limit for write operations (POST/PATCH/PUT/DELETE). Defaults to 30/min per user. Set false to disable. */
+  /** Rate limit for write operations (POST/PATCH/PUT/DELETE). Defaults to 60/min per user per path. Set false to disable. */
   rateLimit?: { max: number; windowMs: number } | false;
 }
 
@@ -65,7 +65,7 @@ export function withAuth(options: ApiHandlerOptions, handler: ApiHandler) {
       // Rate limit write operations (POST/PATCH/PUT/DELETE)
       const isWrite = request.method !== 'GET' && request.method !== 'HEAD';
       if (isWrite && options.rateLimit !== false) {
-        const rl = options.rateLimit ?? { max: 30, windowMs: 60_000 };
+        const rl = options.rateLimit ?? { max: 60, windowMs: 60_000 };
         const url = new URL(request.url);
         const rlResult = await checkRateLimitDb(
           `api:${session.userId}:${url.pathname}`,
@@ -126,7 +126,7 @@ export function withAdminOverride(
       // Rate limit write operations
       const isWrite = request.method !== 'GET' && request.method !== 'HEAD';
       if (isWrite && options.rateLimit !== false) {
-        const rl = (options as any).rateLimit ?? { max: 30, windowMs: 60_000 };
+        const rl = (options as any).rateLimit ?? { max: 60, windowMs: 60_000 };
         const url = new URL(request.url);
         const rlResult = await checkRateLimitDb(
           `api:${session.userId}:${url.pathname}`,

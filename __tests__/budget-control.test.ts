@@ -14,7 +14,12 @@ vi.mock('@/lib/prisma', () => ({
   }),
 }));
 
-import { verificarPresupuesto, verificarPresupuestoArea, getResumenPresupuesto } from '@/lib/budget-control';
+import {
+  verificarPresupuesto,
+  verificarPresupuestoArea,
+  verificarPresupuestoSolicitanteArea,
+  getResumenPresupuesto,
+} from '@/lib/budget-control';
 
 beforeEach(() => {
   mockFindFirst.mockReset();
@@ -191,6 +196,100 @@ describe('verificarPresupuestoArea', () => {
     expect(result.permitido).toBe(false);
     expect(result.status.excedidoAnual).toBe(true);
     expect(result.status.excedidoMensual).toBe(true);
+    expect(result.mensaje).toContain('mensual');
+    expect(result.mensaje).toContain('anual');
+  });
+});
+
+describe('verificarPresupuestoSolicitanteArea', () => {
+  it('permite cuando el área no existe', async () => {
+    mockAreasFindFirst.mockResolvedValue(null);
+    const result = await verificarPresupuestoSolicitanteArea(1, 99, 1000);
+    expect(result.permitido).toBe(true);
+  });
+
+  it('permite cuando no hay presupuesto configurado', async () => {
+    mockAreasFindFirst.mockResolvedValue({
+      id: 1,
+      nombre: 'Administración',
+      presupuesto_anual: null,
+      presupuesto_mensual: null,
+    });
+    const result = await verificarPresupuestoSolicitanteArea(1, 1, 50000);
+    expect(result.permitido).toBe(true);
+    expect(result.status.area).toBe('Administración');
+    expect(result.status.excedidoAnual).toBe(false);
+    expect(result.status.excedidoMensual).toBe(false);
+  });
+
+  it('bloquea cuando gasto real + comprometido + nuevo excede anual', async () => {
+    mockAreasFindFirst.mockResolvedValue({
+      id: 1,
+      nombre: 'Ventas',
+      presupuesto_anual: 150000,
+      presupuesto_mensual: null,
+    });
+    // Real $50k + comprometido $80k + nuevo $30k = $160k > $150k → bloquea
+    mockQueryRaw.mockResolvedValue([
+      { real_anual: 50000, real_mensual: 0, comprometido_anual: 80000, comprometido_mensual: 0 },
+    ]);
+    const result = await verificarPresupuestoSolicitanteArea(1, 1, 30000);
+    expect(result.permitido).toBe(false);
+    expect(result.status.excedidoAnual).toBe(true);
+    expect(result.mensaje).toContain('anual');
+    expect(result.mensaje).toContain('solicitudes pendientes');
+  });
+
+  it('permite cuando gasto + comprometido + nuevo queda bajo el presupuesto', async () => {
+    mockAreasFindFirst.mockResolvedValue({
+      id: 1,
+      nombre: 'Ventas',
+      presupuesto_anual: 200000,
+      presupuesto_mensual: null,
+    });
+    // Real $50k + comprometido $80k + nuevo $30k = $160k < $200k → permite
+    mockQueryRaw.mockResolvedValue([
+      { real_anual: 50000, real_mensual: 0, comprometido_anual: 80000, comprometido_mensual: 0 },
+    ]);
+    const result = await verificarPresupuestoSolicitanteArea(1, 1, 30000);
+    expect(result.permitido).toBe(true);
+    expect(result.status.gastoAnual).toBe(130000);
+  });
+
+  it('bloquea cuando excede solo el presupuesto mensual', async () => {
+    mockAreasFindFirst.mockResolvedValue({
+      id: 1,
+      nombre: 'Marketing',
+      presupuesto_anual: null,
+      presupuesto_mensual: 50000,
+    });
+    mockQueryRaw.mockResolvedValue([
+      { real_anual: 0, real_mensual: 20000, comprometido_anual: 0, comprometido_mensual: 25000 },
+    ]);
+    // Real $20k + comprometido $25k + nuevo $10k = $55k > $50k → bloquea
+    const result = await verificarPresupuestoSolicitanteArea(1, 1, 10000);
+    expect(result.permitido).toBe(false);
+    expect(result.status.excedidoMensual).toBe(true);
+    expect(result.mensaje).toContain('mensual');
+  });
+
+  it('reporta ambos excesos en el mensaje cuando excede anual y mensual', async () => {
+    mockAreasFindFirst.mockResolvedValue({
+      id: 1,
+      nombre: 'Ops',
+      presupuesto_anual: 100000,
+      presupuesto_mensual: 50000,
+    });
+    mockQueryRaw.mockResolvedValue([
+      {
+        real_anual: 70000,
+        real_mensual: 40000,
+        comprometido_anual: 20000,
+        comprometido_mensual: 5000,
+      },
+    ]);
+    const result = await verificarPresupuestoSolicitanteArea(1, 1, 15000);
+    expect(result.permitido).toBe(false);
     expect(result.mensaje).toContain('mensual');
     expect(result.mensaje).toContain('anual');
   });

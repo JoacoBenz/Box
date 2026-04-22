@@ -6,7 +6,7 @@ import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { compraSchema } from '@/lib/validators';
 import { uploadFile } from '@/lib/supabase';
 import { logApiError } from '@/lib/logger';
-import { verificarPresupuestoArea } from '@/lib/budget-control';
+import { verificarPresupuestoArea, verificarPresupuesto } from '@/lib/budget-control';
 
 export const POST = withAuth(
   { roles: ['tesoreria', 'compras', 'solicitante'] },
@@ -78,6 +78,7 @@ export const POST = withAuth(
         aprobado_por_id: true,
         proveedor_id: true,
         area_id: true,
+        centro_costo_id: true,
         titulo: true,
         numero: true,
       },
@@ -135,6 +136,47 @@ export const POST = withAuth(
         { error: { code: 'BUDGET_EXCEEDED', message: budgetCheck.mensaje } },
         { status: 422 },
       );
+    }
+
+    // Centro de costo check — same enforcement as the area budget. Only runs
+    // when the solicitud has a CC assigned; for tenants that only track
+    // budgets at the area level this is a no-op.
+    const centroCostoId = solicitud.centro_costo_id;
+    if (centroCostoId) {
+      const ccCheck = await verificarPresupuesto(
+        session.tenantId,
+        centroCostoId,
+        parsed.data.monto_total,
+      );
+      if (ccCheck.status.excedido) {
+        const p = ccCheck.status;
+        const parts: string[] = [];
+        if (
+          p.presupuestoMensual !== null &&
+          p.gastoMensual + parsed.data.monto_total > p.presupuestoMensual
+        ) {
+          parts.push(
+            `mensual ($${p.gastoMensual.toLocaleString('es-AR')} + $${parsed.data.monto_total.toLocaleString('es-AR')} > $${p.presupuestoMensual.toLocaleString('es-AR')})`,
+          );
+        }
+        if (
+          p.presupuestoAnual !== null &&
+          p.gastoAnual + parsed.data.monto_total > p.presupuestoAnual
+        ) {
+          parts.push(
+            `anual ($${p.gastoAnual.toLocaleString('es-AR')} + $${parsed.data.monto_total.toLocaleString('es-AR')} > $${p.presupuestoAnual.toLocaleString('es-AR')})`,
+          );
+        }
+        return Response.json(
+          {
+            error: {
+              code: 'BUDGET_EXCEEDED_CC',
+              message: `El centro de costo "${p.centroCosto}" excede el presupuesto ${parts.join(' y ')}.`,
+            },
+          },
+          { status: 422 },
+        );
+      }
     }
 
     const compra = await prisma.$transaction(async (tx) => {
@@ -224,11 +266,7 @@ export const POST = withAuth(
     );
 
     // Budget threshold notifications after purchase
-    const postBudget = await verificarPresupuestoArea(
-      session.tenantId,
-      solicitud.area_id,
-      0,
-    );
+    const postBudget = await verificarPresupuestoArea(session.tenantId, solicitud.area_id, 0);
     const pctMensual = postBudget.status.presupuestoMensual
       ? Math.round((postBudget.status.gastoMensual / postBudget.status.presupuestoMensual) * 100)
       : 0;
@@ -238,12 +276,14 @@ export const POST = withAuth(
     const pctMax = Math.max(pctMensual, pctAnual);
     if (pctMax >= 80) {
       const tipo = pctMax >= 100 ? 'excedido' : 'alto';
-      const titulo = pctMax >= 100
-        ? `Presupuesto excedido: ${postBudget.status.area}`
-        : `Presupuesto al ${pctMax}%: ${postBudget.status.area}`;
-      const mensaje = pctMax >= 100
-        ? `El área "${postBudget.status.area}" superó su presupuesto (${pctMax}%) tras registrar la compra de "${solicitud.titulo}".`
-        : `El área "${postBudget.status.area}" alcanzó el ${pctMax}% de su presupuesto tras la compra de "${solicitud.titulo}".`;
+      const titulo =
+        pctMax >= 100
+          ? `Presupuesto excedido: ${postBudget.status.area}`
+          : `Presupuesto al ${pctMax}%: ${postBudget.status.area}`;
+      const mensaje =
+        pctMax >= 100
+          ? `El área "${postBudget.status.area}" superó su presupuesto (${pctMax}%) tras registrar la compra de "${solicitud.titulo}".`
+          : `El área "${postBudget.status.area}" alcanzó el ${pctMax}% de su presupuesto tras la compra de "${solicitud.titulo}".`;
       await Promise.all([
         notificarPorRol(session.tenantId, 'director', titulo, mensaje, solicitud.id),
         notificarPorRol(session.tenantId, 'tesoreria', titulo, mensaje, solicitud.id),
@@ -263,9 +303,10 @@ export const POST = withAuth(
     if (pctMax >= 70) {
       presupuestoAlerta = {
         porcentaje: pctMax,
-        mensaje: pctMax >= 100
-          ? `El presupuesto del área quedó excedido (${pctMax}%)`
-          : `El presupuesto del área quedó al ${pctMax}%`,
+        mensaje:
+          pctMax >= 100
+            ? `El presupuesto del área quedó excedido (${pctMax}%)`
+            : `El presupuesto del área quedó al ${pctMax}%`,
       };
     }
 
