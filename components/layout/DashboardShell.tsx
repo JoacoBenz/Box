@@ -42,20 +42,6 @@ export function DashboardShell({
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  const rolPrincipal = roles.includes('super_admin')
-    ? 'super_admin'
-    : roles.includes('admin')
-      ? 'admin'
-      : roles.includes('director')
-        ? 'director'
-        : roles.includes('tesoreria')
-          ? 'tesoreria'
-          : roles.includes('compras')
-            ? 'compras'
-            : roles.includes('responsable_area')
-              ? 'responsable_area'
-              : 'solicitante';
-
   const siderWidth = isMobile ? 0 : collapsed ? 80 : 240;
 
   const handleToggle = () => {
@@ -87,7 +73,6 @@ export function DashboardShell({
             tenantNombre={tenantNombre}
             userName={userName}
             areaNombre={areaNombre}
-            rolPrincipal={rolPrincipal}
             roles={roles}
             collapsed={collapsed}
             isMobile={isMobile}

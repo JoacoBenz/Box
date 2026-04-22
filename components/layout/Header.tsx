@@ -26,22 +26,11 @@ interface HeaderProps {
   tenantNombre: string;
   userName: string;
   areaNombre: string | null;
-  rolPrincipal: string;
   roles: string[];
   collapsed: boolean;
   isMobile?: boolean;
   onToggle: () => void;
 }
-
-const ROL_LABELS: Record<string, string> = {
-  super_admin: 'Super Admin',
-  admin: 'Admin',
-  director: 'Director',
-  tesoreria: 'Tesorería',
-  compras: 'Compras',
-  responsable_area: 'Responsable',
-  solicitante: 'Solicitante',
-};
 
 interface SearchResult {
   solicitudes: { id: number; numero: string; titulo: string; estado: string; urgencia: string }[];
@@ -52,7 +41,6 @@ export function AppHeader({
   tenantNombre,
   userName,
   areaNombre,
-  rolPrincipal,
   roles,
   collapsed,
   isMobile,
@@ -556,8 +544,7 @@ export function AppHeader({
                     {userName}
                   </Text>
                   <Text type="secondary" style={{ fontSize: 11 }}>
-                    {areaNombre ? `${areaNombre} · ` : ''}
-                    {ROL_LABELS[rolPrincipal] ?? rolPrincipal}
+                    {areaNombre || 'Sin área asignada'}
                   </Text>
                 </div>
               )}
