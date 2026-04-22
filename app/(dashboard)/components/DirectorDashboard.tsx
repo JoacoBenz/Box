@@ -1,7 +1,19 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import { Card, Col, Row, Typography, Empty, Select, Progress, Table, Tag } from 'antd';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import {
+  Card,
+  Col,
+  Row,
+  Typography,
+  Empty,
+  Select,
+  Progress,
+  Table,
+  Tag,
+  Button,
+  App,
+} from 'antd';
 import {
   PieChart,
   Pie,
@@ -15,13 +27,22 @@ import {
   CartesianGrid,
   Tooltip as AreaTooltip,
 } from 'recharts';
+import {
+  CheckOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+  ClockCircleOutlined,
+  RightOutlined,
+} from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
 import { useTheme } from '@/components/ThemeProvider';
+import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types';
+import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types';
 
 const { Text } = Typography;
 
 // ── Shared helpers ──
 
-// First two are theme-aware; rest are status colors that stay fixed across themes
 const DONUT_COLORS_STATIC = [
   '#22c55e',
   '#f59e0b',
@@ -74,20 +95,27 @@ function useCountUp(rawTarget: number | undefined | null, duration = 800) {
   return value;
 }
 
-// ── Metric Card with big number ──
+// ── Metric Card with big number + trend ──
 function MetricCard({
   title,
   value,
+  previousValue,
   subtitle,
   color,
 }: {
   title: string;
   value: number | undefined | null;
+  previousValue?: number | null;
   subtitle?: string;
   color: string;
 }) {
   const { tokens } = useTheme();
   const count = useCountUp(value);
+  const current = value ?? 0;
+  const prev = previousValue ?? 0;
+  const hasTrend = prev > 0 && current > 0;
+  const pctChange = hasTrend ? Math.round(((current - prev) / prev) * 100) : null;
+
   return (
     <Card
       style={{ borderRadius: 16, border: `1px solid ${tokens.borderColor}` }}
@@ -104,8 +132,25 @@ function MetricCard({
       >
         {title}
       </Text>
-      <div style={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1.3, marginTop: 4 }}>
-        {formatMoney(count)}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+        <div style={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1.3, marginTop: 4 }}>
+          {formatMoney(count)}
+        </div>
+        {pctChange !== null && (
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: pctChange > 0 ? '#ef4444' : '#22c55e',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+            {pctChange > 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
+            {Math.abs(pctChange)}%
+          </span>
+        )}
       </div>
       {subtitle && (
         <Text type="secondary" style={{ fontSize: 11 }}>
@@ -197,21 +242,37 @@ const MEDIO_PAGO_LABELS: Record<string, string> = {
   otro: 'Otro',
 };
 
+const PIPELINE_STAGES: EstadoSolicitud[] = [
+  'enviada',
+  'validada',
+  'aprobada',
+  'en_compras',
+  'pago_programado',
+  'abonada',
+];
+
 // ── Main Component ──
 
 interface DirectorDashboardProps {
   data: any;
   directorAreaId: number | null;
   onAreaChange: (value: number | null) => void;
+  onRefresh?: () => void;
 }
 
 export default function DirectorDashboard({
   data,
   directorAreaId,
   onAreaChange,
+  onRefresh,
 }: DirectorDashboardProps) {
   const { tokens } = useTheme();
+  const router = useRouter();
+  const { message, modal } = App.useApp();
   const DONUT_COLORS = [tokens.colorPrimary, tokens.colorSecondary, ...DONUT_COLORS_STATIC];
+
+  const [approvingId, setApprovingId] = useState<number | null>(null);
+
   const gastoPorArea: { name: string; value: number; cantidad: number }[] = (
     data.gastoPorArea ?? []
   ).map((g: any) => ({ name: g.area, value: g.total, cantidad: g.cantidad }));
@@ -231,12 +292,68 @@ export default function DirectorDashboard({
   const totalMedio = gastoPorMedio.reduce((sum, m) => sum + m.value, 0);
 
   const resumenPresupuesto: any[] = data.resumenPresupuesto ?? [];
+  const pipelineData: { estado: string; cantidad: number }[] = data.pipeline ?? [];
+  const topPendientes: any[] = data.topPendientes ?? [];
+  const tiempoCiclo = data.tiempoCiclo ?? { totalDias: 0, aprobacionDias: 0, pagoDias: 0 };
+
+  // Budget widget: sort by max usage %, show critical first
+  const budgetSorted = [...resumenPresupuesto]
+    .filter((r: any) => r.presupuestoMensual !== null || r.presupuestoAnual !== null)
+    .sort((a: any, b: any) => {
+      const maxA = Math.max(a.porcentajeMensual ?? 0, a.porcentajeAnual ?? 0);
+      const maxB = Math.max(b.porcentajeMensual ?? 0, b.porcentajeAnual ?? 0);
+      return maxB - maxA;
+    });
+
+  const handleApprove = useCallback(
+    async (solicitud: any) => {
+      setApprovingId(solicitud.id);
+      try {
+        const res = await fetch(`/api/solicitudes/${solicitud.id}/aprobar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ updated_at: solicitud.updated_at }),
+        });
+        if (res.ok) {
+          const result = await res.json();
+          message.success(`Solicitud ${solicitud.numero} aprobada`);
+          if (result.presupuestoAlerta) {
+            const isExceeded = result.presupuestoAlerta.porcentaje >= 100;
+            modal[isExceeded ? 'warning' : 'info']({
+              title: isExceeded ? 'Presupuesto excedido' : 'Alerta de presupuesto',
+              content: result.presupuestoAlerta.mensaje,
+            });
+          }
+          onRefresh?.();
+        } else {
+          const err = await res.json().catch(() => null);
+          modal.error({
+            title: 'Error al aprobar',
+            content: err?.error?.message || 'Error desconocido',
+          });
+        }
+      } catch {
+        modal.error({ title: 'Error', content: 'No se pudo conectar con el servidor' });
+      } finally {
+        setApprovingId(null);
+      }
+    },
+    [message, modal, onRefresh],
+  );
+
+  function calcMonto(items: any[]) {
+    return (items ?? []).reduce(
+      (sum: number, it: any) =>
+        sum + (it.precio_estimado ? Number(it.precio_estimado) * Number(it.cantidad) : 0),
+      0,
+    );
+  }
 
   const areaFilterSelect = (
     <Select
       value={directorAreaId}
       onChange={onAreaChange}
-      placeholder="Todas las áreas"
+      placeholder="Todas las areas"
       allowClear
       size="small"
       style={{ minWidth: 160 }}
@@ -244,170 +361,257 @@ export default function DirectorDashboard({
     />
   );
 
+  // Pipeline total for percentage calc
+  const pipelineTotal = pipelineData.reduce((s, p) => s + p.cantidad, 0);
+
   return (
     <>
-      {/* ── KPI Row: 4 cards ── */}
+      {/* ── KPI Row: 4 cards with trends ── */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} lg={12}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <MetricCard title="Gasto del Año" value={data.gastoAnual} color={tokens.colorPrimary} />
-            <MetricCard title="Gasto del Mes" value={data.gastoMensual} color="#22c55e" />
-          </div>
+        <Col xs={12} lg={6}>
+          <MetricCard
+            title="Gasto del Ano"
+            value={data.gastoAnual}
+            previousValue={data.gastoAnualAnterior}
+            subtitle="vs ano anterior"
+            color={tokens.colorPrimary}
+          />
+        </Col>
+        <Col xs={12} lg={6}>
+          <MetricCard
+            title="Gasto del Mes"
+            value={data.gastoMensual}
+            previousValue={data.gastoMesAnterior}
+            subtitle="vs mes anterior"
+            color="#22c55e"
+          />
         </Col>
         <Col xs={12} lg={6}>
           <Card
-            title={
-              <span style={{ fontWeight: 700, color: tokens.textPrimary, fontSize: 13 }}>
-                Medio de Pago
-              </span>
-            }
-            style={{ borderRadius: 16, height: '100%' }}
-            styles={{ body: { padding: '8px 12px' } }}
+            style={{ borderRadius: 16, border: `1px solid ${tokens.borderColor}` }}
+            styles={{ body: { padding: '20px 24px' } }}
           >
-            {gastoPorMedio.length === 0 ? (
-              <Empty
-                description="Sin datos"
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                style={{ margin: '8px 0' }}
-              />
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <ResponsiveContainer width={90} height={90}>
-                  <PieChart>
-                    <Pie
-                      data={gastoPorMedio}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={25}
-                      outerRadius={40}
-                      paddingAngle={2}
-                      strokeWidth={0}
-                    >
-                      {gastoPorMedio.map((_, i) => (
-                        <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <ReTooltip content={<MiniDonutTooltipContent />} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  {gastoPorMedio.slice(0, 4).map((m, i) => (
+            <Text
+              type="secondary"
+              style={{
+                fontSize: 11,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                fontWeight: 600,
+              }}
+            >
+              Tiempo Promedio
+            </Text>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: 4,
+                marginTop: 4,
+              }}
+            >
+              <ClockCircleOutlined style={{ fontSize: 18, color: tokens.colorPrimary }} />
+              <span style={{ fontSize: 26, fontWeight: 800, color: tokens.colorPrimary }}>
+                {tiempoCiclo.totalDias}
+              </span>
+              <span style={{ fontSize: 13, color: tokens.textSecondary, fontWeight: 500 }}>
+                dias
+              </span>
+            </div>
+            <div style={{ fontSize: 11, color: tokens.textMuted, marginTop: 4 }}>
+              {tiempoCiclo.aprobacionDias}d aprobacion + {tiempoCiclo.pagoDias}d pago
+            </div>
+          </Card>
+        </Col>
+        <Col xs={12} lg={6}>
+          <Card
+            style={{ borderRadius: 16, border: `1px solid ${tokens.borderColor}` }}
+            styles={{ body: { padding: '20px 24px' } }}
+          >
+            <Text
+              type="secondary"
+              style={{
+                fontSize: 11,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                fontWeight: 600,
+              }}
+            >
+              Pendientes
+            </Text>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#f59e0b', marginTop: 4 }}>
+              {data.pendientesAprobar ?? 0}
+            </div>
+            <div style={{ fontSize: 11, color: tokens.textMuted }}>
+              {data.urgentesPendientesDir > 0 && (
+                <Tag color="red" style={{ fontSize: 10, marginRight: 4 }}>
+                  {data.urgentesPendientesDir} urgente{data.urgentesPendientesDir > 1 ? 's' : ''}
+                </Tag>
+              )}
+              por aprobar
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* ── Pipeline Widget ── */}
+      {pipelineData.length > 0 && (
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col span={24}>
+            <Card
+              title={
+                <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
+                  Pipeline de Solicitudes
+                </span>
+              }
+              extra={areaFilterSelect}
+              style={{ borderRadius: 16 }}
+              styles={{ body: { padding: '16px 24px' } }}
+            >
+              <div style={{ display: 'flex', gap: 0, alignItems: 'stretch' }}>
+                {PIPELINE_STAGES.map((stage, idx) => {
+                  const match = pipelineData.find((p) => p.estado === stage);
+                  const count = match?.cantidad ?? 0;
+                  const estadoInfo = ESTADOS_SOLICITUD[stage];
+                  const isLast = idx === PIPELINE_STAGES.length - 1;
+                  return (
                     <div
-                      key={m.name}
+                      key={stage}
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        fontSize: 11,
-                        color: tokens.textSecondary,
-                        marginBottom: 3,
+                        flex: 1,
+                        textAlign: 'center',
+                        padding: '12px 8px',
+                        position: 'relative',
+                        borderRight: isLast ? 'none' : `1px dashed ${tokens.borderColor}`,
                       }}
                     >
-                      <div
+                      <div style={{ fontSize: 28, fontWeight: 800, color: tokens.textPrimary }}>
+                        {count}
+                      </div>
+                      <Tag
+                        color={estadoInfo?.color ?? 'default'}
+                        style={{ fontSize: 10, marginTop: 4 }}
+                      >
+                        {estadoInfo?.label ?? stage}
+                      </Tag>
+                      {pipelineTotal > 0 && (
+                        <div style={{ fontSize: 10, color: tokens.textMuted, marginTop: 4 }}>
+                          {Math.round((count / pipelineTotal) * 100)}%
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          </Col>
+        </Row>
+      )}
+
+      {/* ── Top Pending Approvals (inline) ── */}
+      {topPendientes.length > 0 && (
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col span={24}>
+            <Card
+              title={
+                <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
+                  Pendientes de Aprobacion
+                </span>
+              }
+              extra={
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => router.push('/aprobaciones')}
+                  icon={<RightOutlined />}
+                  iconPosition="end"
+                >
+                  Ver todas
+                </Button>
+              }
+              style={{ borderRadius: 16 }}
+              styles={{ body: { padding: '8px 16px' } }}
+            >
+              {topPendientes.map((s: any) => {
+                const u = URGENCIAS[s.urgencia as UrgenciaSolicitud];
+                const monto = calcMonto(s.items_solicitud);
+                return (
+                  <div
+                    key={s.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      padding: '10px 8px',
+                      borderBottom: `1px solid ${tokens.borderColor}`,
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Text
+                          strong
+                          style={{
+                            fontSize: 13,
+                            color: tokens.colorPrimary,
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => router.push(`/solicitudes/${s.id}`)}
+                        >
+                          {s.numero}
+                        </Text>
+                        {u && (
+                          <Tag color={u.color} style={{ fontSize: 10, margin: 0 }}>
+                            {u.label}
+                          </Tag>
+                        )}
+                      </div>
+                      <Text
                         style={{
-                          width: 7,
-                          height: 7,
-                          borderRadius: '50%',
-                          background: DONUT_COLORS[i % DONUT_COLORS.length],
-                          flexShrink: 0,
-                        }}
-                      />
-                      <span
-                        style={{
-                          flex: 1,
-                          minWidth: 0,
+                          fontSize: 13,
+                          color: tokens.textPrimary,
+                          display: 'block',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {m.name}
-                      </span>
-                      <span style={{ fontWeight: 600, color: tokens.textPrimary, flexShrink: 0 }}>
-                        {formatMoneyShort(m.value)}
-                      </span>
+                        {s.titulo}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: tokens.textMuted }}>
+                        {s.solicitante?.nombre} — {s.area?.nombre}
+                      </Text>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </Card>
-        </Col>
-        <Col xs={24} lg={6}>
-          <Card
-            title={
-              <span style={{ fontWeight: 700, color: tokens.textPrimary, fontSize: 13 }}>
-                Top Proveedores
-              </span>
-            }
-            style={{ borderRadius: 16, height: '100%' }}
-            styles={{ body: { padding: '8px 12px' } }}
-          >
-            {topProveedores.length === 0 ? (
-              <Empty
-                description="Sin datos"
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                style={{ margin: '8px 0' }}
-              />
-            ) : (
-              <div>
-                {topProveedores.slice(0, 4).map((p, i) => (
-                  <div
-                    key={p.name}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: tokens.textMuted,
-                        fontWeight: 600,
-                        width: 16,
-                        textAlign: 'center',
-                      }}
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: tokens.textPrimary }}>
+                        {monto > 0 ? formatMoney(monto) : '—'}
+                      </div>
+                    </div>
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<CheckOutlined />}
+                      loading={approvingId === s.id}
+                      onClick={() => handleApprove(s)}
+                      style={{ borderRadius: 8, flexShrink: 0 }}
                     >
-                      {i + 1}
-                    </span>
-                    <span
-                      style={{
-                        flex: 1,
-                        fontSize: 12,
-                        color: tokens.textPrimary,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {p.name}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 700,
-                        color: tokens.colorSecondary,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {formatMoneyShort(p.value)}
-                    </span>
+                      Aprobar
+                    </Button>
                   </div>
-                ))}
-              </div>
-            )}
-          </Card>
-        </Col>
-      </Row>
+                );
+              })}
+            </Card>
+          </Col>
+        </Row>
+      )}
 
       {/* ── Charts Row ── */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        {/* Donut: Gasto por Área */}
+        {/* Donut: Gasto por Area */}
         <Col xs={24} lg={12}>
           <Card
             title={
-              <span style={{ fontWeight: 700, color: tokens.textPrimary }}>Gasto por Área</span>
+              <span style={{ fontWeight: 700, color: tokens.textPrimary }}>Gasto por Area</span>
             }
-            extra={areaFilterSelect}
             style={{ borderRadius: 16 }}
             styles={{ body: { padding: '16px 24px' } }}
           >
@@ -552,14 +756,161 @@ export default function DirectorDashboard({
         </Col>
       </Row>
 
-      {/* ── Presupuesto por Área ── */}
-      {resumenPresupuesto.length > 0 && (
+      {/* ── Small cards row: Medio de Pago + Top Proveedores ── */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} lg={12}>
+          <Card
+            title={
+              <span style={{ fontWeight: 700, color: tokens.textPrimary, fontSize: 13 }}>
+                Medio de Pago
+              </span>
+            }
+            style={{ borderRadius: 16 }}
+            styles={{ body: { padding: '8px 12px' } }}
+          >
+            {gastoPorMedio.length === 0 ? (
+              <Empty
+                description="Sin datos"
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                style={{ margin: '8px 0' }}
+              />
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <ResponsiveContainer width={120} height={120}>
+                  <PieChart>
+                    <Pie
+                      data={gastoPorMedio}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={30}
+                      outerRadius={50}
+                      paddingAngle={2}
+                      strokeWidth={0}
+                    >
+                      {gastoPorMedio.map((_, i) => (
+                        <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <ReTooltip content={<MiniDonutTooltipContent />} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {gastoPorMedio.slice(0, 5).map((m, i) => (
+                    <div
+                      key={m.name}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontSize: 12,
+                        color: tokens.textSecondary,
+                        marginBottom: 4,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          background: DONUT_COLORS[i % DONUT_COLORS.length],
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {m.name}
+                      </span>
+                      <span style={{ fontWeight: 600, color: tokens.textPrimary, flexShrink: 0 }}>
+                        {formatMoneyShort(m.value)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </Card>
+        </Col>
+        <Col xs={24} lg={12}>
+          <Card
+            title={
+              <span style={{ fontWeight: 700, color: tokens.textPrimary, fontSize: 13 }}>
+                Top Proveedores
+              </span>
+            }
+            style={{ borderRadius: 16 }}
+            styles={{ body: { padding: '12px 16px' } }}
+          >
+            {topProveedores.length === 0 ? (
+              <Empty
+                description="Sin datos"
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                style={{ margin: '8px 0' }}
+              />
+            ) : (
+              <div>
+                {topProveedores.slice(0, 5).map((p, i) => (
+                  <div
+                    key={p.name}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: tokens.textMuted,
+                        fontWeight: 600,
+                        width: 16,
+                        textAlign: 'center',
+                      }}
+                    >
+                      {i + 1}
+                    </span>
+                    <span
+                      style={{
+                        flex: 1,
+                        fontSize: 13,
+                        color: tokens.textPrimary,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {p.name}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: tokens.colorSecondary,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {formatMoneyShort(p.value)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+      {/* ── Presupuesto por Area (sorted by urgency) ── */}
+      {budgetSorted.length > 0 && (
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
           <Col span={24}>
             <Card
               title={
                 <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
-                  Presupuesto por Área
+                  Presupuesto por Area
                 </span>
               }
               style={{ borderRadius: 16 }}
@@ -567,12 +918,12 @@ export default function DirectorDashboard({
             >
               <Table
                 rowKey="areaId"
-                dataSource={resumenPresupuesto}
+                dataSource={budgetSorted}
                 pagination={false}
                 size="small"
                 columns={[
                   {
-                    title: 'Área',
+                    title: 'Area',
                     dataIndex: 'areaNombre',
                     key: 'areaNombre',
                     width: 180,
@@ -598,7 +949,14 @@ export default function DirectorDashboard({
                       if (r.presupuestoMensual === null) return <Tag>Sin presupuesto</Tag>;
                       const pct = r.porcentajeMensual;
                       const color = pct >= 100 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#22c55e';
-                      return <Progress percent={Math.min(pct, 100)} size="small" strokeColor={color} format={() => `${pct}%`} />;
+                      return (
+                        <Progress
+                          percent={Math.min(pct, 100)}
+                          size="small"
+                          strokeColor={color}
+                          format={() => `${pct}%`}
+                        />
+                      );
                     },
                   },
                   {
@@ -609,7 +967,7 @@ export default function DirectorDashboard({
                       r.presupuestoAnual !== null ? formatMoney(r.presupuestoAnual) : '—',
                   },
                   {
-                    title: 'Gastado (año)',
+                    title: 'Gastado (ano)',
                     key: 'gastoAnio',
                     width: 130,
                     render: (_, r: any) => formatMoney(r.gastoAnual),
@@ -622,7 +980,14 @@ export default function DirectorDashboard({
                       if (r.presupuestoAnual === null) return <Tag>Sin presupuesto</Tag>;
                       const pct = r.porcentajeAnual;
                       const color = pct >= 100 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#22c55e';
-                      return <Progress percent={Math.min(pct, 100)} size="small" strokeColor={color} format={() => `${pct}%`} />;
+                      return (
+                        <Progress
+                          percent={Math.min(pct, 100)}
+                          size="small"
+                          strokeColor={color}
+                          format={() => `${pct}%`}
+                        />
+                      );
                     },
                   },
                 ]}

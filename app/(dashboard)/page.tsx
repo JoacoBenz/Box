@@ -799,6 +799,7 @@ export default function DashboardPage() {
           data={data}
           directorAreaId={directorAreaId}
           onAreaChange={handleDirectorAreaChange}
+          onRefresh={() => fetchDashboard(directorAreaId)}
         />
       )}
 

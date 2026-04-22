@@ -11,7 +11,9 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
   const result: Record<string, any> = {};
   const semanaAtras = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const inicioMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const inicioMesAnterior = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1);
   const inicioAño = new Date(new Date().getFullYear(), 0, 1);
+  const inicioAñoAnterior = new Date(new Date().getFullYear() - 1, 0, 1);
   const hace90Dias = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
   // Director area filter from query params (optional)
@@ -186,6 +188,18 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
     // Director can pick an area to filter, or see all (default)
     const dirAreaFilter = directorAreaId ? { area_id: directorAreaId } : {};
     const areaFilter = dirAreaFilter;
+
+    // Raw SQL filter fragments for director area
+    const dirAreaSqlFilter = directorAreaId
+      ? Prisma.sql`AND area_id = ${directorAreaId}`
+      : Prisma.empty;
+    const dirAreaJoinFilter = directorAreaId
+      ? Prisma.sql`JOIN solicitudes sf ON c.solicitud_id = sf.id AND c.tenant_id = sf.tenant_id AND sf.area_id = ${directorAreaId}`
+      : Prisma.empty;
+    const dirAreaSqlFilterS = directorAreaId
+      ? Prisma.sql`AND s.area_id = ${directorAreaId}`
+      : Prisma.empty;
+
     const [pendientesAprobar, aprobadasSemana, rechazadasSemana, urgentesPendientes] =
       await Promise.all([
         db.solicitudes.count({ where: { estado: 'validada', ...areaFilter } }),
@@ -199,6 +213,91 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
     result.aprobadasSemana = aprobadasSemana;
     result.rechazadasSemana = rechazadasSemana;
     result.urgentesPendientesDir = urgentesPendientes;
+
+    // ── KPI trends, pipeline, top pendientes, cycle time ──
+    const [
+      gastoMesAnteriorData,
+      gastoAnualAnteriorData,
+      pipelineData,
+      topPendientes,
+      cycleTimeData,
+    ] = await Promise.all([
+      // 1. KPI trends — last month gasto
+      prisma.$queryRaw<{ total_mes_anterior: string }[]>`
+        SELECT COALESCE(SUM(c.monto_total), 0)::text AS total_mes_anterior
+        FROM compras c
+        ${dirAreaJoinFilter}
+        WHERE c.tenant_id = ${tenantId}
+          AND c.fecha_compra >= ${inicioMesAnterior}
+          AND c.fecha_compra < ${inicioMes}
+      `,
+      // 1b. KPI trends — last year annual gasto
+      prisma.$queryRaw<{ total_anual_anterior: string }[]>`
+        SELECT COALESCE(SUM(c.monto_total), 0)::text AS total_anual_anterior
+        FROM compras c
+        ${dirAreaJoinFilter}
+        WHERE c.tenant_id = ${tenantId}
+          AND c.fecha_compra >= ${inicioAñoAnterior}
+          AND c.fecha_compra < ${inicioAño}
+      `,
+      // 2. Pipeline counts (solicitudes by active state)
+      prisma.$queryRaw<{ estado: string; cantidad: string }[]>`
+        SELECT estado, COUNT(*)::text AS cantidad
+        FROM solicitudes
+        WHERE tenant_id = ${tenantId}
+          AND estado IN ('enviada', 'validada', 'aprobada', 'en_compras', 'pago_programado', 'abonada')
+          ${dirAreaSqlFilter}
+        GROUP BY estado
+      `,
+      // 3. Top 5 pending approvals
+      db.solicitudes.findMany({
+        where: { estado: 'validada', ...areaFilter },
+        orderBy: [{ created_at: 'asc' }],
+        take: 5,
+        select: {
+          id: true,
+          numero: true,
+          titulo: true,
+          urgencia: true,
+          updated_at: true,
+          solicitante: { select: { nombre: true } },
+          area: { select: { nombre: true } },
+          items_solicitud: { select: { precio_estimado: true, cantidad: true } },
+        },
+      }),
+      // 4. Average cycle time (last 90 days)
+      prisma.$queryRaw<
+        { avg_total_days: string | null; avg_approval_days: string | null; avg_payment_days: string | null }[]
+      >`
+        SELECT
+          ROUND(AVG(EXTRACT(EPOCH FROM (c.fecha_compra - s.created_at)) / 86400))::text AS avg_total_days,
+          ROUND(AVG(EXTRACT(EPOCH FROM (s.fecha_aprobacion - s.created_at)) / 86400))::text AS avg_approval_days,
+          ROUND(AVG(EXTRACT(EPOCH FROM (c.fecha_compra - s.fecha_aprobacion)) / 86400))::text AS avg_payment_days
+        FROM compras c
+        JOIN solicitudes s ON c.solicitud_id = s.id AND c.tenant_id = s.tenant_id
+        WHERE c.tenant_id = ${tenantId}
+          AND s.fecha_aprobacion IS NOT NULL
+          AND c.fecha_compra >= ${hace90Dias}
+          ${dirAreaSqlFilterS}
+      `,
+    ]);
+
+    result.gastoMesAnterior = parseFloat(gastoMesAnteriorData[0]?.total_mes_anterior ?? '0');
+    result.gastoAnualAnterior = parseFloat(gastoAnualAnteriorData[0]?.total_anual_anterior ?? '0');
+    result.pipeline = pipelineData.map((r) => ({
+      estado: r.estado,
+      cantidad: parseInt(r.cantidad),
+    }));
+    // Sort top pendientes so urgencia critica/urgente float to top
+    const urgenciaOrder: Record<string, number> = { critica: 0, urgente: 1, normal: 2 };
+    result.topPendientes = topPendientes.sort(
+      (a, b) => (urgenciaOrder[a.urgencia] ?? 99) - (urgenciaOrder[b.urgencia] ?? 99),
+    );
+    result.tiempoCiclo = {
+      totalDias: parseInt(cycleTimeData[0]?.avg_total_days ?? '0') || 0,
+      aprobacionDias: parseInt(cycleTimeData[0]?.avg_approval_days ?? '0') || 0,
+      pagoDias: parseInt(cycleTimeData[0]?.avg_payment_days ?? '0') || 0,
+    };
 
     result.resumenPresupuesto = await getResumenPresupuesto(tenantId!);
   }
