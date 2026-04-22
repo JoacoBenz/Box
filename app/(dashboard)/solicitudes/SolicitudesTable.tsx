@@ -189,7 +189,9 @@ export default function SolicitudesTable({ roles, areas }: Props) {
         render: (val: string, r: Solicitud) => (
           <a
             onClick={() => router.push(`/solicitudes/${r.id}`)}
-            style={{ cursor: 'pointer', fontWeight: 600, color: tokens.colorPrimary }}
+            // CSS var (not tokens.*) so the color flips with theme without
+            // needing to re-memoize columns on every theme toggle.
+            style={{ cursor: 'pointer', fontWeight: 600, color: 'var(--color-primary)' }}
           >
             {val}
           </a>
@@ -200,7 +202,7 @@ export default function SolicitudesTable({ roles, areas }: Props) {
         dataIndex: 'titulo',
         key: 'titulo',
         ellipsis: true,
-        render: (val: string) => <Text style={{ color: tokens.textPrimary }}>{val}</Text>,
+        render: (val: string) => <Text style={{ color: 'var(--text-primary)' }}>{val}</Text>,
       },
       {
         title: 'Solicitante',
