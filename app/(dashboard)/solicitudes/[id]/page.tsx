@@ -119,7 +119,6 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
     en_compras: 'var(--status-bg-validada)',
     rechazada: 'var(--status-bg-rechazada)',
     abonada: 'var(--status-bg-abonada)',
-    recibida: 'var(--status-bg-recibida)',
     recibida_con_obs: 'var(--status-bg-recibida-obs)',
     cerrada: 'var(--status-bg-cerrada)',
   };

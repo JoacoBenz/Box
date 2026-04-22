@@ -18,7 +18,6 @@ export type EstadoSolicitud =
   | 'aprobada'
   | 'rechazada'
   | 'abonada'
-  | 'recibida'
   | 'recibida_con_obs'
   | 'en_compras'
   | 'pago_programado'
@@ -71,7 +70,6 @@ export const ESTADOS_SOLICITUD: Record<EstadoSolicitud, { label: string; color: 
   pago_programado: { label: 'Pago Programado', color: 'purple' },
   rechazada: { label: 'Rechazada', color: 'red' },
   abonada: { label: 'Abonada', color: 'geekblue' },
-  recibida: { label: 'Recibida', color: 'lime' },
   recibida_con_obs: { label: 'Recibida con observaciones', color: 'gold' },
   anulada: { label: 'Anulada', color: 'default' },
   cerrada: { label: 'Cerrada', color: 'purple' },

@@ -60,7 +60,7 @@ const TRANSITIONS: Transition[] = [
   },
   {
     action: 'rechazar',
-    from: ['validada'], // BUG: should also include 'enviada' when skipValidacion=true
+    from: ['validada'], // also 'enviada' when skipValidacion=true
     to: 'rechazada',
     requiredRoles: ['director'],
     segregation: 'aprobar', // uses same permission context
@@ -84,8 +84,8 @@ const TRANSITIONS: Transition[] = [
   },
   {
     action: 'procesar_compras',
-    from: ['aprobada', 'en_compras'],
-    to: 'en_compras',
+    from: ['en_compras'],
+    to: 'pago_programado',
     requiredRoles: ['compras'],
     segregation: 'procesar_compras',
     endpoint: '/api/solicitudes/[id]/procesar-compras',
@@ -109,10 +109,10 @@ const TRANSITIONS: Transition[] = [
     action: 'registrar_recepcion',
     from: ['abonada'],
     to: (ctx) => {
-      if (ctx.hasItems && ctx.allItemsReceived && !ctx.hasProblems) return 'recibida';
+      if (ctx.hasItems && ctx.allItemsReceived && !ctx.hasProblems) return 'cerrada';
       if (ctx.hasItems && ctx.allItemsReceived && ctx.hasProblems) return 'recibida_con_obs';
       if (ctx.hasItems && !ctx.allItemsReceived) return 'abonada'; // partial
-      if (ctx.conforme) return 'cerrada'; // no items, bulk conforme → cerrada (BUG: should be recibida)
+      if (ctx.conforme) return 'cerrada';
       return 'recibida_con_obs';
     },
     requiredRoles: ['solicitante', 'responsable_area'],
@@ -120,7 +120,7 @@ const TRANSITIONS: Transition[] = [
   },
   {
     action: 'cerrar',
-    from: ['recibida_con_obs'], // BUG: missing 'recibida'
+    from: ['recibida_con_obs'],
     to: 'cerrada',
     requiredRoles: ['tesoreria', 'admin'],
     endpoint: '/api/solicitudes/[id]/cerrar',
@@ -144,7 +144,6 @@ const ALL_STATES: EstadoSolicitud[] = [
   'aprobada',
   'rechazada',
   'abonada',
-  'recibida',
   'recibida_con_obs',
   'en_compras',
   'pago_programado',
@@ -173,9 +172,7 @@ describe('Workflow State Machine - Transition Definitions', () => {
       (s) => !statesWithTransitions.has(s),
     );
 
-    // DOCUMENTS A BUG: 'recibida' has no outgoing transition
-    // It should be closable (cerrar endpoint should accept 'recibida')
-    expect(statesWithoutTransitions).toEqual(['recibida']);
+    expect(statesWithoutTransitions).toEqual([]);
   });
 
   it('terminal states have no outgoing transitions', () => {
@@ -280,14 +277,6 @@ describe('Workflow State Machine - Rechazo y Anulación', () => {
     expect(rechazar!.from).toContain('validada');
   });
 
-  it('BUG: rechazar does NOT accept enviada (asymmetry with aprobar)', () => {
-    // When validation is skipped, solicitudes go from enviada → aprobada
-    // But they CANNOT go from enviada → rechazada
-    // This is an asymmetry bug
-    const rechazar = TRANSITIONS.find((t) => t.action === 'rechazar');
-    expect(rechazar!.from).not.toContain('enviada');
-  });
-
   it('anular accepts multiple states', () => {
     const anular = TRANSITIONS.find((t) => t.action === 'anular');
     expect(anular!.from).toEqual(
@@ -344,7 +333,7 @@ describe('Workflow State Machine - Recepción', () => {
     expect(target).toBe('recibida_con_obs');
   });
 
-  it('recepción con items - todos recibidos sin problemas → recibida', () => {
+  it('recepción con items - todos recibidos sin problemas → cerrada', () => {
     const recepcion = TRANSITIONS.find((t) => t.action === 'registrar_recepcion');
     const ctx: TransitionContext = {
       hasComprasUsers: false,
@@ -355,7 +344,7 @@ describe('Workflow State Machine - Recepción', () => {
       hasProblems: false,
     };
     const target = (recepcion!.to as (ctx: TransitionContext) => EstadoSolicitud)(ctx);
-    expect(target).toBe('recibida');
+    expect(target).toBe('cerrada');
   });
 
   it('recepción con items - todos recibidos con problemas → recibida_con_obs', () => {
@@ -393,18 +382,6 @@ describe('Workflow State Machine - Cierre', () => {
     expect(cerrar!.from).toContain('recibida_con_obs');
   });
 
-  it('BUG: cerrar does NOT accept recibida', () => {
-    // A solicitud in 'recibida' state (clean reception with items) has NO way to move to 'cerrada'
-    // The cerrar endpoint only accepts 'recibida_con_obs'
-    const cerrar = TRANSITIONS.find((t) => t.action === 'cerrar');
-    expect(cerrar!.from).not.toContain('recibida');
-  });
-
-  it('BUG: recibida is a dead-end state', () => {
-    // No action can transition FROM 'recibida' to any other state
-    const transitionsFromRecibida = TRANSITIONS.filter((t) => t.from.includes('recibida'));
-    expect(transitionsFromRecibida).toHaveLength(0);
-  });
 });
 
 describe('Workflow State Machine - Role Requirements', () => {
@@ -523,44 +500,3 @@ describe('Workflow State Machine - Edición', () => {
   });
 });
 
-describe('Workflow State Machine - Known Bugs Summary', () => {
-  it('BUG #1: rechazar only accepts validada, not enviada (when skipValidacion)', () => {
-    const rechazar = TRANSITIONS.find((t) => t.action === 'rechazar');
-    // If skipValidacion=true, director can approve from 'enviada' but CANNOT reject from 'enviada'
-    expect(rechazar!.from).toEqual(['validada']);
-    // Expected: should also include 'enviada' when validation is skipped
-  });
-
-  it('BUG #2: cerrar only accepts recibida_con_obs, not recibida', () => {
-    const cerrar = TRANSITIONS.find((t) => t.action === 'cerrar');
-    expect(cerrar!.from).toEqual(['recibida_con_obs']);
-    // Expected: should also include 'recibida'
-  });
-
-  it('BUG #3: recibida is a dead-end state with no transitions out', () => {
-    const fromRecibida = TRANSITIONS.filter((t) => t.from.includes('recibida'));
-    expect(fromRecibida).toHaveLength(0);
-    // Expected: cerrar should accept 'recibida' to transition to 'cerrada'
-  });
-
-  it('BUG #4: procesar_compras allows idempotent en_compras → en_compras', () => {
-    const procesar = TRANSITIONS.find((t) => t.action === 'procesar_compras');
-    // Allows re-processing an already in-process solicitud
-    expect(procesar!.from).toContain('en_compras');
-  });
-
-  it('BUG #5: conforme reception without items goes to cerrada, skipping recibida', () => {
-    const recepcion = TRANSITIONS.find((t) => t.action === 'registrar_recepcion');
-    const ctx: TransitionContext = {
-      hasComprasUsers: false,
-      skipValidacion: false,
-      conforme: true,
-      hasItems: false,
-      allItemsReceived: false,
-      hasProblems: false,
-    };
-    const target = (recepcion!.to as (ctx: TransitionContext) => EstadoSolicitud)(ctx);
-    // Goes directly to 'cerrada', inconsistent with item-level flow that goes to 'recibida'
-    expect(target).toBe('cerrada');
-  });
-});

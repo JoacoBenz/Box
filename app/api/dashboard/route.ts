@@ -84,7 +84,6 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
                 'cerrada',
                 'en_compras',
                 'pago_programado',
-                'recibida',
                 'recibida_con_obs',
               ],
             },

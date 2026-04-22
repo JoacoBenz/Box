@@ -368,7 +368,7 @@ async function main() {
   );
   sol = await getSolicitud(f1Id);
   const f1Final = sol?.estado ?? '';
-  assert(['recibida', 'cerrada'].includes(f1Final), 'F1.7 DB estado final', `actual=${f1Final}`);
+  assert(f1Final === 'cerrada', 'F1.7 DB estado final', `actual=${f1Final}`);
 
   // DB: verify recepcion record
   const f1Recepciones = await getRecepcionesBySolicitud(f1Id);
