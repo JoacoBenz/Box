@@ -1,5 +1,5 @@
 import { Prisma } from '@/app/generated/prisma/client';
-import { prisma } from '@/lib/prisma';
+import { prisma, tenantPrisma } from '@/lib/prisma';
 import { withAdminOverride } from '@/lib/api-handler';
 import { cached } from '@/lib/cache';
 import type { DashboardData } from '@/types/dashboard';
@@ -309,6 +309,8 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
 
   // ── Org Admin section (admin role, not super_admin platform metrics) ──
   if (roles.includes('admin')) {
+    const adminTenantId = tenantId ?? session.tenantId;
+    const adminDb = tenantPrisma(adminTenantId);
     const [
       totalUsuarios,
       usuariosActivos,
@@ -319,23 +321,23 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       ultimasAuditorias,
       solicitudesActivas,
     ] = await Promise.all([
-      db.usuarios.count(),
-      db.usuarios.count({ where: { activo: true } }),
-      db.areas.count(),
-      db.areas.count({ where: { responsable_id: { not: null } } }),
-      db.centros_costo.count(),
-      db.codigos_invitacion
-        ? db.codigos_invitacion.count({ where: { activo: true, expira_el: { gte: new Date() } } }).catch(() => 0)
+      adminDb.usuarios.count(),
+      adminDb.usuarios.count({ where: { activo: true } }),
+      adminDb.areas.count(),
+      adminDb.areas.count({ where: { responsable_id: { not: null } } }),
+      adminDb.centros_costo.count(),
+      adminDb.codigos_invitacion
+        ? adminDb.codigos_invitacion.count({ where: { activo: true, expira_el: { gte: new Date() } } }).catch(() => 0)
         : Promise.resolve(0),
       prisma.$queryRaw<{ accion: string; usuario: string; fecha: string }[]>`
         SELECT la.accion, u.nombre AS usuario, la.created_at::text AS fecha
         FROM log_auditoria la
         JOIN usuarios u ON la.usuario_id = u.id
-        WHERE la.tenant_id = ${tenantId}
+        WHERE la.tenant_id = ${adminTenantId}
         ORDER BY la.created_at DESC
         LIMIT 5
       `,
-      db.solicitudes.count({
+      adminDb.solicitudes.count({
         where: { estado: { notIn: ['cerrada', 'anulada', 'rechazada'] } },
       }),
     ]);
@@ -352,7 +354,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
     };
 
     if (!result.resumenPresupuesto) {
-      result.resumenPresupuesto = await getResumenPresupuesto(tenantId!);
+      result.resumenPresupuesto = await getResumenPresupuesto(adminTenantId);
     }
   }
 
