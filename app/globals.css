@@ -255,6 +255,35 @@ body {
   --ant-descriptions-title-color: var(--text-primary);
 }
 
+/* Button component tokens also stay light (default bg #fff, text #1e293b).
+   Only affects Button variants that use the "default" style — `type="primary"`
+   and `type="text"` look fine since they compute from colorPrimary/text. */
+[data-theme='dark'] .ant-btn {
+  --ant-button-default-color: var(--text-primary);
+  --ant-button-default-bg: var(--bg-input);
+  --ant-button-default-border-color: var(--border-color);
+  --ant-button-default-hover-bg: var(--bg-input);
+  --ant-button-default-hover-color: var(--color-primary);
+  --ant-button-default-hover-border-color: var(--color-primary);
+  --ant-button-default-active-bg: var(--bg-input);
+  --ant-button-text-text-color: var(--text-primary);
+  --ant-button-text-text-hover-color: var(--text-primary);
+  --ant-button-text-text-active-color: var(--text-primary);
+}
+
+/* Card extra slot (e.g. right-side link in Card title) also stays light. */
+[data-theme='dark'] .ant-card {
+  --ant-card-extra-color: var(--text-primary);
+}
+
+/* AntD emits --ant-table-color (tbody text) as transparent, so cells inherit
+   td color which we already set to white via element styles. But make the
+   explicit token align in case any sub-component reads it. */
+[data-theme='dark'] .ant-table-wrapper {
+  --ant-table-color: var(--text-primary);
+  --ant-table-header-color: var(--text-secondary);
+}
+
 /* ── Progress bar ── */
 .ant-progress-bg {
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1) !important;
