@@ -466,7 +466,6 @@ export default function DashboardPage() {
   // Check if any pending actions exist
   const hasPendingActions =
     hasResponsable ||
-    hasDirector ||
     hasCompras ||
     hasTesoreria ||
     (hasSolicitante &&
@@ -475,6 +474,18 @@ export default function DashboardPage() {
   return (
     <div className="page-content">
       <Greeting />
+
+      {/* ═══════════════════════════════════════════════════ */}
+      {/* ── DIRECTOR DASHBOARD (first for directors) ────── */}
+      {/* ═══════════════════════════════════════════════════ */}
+      {hasDirector && (
+        <DirectorDashboard
+          data={data}
+          directorAreaId={directorAreaId}
+          onAreaChange={handleDirectorAreaChange}
+          onRefresh={() => fetchDashboard(directorAreaId)}
+        />
+      )}
 
       {/* ═══════════════════════════════════════════════════ */}
       {/* ── 1. MIS ACCIONES PENDIENTES ─────────────────── */}
@@ -513,16 +524,7 @@ export default function DashboardPage() {
                 />
               </Col>
             )}
-            {hasDirector && (
-              <Col xs={24} sm={12} lg={6}>
-                <PendingActionCard
-                  count={data.pendientesAprobar}
-                  label="Pendientes de Aprobar"
-                  href="/aprobaciones"
-                  buttonText="Ir a Aprobaciones"
-                />
-              </Col>
-            )}
+            {/* Director pendientes handled in DirectorDashboard */}
             {hasCompras && (
               <Col xs={24} sm={12} lg={6}>
                 <PendingActionCard
@@ -789,18 +791,6 @@ export default function DashboardPage() {
             )}
           </Row>
         </div>
-      )}
-
-      {/* ═══════════════════════════════════════════════════ */}
-      {/* ── 2.5 DIRECTOR DASHBOARD (charts + analytics) ── */}
-      {/* ═══════════════════════════════════════════════════ */}
-      {hasDirector && (
-        <DirectorDashboard
-          data={data}
-          directorAreaId={directorAreaId}
-          onAreaChange={handleDirectorAreaChange}
-          onRefresh={() => fetchDashboard(directorAreaId)}
-        />
       )}
 
       {/* ═══════════════════════════════════════════════════ */}
