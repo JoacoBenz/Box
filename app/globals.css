@@ -231,6 +231,22 @@ body {
   transition: background 0.15s ease !important;
 }
 
+/* ── Dark-mode AntD 6 token overrides ──
+   AntD 6 emits hardcoded --ant-table-border-color: #f1f5f9 and
+   --ant-select-background-color: #ffffff that don't flip with algorithm:dark.
+   We re-point them at our theme CSS variables. */
+[data-theme='dark'] .ant-table,
+[data-theme='dark'] .ant-table-wrapper,
+[data-theme='dark'] .ant-table-tbody > tr > td,
+[data-theme='dark'] .ant-table-thead > tr > th {
+  --ant-table-border-color: var(--border-subtle);
+}
+
+[data-theme='dark'] .ant-select,
+[data-theme='dark'] .ant-select.ant-select-outlined {
+  --ant-select-background-color: var(--bg-input);
+}
+
 /* ── Progress bar ── */
 .ant-progress-bg {
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1) !important;
