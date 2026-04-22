@@ -7,7 +7,8 @@ import { getResumenPresupuesto } from '@/lib/budget-control';
 
 export const GET = withAdminOverride({}, async (request, { session, db, effectiveTenantId }) => {
   const { userId, areaId, roles } = session;
-  const tenantId = effectiveTenantId;
+  const tenantId = effectiveTenantId ?? session.tenantId;
+  const tdb = effectiveTenantId ? db : tenantPrisma(tenantId);
   const result: Record<string, any> = {};
   const semanaAtras = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const inicioMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -23,7 +24,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
 
   // Provide list of areas for director selector
   if (roles.includes('director')) {
-    const areas = await db.areas.findMany({
+    const areas = await tdb.areas.findMany({
       where: { activo: true },
       select: { id: true, nombre: true },
       orderBy: { nombre: 'asc' },
@@ -42,7 +43,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       tasaAprobacionData,
       misSolicitudesPorEstado,
     ] = await Promise.all([
-      db.solicitudes.findMany({
+      tdb.solicitudes.findMany({
         where: { solicitante_id: userId, estado: { notIn: ['rechazada', 'cerrada', 'anulada'] } },
         orderBy: { created_at: 'desc' },
         take: 5,
@@ -55,24 +56,24 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
           created_at: true,
         },
       }),
-      db.solicitudes.count({
+      tdb.solicitudes.count({
         where: {
           solicitante_id: userId,
           estado: { in: ['aprobada', 'en_compras', 'pago_programado', 'abonada'] },
         },
       }),
-      db.solicitudes.count({
+      tdb.solicitudes.count({
         where: { solicitante_id: userId, estado: { in: ['devuelta_resp', 'devuelta_dir'] } },
       }),
-      db.solicitudes.count({
+      tdb.solicitudes.count({
         where: { solicitante_id: userId, estado: 'abonada' },
       }),
-      db.solicitudes.count({
+      tdb.solicitudes.count({
         where: { solicitante_id: userId, created_at: { gte: inicioMes } },
       }),
       // Tasa de aprobación: last 90 days
       Promise.all([
-        db.solicitudes.count({
+        tdb.solicitudes.count({
           where: {
             solicitante_id: userId,
             created_at: { gte: hace90Dias },
@@ -89,7 +90,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
             },
           },
         }),
-        db.solicitudes.count({
+        tdb.solicitudes.count({
           where: {
             solicitante_id: userId,
             created_at: { gte: hace90Dias },
@@ -131,10 +132,10 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       gastoAreaData,
       solicitudesAreaPorEstado,
     ] = await Promise.all([
-      db.solicitudes.count({
+      tdb.solicitudes.count({
         where: { area_id: areaId, estado: 'enviada' },
       }),
-      db.solicitudes.findMany({
+      tdb.solicitudes.findMany({
         where: { area_id: areaId },
         orderBy: { created_at: 'desc' },
         take: 10,
@@ -147,10 +148,10 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
           created_at: true,
         },
       }),
-      db.solicitudes.count({
+      tdb.solicitudes.count({
         where: { area_id: areaId, created_at: { gte: inicioMes } },
       }),
-      db.solicitudes.count({
+      tdb.solicitudes.count({
         where: { area_id: areaId, estado: { in: ['devuelta_resp', 'devuelta_dir'] } },
       }),
       // Gasto del área mes y año (single query)
@@ -202,10 +203,10 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
 
     const [pendientesAprobar, aprobadasSemana, rechazadasSemana, urgentesPendientes] =
       await Promise.all([
-        db.solicitudes.count({ where: { estado: 'validada', ...areaFilter } }),
-        db.solicitudes.count({ where: { fecha_aprobacion: { gte: semanaAtras }, ...areaFilter } }),
-        db.solicitudes.count({ where: { fecha_rechazo: { gte: semanaAtras }, ...areaFilter } }),
-        db.solicitudes.count({
+        tdb.solicitudes.count({ where: { estado: 'validada', ...areaFilter } }),
+        tdb.solicitudes.count({ where: { fecha_aprobacion: { gte: semanaAtras }, ...areaFilter } }),
+        tdb.solicitudes.count({ where: { fecha_rechazo: { gte: semanaAtras }, ...areaFilter } }),
+        tdb.solicitudes.count({
           where: { estado: 'validada', urgencia: { in: ['urgente', 'critica'] }, ...areaFilter },
         }),
       ]);
@@ -250,7 +251,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
         GROUP BY estado
       `,
       // 3. Top 5 pending approvals
-      db.solicitudes.findMany({
+      tdb.solicitudes.findMany({
         where: { estado: 'validada', ...areaFilter },
         orderBy: [{ created_at: 'asc' }],
         take: 5,
@@ -299,18 +300,16 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       pagoDias: parseInt(cycleTimeData[0]?.avg_payment_days ?? '0') || 0,
     };
 
-    result.resumenPresupuesto = await getResumenPresupuesto(tenantId!);
+    result.resumenPresupuesto = await getResumenPresupuesto(tenantId);
   }
 
   // ── Tesoreria budget summary ──
   if (roles.includes('tesoreria') && !roles.includes('director')) {
-    result.resumenPresupuesto = await getResumenPresupuesto(tenantId!);
+    result.resumenPresupuesto = await getResumenPresupuesto(tenantId);
   }
 
   // ── Org Admin section (admin role, not super_admin platform metrics) ──
   if (roles.includes('admin')) {
-    const adminTenantId = tenantId ?? session.tenantId;
-    const adminDb = tenantPrisma(adminTenantId);
     const [
       totalUsuarios,
       usuariosActivos,
@@ -321,23 +320,23 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       ultimasAuditorias,
       solicitudesActivas,
     ] = await Promise.all([
-      adminDb.usuarios.count(),
-      adminDb.usuarios.count({ where: { activo: true } }),
-      adminDb.areas.count(),
-      adminDb.areas.count({ where: { responsable_id: { not: null } } }),
-      adminDb.centros_costo.count(),
-      adminDb.codigos_invitacion
-        ? adminDb.codigos_invitacion.count({ where: { activo: true, expira_el: { gte: new Date() } } }).catch(() => 0)
+      tdb.usuarios.count(),
+      tdb.usuarios.count({ where: { activo: true } }),
+      tdb.areas.count(),
+      tdb.areas.count({ where: { responsable_id: { not: null } } }),
+      tdb.centros_costo.count(),
+      tdb.codigos_invitacion
+        ? tdb.codigos_invitacion.count({ where: { activo: true, expira_el: { gte: new Date() } } }).catch(() => 0)
         : Promise.resolve(0),
       prisma.$queryRaw<{ accion: string; usuario: string; fecha: string }[]>`
         SELECT la.accion, u.nombre AS usuario, la.created_at::text AS fecha
         FROM log_auditoria la
         JOIN usuarios u ON la.usuario_id = u.id
-        WHERE la.tenant_id = ${adminTenantId}
+        WHERE la.tenant_id = ${tenantId}
         ORDER BY la.created_at DESC
         LIMIT 5
       `,
-      adminDb.solicitudes.count({
+      tdb.solicitudes.count({
         where: { estado: { notIn: ['cerrada', 'anulada', 'rechazada'] } },
       }),
     ]);
@@ -354,7 +353,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
     };
 
     if (!result.resumenPresupuesto) {
-      result.resumenPresupuesto = await getResumenPresupuesto(adminTenantId);
+      result.resumenPresupuesto = await getResumenPresupuesto(tenantId);
     }
   }
 
@@ -363,10 +362,10 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
     const areaFilter = {};
     const [solicitudesAprobadas, solicitudesEnCompras, pagoProgramado, urgentesPipeline] =
       await Promise.all([
-        db.solicitudes.count({ where: { estado: 'aprobada', ...areaFilter } }),
-        db.solicitudes.count({ where: { estado: 'en_compras', ...areaFilter } }),
-        db.solicitudes.count({ where: { estado: 'pago_programado', ...areaFilter } }),
-        db.solicitudes.count({
+        tdb.solicitudes.count({ where: { estado: 'aprobada', ...areaFilter } }),
+        tdb.solicitudes.count({ where: { estado: 'en_compras', ...areaFilter } }),
+        tdb.solicitudes.count({ where: { estado: 'pago_programado', ...areaFilter } }),
+        tdb.solicitudes.count({
           where: {
             estado: { in: ['aprobada', 'en_compras'] },
             urgencia: { in: ['urgente', 'critica'] },
@@ -374,7 +373,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
           },
         }),
       ]);
-    const pipeline = await db.solicitudes.findMany({
+    const pipeline = await tdb.solicitudes.findMany({
       where: { estado: { in: ['aprobada', 'en_compras', 'pago_programado'] }, ...areaFilter },
       orderBy: { created_at: 'desc' },
       take: 10,
@@ -416,18 +415,18 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       ultimasCompras,
       comprasSinRecepcion,
     ] = await Promise.all([
-      db.solicitudes.count({
+      tdb.solicitudes.count({
         where: { estado: { in: ['aprobada', 'pago_programado'] }, ...areaFilter },
       }),
-      db.solicitudes.count({ where: { estado: 'recibida_con_obs', ...areaFilter } }),
-      db.solicitudes.count({
+      tdb.solicitudes.count({ where: { estado: 'recibida_con_obs', ...areaFilter } }),
+      tdb.solicitudes.count({
         where: {
           estado: 'pago_programado',
           dia_pago_programado: { gte: new Date(), lte: proximaSemanaDias },
           ...areaFilter,
         },
       }),
-      db.compras.findMany({
+      tdb.compras.findMany({
         orderBy: { created_at: 'desc' },
         take: 5,
         include: { solicitud: { select: { numero: true, titulo: true } } },
