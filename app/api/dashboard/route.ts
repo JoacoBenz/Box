@@ -308,7 +308,7 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
   }
 
   // ── Org Admin section (admin role, not super_admin platform metrics) ──
-  if (roles.includes('admin') && !roles.includes('director')) {
+  if (roles.includes('admin')) {
     const [
       totalUsuarios,
       usuariosActivos,
@@ -351,7 +351,9 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
       solicitudesActivas,
     };
 
-    result.resumenPresupuesto = await getResumenPresupuesto(tenantId!);
+    if (!result.resumenPresupuesto) {
+      result.resumenPresupuesto = await getResumenPresupuesto(tenantId!);
+    }
   }
 
   // ── Compras section (cross-area — sees all solicitudes) ──
