@@ -328,11 +328,11 @@ export const GET = withAdminOverride({}, async (request, { session, db, effectiv
         ? db.codigos_invitacion.count({ where: { activo: true, expira_el: { gte: new Date() } } }).catch(() => 0)
         : Promise.resolve(0),
       prisma.$queryRaw<{ accion: string; usuario: string; fecha: string }[]>`
-        SELECT al.accion, u.nombre AS usuario, al.created_at::text AS fecha
-        FROM audit_logs al
-        JOIN usuarios u ON al.usuario_id = u.id
-        WHERE al.tenant_id = ${tenantId}
-        ORDER BY al.created_at DESC
+        SELECT la.accion, u.nombre AS usuario, la.created_at::text AS fecha
+        FROM log_auditoria la
+        JOIN usuarios u ON la.usuario_id = u.id
+        WHERE la.tenant_id = ${tenantId}
+        ORDER BY la.created_at DESC
         LIMIT 5
       `,
       db.solicitudes.count({
