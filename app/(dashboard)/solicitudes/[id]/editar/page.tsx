@@ -20,12 +20,19 @@ import { PlusOutlined, MinusCircleOutlined, UploadOutlined } from '@ant-design/i
 import Link from 'next/link';
 import AnimatedSubmitButton from '@/components/AnimatedSubmitButton';
 import { useFormValid } from '@/hooks/useFormValid';
+import { useFormDraft } from '@/hooks/useFormDraft';
 import ProveedorSelect from '@/components/ProveedorSelect';
 import ProductoSelect from '@/components/ProductoSelect';
 import ProveedorInfoCard from '@/components/ProveedorInfoCard';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const { TextArea } = Input;
 const { Title } = Typography;
+
+function formatRelativeTime(ts: number): string {
+  return formatDistanceToNow(new Date(ts), { addSuffix: true, locale: es });
+}
 
 interface ItemForm {
   producto_id?: number | null;
@@ -87,6 +94,10 @@ export default function EditarSolicitudPage() {
   const id = params.id as string;
   const [form] = Form.useForm<SolicitudFormValues>();
   const { hasErrors, formProps } = useFormValid(form);
+  const draft = useFormDraft<SolicitudFormValues>({
+    form,
+    storageKey: `box:draft:editar-solicitud:v1:${id}`,
+  });
   const [loading, setLoading] = useState<'guardar' | 'enviar' | null>(null);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -192,6 +203,9 @@ export default function EditarSolicitudPage() {
         message.success('Cambios guardados');
       }
 
+      // Clear the unsaved-draft snapshot once the edit is persisted server-side.
+      draft.clear();
+
       if (accion === 'enviar') await new Promise((r) => setTimeout(r, 3500));
       router.push(`/solicitudes/${id}`);
     } catch (err: any) {
@@ -243,10 +257,31 @@ export default function EditarSolicitudPage() {
         />
       )}
 
+      {draft.hasDraft && draft.savedAt && (
+        <Alert
+          type="info"
+          showIcon
+          title="Tenés cambios sin guardar"
+          description={`Se guardaron automáticamente en este navegador ${formatRelativeTime(draft.savedAt)}. ¿Querés recuperarlos?`}
+          style={{ borderRadius: 10, marginBottom: 20 }}
+          action={
+            <Space>
+              <Button size="small" type="primary" onClick={draft.restore}>
+                Recuperar
+              </Button>
+              <Button size="small" onClick={draft.discard}>
+                Descartar
+              </Button>
+            </Space>
+          }
+        />
+      )}
+
       <Form
         form={form}
         layout="vertical"
         style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
+        onValuesChange={draft.onValuesChange}
         {...formProps}
       >
         <Card

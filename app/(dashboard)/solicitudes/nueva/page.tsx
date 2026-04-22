@@ -18,6 +18,9 @@ import {
 import { PlusOutlined, MinusCircleOutlined, UploadOutlined } from '@ant-design/icons';
 import AnimatedSubmitButton from '@/components/AnimatedSubmitButton';
 import { useFormValid } from '@/hooks/useFormValid';
+import { useFormDraft } from '@/hooks/useFormDraft';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 import ProveedorSelect from '@/components/ProveedorSelect';
 import ProductoSelect from '@/components/ProductoSelect';
 import { useTheme } from '@/components/ThemeProvider';
@@ -25,6 +28,10 @@ import ProveedorInfoCard from '@/components/ProveedorInfoCard';
 
 const { TextArea } = Input;
 const { Title } = Typography;
+
+function formatRelativeTime(ts: number): string {
+  return formatDistanceToNow(new Date(ts), { addSuffix: true, locale: es });
+}
 
 interface ItemForm {
   producto_id?: number | null;
@@ -88,6 +95,10 @@ export default function NuevaSolicitudPage() {
   const desdeId = searchParams.get('desde');
   const [form] = Form.useForm<SolicitudFormValues>();
   const { hasErrors, formProps } = useFormValid(form);
+  const draft = useFormDraft<SolicitudFormValues>({
+    form,
+    storageKey: 'box:draft:nueva-solicitud:v1',
+  });
   const [loading, setLoading] = useState<'borrador' | 'enviar' | null>(null);
   const [selectedProveedor, setSelectedProveedor] = useState<any>(null);
   const [presupuestoFile, setPresupuestoFile] = useState<File | null>(null);
@@ -188,6 +199,10 @@ export default function NuevaSolicitudPage() {
         await fetch('/api/archivos', { method: 'POST', body: formData });
       }
 
+      // Solicitud committed to the DB — drop the unsaved-draft snapshot so
+      // the user doesn't get a stale "Recuperar borrador" banner next visit.
+      draft.clear();
+
       message.success(
         accion === 'borrador'
           ? 'Borrador guardado correctamente'
@@ -226,11 +241,32 @@ export default function NuevaSolicitudPage() {
         />
       )}
 
+      {draft.hasDraft && draft.savedAt && (
+        <Alert
+          type="info"
+          showIcon
+          title="Tenés un borrador sin guardar"
+          description={`Se guardó automáticamente ${formatRelativeTime(draft.savedAt)}. ¿Querés recuperarlo?`}
+          style={{ borderRadius: 10, marginBottom: 20 }}
+          action={
+            <Space>
+              <Button size="small" type="primary" onClick={draft.restore}>
+                Recuperar
+              </Button>
+              <Button size="small" onClick={draft.discard}>
+                Descartar
+              </Button>
+            </Space>
+          }
+        />
+      )}
+
       <Form
         form={form}
         layout="vertical"
         initialValues={{ urgencia: 'normal', items: [{ unidad: 'unidades', cantidad: 1 }] }}
         style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
+        onValuesChange={draft.onValuesChange}
         {...formProps}
       >
         <Card
