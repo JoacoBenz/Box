@@ -837,6 +837,16 @@ export default function LandingPage() {
           padding: 32px 48px; text-align: center; font-size: 14px; color: #aaa;
           background: #111; border-top: 1px solid rgba(255,255,255,0.05);
         }
+        .lp-footer-links {
+          display: flex; gap: 14px; justify-content: center; align-items: center;
+          margin-bottom: 10px; flex-wrap: wrap;
+        }
+        .lp-footer-links a {
+          color: #ccc; text-decoration: none; opacity: 0.85;
+          transition: opacity 0.15s ease;
+        }
+        .lp-footer-links a:hover { opacity: 1; text-decoration: underline; }
+        .lp-footer-sep { opacity: 0.4; }
 
         /* ---- WHATSAPP FAB ---- */
         .lp-wpp-fab {
@@ -1105,6 +1115,11 @@ export default function LandingPage() {
 
       {/* FOOTER */}
       <footer className="lp-footer">
+        <div className="lp-footer-links">
+          <Link href="/terminos">Términos</Link>
+          <span className="lp-footer-sep">·</span>
+          <Link href="/privacidad">Privacidad</Link>
+        </div>
         <p>&copy; {new Date().getFullYear()} Box — Sistema de gestión de compras</p>
       </footer>
 
