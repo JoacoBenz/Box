@@ -164,8 +164,7 @@ export default function TerminosPage() {
       <section>
         <h2>13. Contacto</h2>
         <p>
-          Para consultas sobre estos Términos: <strong>legal@box.example.com</strong> (o la casilla
-          oficial que te indicaremos en la próxima actualización).
+          Para consultas sobre estos Términos: <strong>bexovar@gmail.com</strong>.
         </p>
       </section>
 

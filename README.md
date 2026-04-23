@@ -136,23 +136,23 @@ El plan se seedea via `prisma/seed.ts` y vía la propia migración `202604180000
 ### Máquina de estados
 
 ```
-registro verificado → trialing (14d, sin Stripe customer todavía)
+registro verificado → trialing (14d, sin preapproval todavía)
     ↓ admin click "Activar plan"
-    → Stripe Checkout
-    ↓ webhook checkout.session.completed
-    → active (Stripe customer + subscription ligados)
-    ↓ invoice.payment_failed (Stripe retry windows)
+    → Mercado Pago Preapproval (init_point)
+    ↓ webhook preapproval.authorized
+    → active (mp_preapproval_id ligado)
+    ↓ webhook preapproval.paused / payment rejected
     → past_due (gracia de 3 días desde current_period_end)
-    ↓ invoice.paid
+    ↓ webhook payment.approved
     → active
-    ↓ customer.subscription.deleted
+    ↓ webhook preapproval.cancelled
     → canceled (sin acceso hasta reactivar)
 ```
 
 `proxy.ts` gatea el dashboard: los estados que NO tienen acceso (`trialing`
 vencido, `past_due` fuera de gracia, `canceled`, `unpaid`) redirigen a
-`/facturacion?reason=<estado>`. Rutas exentas: `/facturacion`, `/api/stripe/*`,
-`/api/auth/*`, `/api/health`, `/logout`.
+`/facturacion?reason=<estado>`. Rutas exentas: `/facturacion`,
+`/api/mercadopago/*`, `/api/auth/*`, `/api/health`, `/logout`.
 
 ### Enforcement de caps
 

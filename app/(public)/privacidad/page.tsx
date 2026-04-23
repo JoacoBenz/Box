@@ -102,9 +102,9 @@ export default function PrivacidadPage() {
           </li>
         </ul>
         <p>
-          Para ejercerlos, escribinos a <strong>privacidad@box.example.com</strong>. Respondemos
-          dentro de los 10 días corridos establecidos por la ley. También podés presentar un reclamo
-          ante la <strong>Agencia de Acceso a la Información Pública</strong> si considerás que no
+          Para ejercerlos, escribinos a <strong>bexovar@gmail.com</strong>. Respondemos dentro de
+          los 10 días corridos establecidos por la ley. También podés presentar un reclamo ante la{' '}
+          <strong>Agencia de Acceso a la Información Pública</strong> si considerás que no
           respondemos adecuadamente.
         </p>
       </section>
@@ -182,7 +182,7 @@ export default function PrivacidadPage() {
       <section>
         <h2>12. Contacto</h2>
         <p>
-          Delegado de protección de datos: <strong>privacidad@box.example.com</strong>.
+          Delegado de protección de datos: <strong>bexovar@gmail.com</strong>.
         </p>
       </section>
 
