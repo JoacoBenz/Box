@@ -15,6 +15,8 @@ const PUBLIC_ROUTES = [
   '/restablecer',
   '/verificar-email',
   '/unirse',
+  '/terminos',
+  '/privacidad',
   '/api/auth',
   '/api/registro',
   '/api/unirse',

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Form, Input, Button, Card, Typography, Alert, Space, Result } from 'antd';
+import { Form, Input, Button, Card, Typography, Alert, Space, Result, Checkbox } from 'antd';
 import Link from 'next/link';
 import { useFormValid } from '@/hooks/useFormValid';
 
@@ -127,6 +127,33 @@ export default function RegistroPage() {
             rules={[{ required: true, message: 'Confirmá tu contraseña' }]}
           >
             <Input.Password placeholder="••••••••" size="large" />
+          </Form.Item>
+
+          <Form.Item
+            name="aceptaTerminos"
+            valuePropName="checked"
+            rules={[
+              {
+                validator: (_, value) =>
+                  value
+                    ? Promise.resolve()
+                    : Promise.reject(
+                        new Error('Tenés que aceptar los términos y la política de privacidad'),
+                      ),
+              },
+            ]}
+          >
+            <Checkbox>
+              Acepto los{' '}
+              <Link href="/terminos" target="_blank" rel="noopener">
+                Términos y Condiciones
+              </Link>{' '}
+              y la{' '}
+              <Link href="/privacidad" target="_blank" rel="noopener">
+                Política de Privacidad
+              </Link>
+              .
+            </Checkbox>
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0 }}>
