@@ -20,28 +20,31 @@ interface Props {
   compact?: boolean;
 }
 
-const COOKIE_NAME = 'admin_tenant_id';
 const EVENT_NAME = 'admin-tenant-change';
-
-function getCookieValue(): number | null {
-  if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(new RegExp(`(?:^|; )${COOKIE_NAME}=([^;]*)`));
-  return match ? Number(match[1]) : null;
-}
 
 export function useAdminTenant(): [number | null, (id: number | null) => void] {
   const [tenantId, setTenantId] = useState<number | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    setTenantId(getCookieValue());
+    // Cookie is httpOnly, so read it via the server.
+    let cancelled = false;
+    fetch('/api/admin/tenant-override')
+      .then((r) => (r.ok ? r.json() : { tenantId: null }))
+      .then((d: { tenantId: number | null }) => {
+        if (!cancelled) setTenantId(d.tenantId ?? null);
+      })
+      .catch(() => {});
 
     const handler = (e: Event) => {
       const val = (e as CustomEvent).detail as number | null;
       setTenantId(val);
     };
     window.addEventListener(EVENT_NAME, handler);
-    return () => window.removeEventListener(EVENT_NAME, handler);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(EVENT_NAME, handler);
+    };
   }, []);
 
   const set = useCallback(

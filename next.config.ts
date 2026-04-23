@@ -5,22 +5,25 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['bcryptjs'],
 };
 
-// Sentry wraps the config only when a DSN is present.
-// Uploading source maps requires SENTRY_AUTH_TOKEN (+ ORG + PROJECT) at build time.
-const shouldWrapWithSentry =
-  !!process.env.SENTRY_DSN &&
+// Sentry wraps the config whenever a DSN is present.
+// Source map upload (ORG + PROJECT + AUTH_TOKEN) is optional: if those are set
+// too, stack traces get symbolicated; if not, errors still arrive raw-but-useful.
+const hasSentryDsn = !!process.env.SENTRY_DSN;
+const canUploadSourcemaps =
+  hasSentryDsn &&
   !!process.env.SENTRY_ORG &&
   !!process.env.SENTRY_PROJECT &&
   !!process.env.SENTRY_AUTH_TOKEN;
 
-export default shouldWrapWithSentry
+export default hasSentryDsn
   ? withSentryConfig(nextConfig, {
-      org: process.env.SENTRY_ORG!,
-      project: process.env.SENTRY_PROJECT!,
-      authToken: process.env.SENTRY_AUTH_TOKEN,
+      org: process.env.SENTRY_ORG ?? 'placeholder',
+      project: process.env.SENTRY_PROJECT ?? 'placeholder',
+      authToken: canUploadSourcemaps ? process.env.SENTRY_AUTH_TOKEN : undefined,
       silent: !process.env.CI,
-      widenClientFileUpload: true,
+      widenClientFileUpload: canUploadSourcemaps,
       disableLogger: true,
       tunnelRoute: '/monitoring',
+      sourcemaps: canUploadSourcemaps ? undefined : { disable: true },
     })
   : nextConfig;
