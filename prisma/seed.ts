@@ -57,13 +57,14 @@ async function main() {
   console.log('Default plan (box-principal) seeded');
 
   // --- Platform tenant (hidden, for super admin only) ---
+  const superAdminEmail = process.env.SUPER_ADMIN_EMAIL ?? 'super@box.com';
   const platformTenant = await prisma.tenants.upsert({
     where: { slug: '__platform__' },
     update: {},
     create: {
       nombre: 'Plataforma',
       slug: '__platform__',
-      email_contacto: 'super@box.com',
+      email_contacto: superAdminEmail,
       moneda: 'ARS',
     },
   });
@@ -71,14 +72,26 @@ async function main() {
   const superAdminRole = await prisma.roles.findUnique({ where: { nombre: 'super_admin' } });
   if (!superAdminRole) throw new Error('super_admin role not found');
 
-  const passwordHash = await bcrypt.hash('admin1234', 12);
+  // Password: use SUPER_ADMIN_INITIAL_PASSWORD from env if provided; otherwise
+  // generate a random 24-char password and print it on stderr so the operator
+  // running the seed can capture it. We never log to stdout to avoid CI/build
+  // pipelines caching it.
+  let superAdminPassword = process.env.SUPER_ADMIN_INITIAL_PASSWORD;
+  let generated = false;
+  if (!superAdminPassword) {
+    const { randomInt } = await import('crypto');
+    const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#$%&*?-';
+    superAdminPassword = Array.from({ length: 24 }, () => chars[randomInt(chars.length)]).join('');
+    generated = true;
+  }
+  const passwordHash = await bcrypt.hash(superAdminPassword, 12);
   const superAdmin = await prisma.usuarios.upsert({
-    where: { tenant_id_email: { tenant_id: platformTenant.id, email: 'super@box.com' } },
+    where: { tenant_id_email: { tenant_id: platformTenant.id, email: superAdminEmail } },
     update: {},
     create: {
       tenant_id: platformTenant.id,
       nombre: 'Super Admin',
-      email: 'super@box.com',
+      email: superAdminEmail,
       password_hash: passwordHash,
     },
   });
@@ -89,7 +102,19 @@ async function main() {
     create: { usuario_id: superAdmin.id, rol_id: superAdminRole.id },
   });
 
-  console.log('Platform tenant & super admin seeded. Login: super@box.com / admin1234');
+  if (generated) {
+    process.stderr.write(
+      `\n\n===================================================================\n` +
+        `⚠  Super admin creado con password random. GUARDALA AHORA:\n\n` +
+        `   Email:    ${superAdminEmail}\n` +
+        `   Password: ${superAdminPassword}\n\n` +
+        `   Esta línea NO se vuelve a imprimir. Para fijarla, corré el seed\n` +
+        `   con SUPER_ADMIN_INITIAL_PASSWORD=<tu-pw> antes del comando.\n` +
+        `===================================================================\n\n`,
+    );
+  } else {
+    console.log(`Platform tenant & super admin seeded for ${superAdminEmail}`);
+  }
 
   // --- Demo tenant (for testing) ---
   const testTenant = await prisma.tenants.upsert({
