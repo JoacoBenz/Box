@@ -59,6 +59,8 @@ describe('proxy (Next.js 16 middleware)', () => {
       '/restablecer',
       '/verificar-email',
       '/unirse',
+      '/terminos',
+      '/privacidad',
       '/api/auth/signin',
       '/api/registro',
       '/api/unirse',
