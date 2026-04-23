@@ -18,6 +18,7 @@ import { SearchOutlined, DownloadOutlined, PlusOutlined, ReloadOutlined } from '
 import { useRouter } from 'next/navigation';
 import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types';
 import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types';
+import { urgenciaLabel } from '@/lib/constants';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import Link from 'next/link';
 import dayjs from 'dayjs';
@@ -231,7 +232,7 @@ export default function SolicitudesTable({ roles, areas }: Props) {
         width: 110,
         render: (val: string) => {
           const u = URGENCIAS[val as UrgenciaSolicitud];
-          return u ? <Tag color={u.color}>{u.label}</Tag> : <Tag>{val}</Tag>;
+          return u ? <Tag color={u.color}>{u.label}</Tag> : <Tag>{urgenciaLabel(val)}</Tag>;
         },
       },
       {
@@ -499,7 +500,7 @@ export default function SolicitudesTable({ roles, areas }: Props) {
                             {urgenciaInfo.label}
                           </Tag>
                         ) : (
-                          <Tag style={{ margin: 0 }}>{record.urgencia}</Tag>
+                          <Tag style={{ margin: 0 }}>{urgenciaLabel(record.urgencia)}</Tag>
                         )}
                         {estadoInfo ? (
                           <Tag color={estadoInfo.color} style={{ margin: 0 }}>

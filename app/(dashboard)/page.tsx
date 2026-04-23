@@ -35,7 +35,7 @@ const DirectorDashboard = dynamic(() => import('./components/DirectorDashboard')
 });
 
 import { useTheme } from '@/components/ThemeProvider';
-import { ESTADO_COLOR, ESTADO_LABEL, URGENCIA_COLOR } from '@/lib/constants';
+import { ESTADO_COLOR, ESTADO_LABEL, URGENCIA_COLOR, urgenciaLabel } from '@/lib/constants';
 
 const { Title, Text } = Typography;
 
@@ -494,15 +494,11 @@ export default function DashboardPage() {
       {/* ── ORG ADMIN DASHBOARD ───────────────────────── */}
       {/* ═══════════════════════════════════════════════════ */}
       {hasOrgAdmin && !hasDirector && (
-        <DirectorDashboard
-          data={data}
-          directorAreaId={null}
-          onAreaChange={() => {}}
-        />
+        <DirectorDashboard data={data} directorAreaId={null} onAreaChange={() => {}} />
       )}
       {hasOrgAdmin && (
         <div style={{ marginBottom: 28 }}>
-          <SectionTitle>Panel de Administracion</SectionTitle>
+          <SectionTitle>Panel de Administración</SectionTitle>
           <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
             <Col xs={12} sm={8} lg={4}>
               <MiniStatCard
@@ -515,7 +511,7 @@ export default function DashboardPage() {
             </Col>
             <Col xs={12} sm={8} lg={4}>
               <MiniStatCard
-                title="Areas"
+                title="Áreas"
                 value={data.orgAdmin.totalAreas}
                 icon={<ApartmentOutlined />}
                 color="green"
@@ -547,10 +543,14 @@ export default function DashboardPage() {
             </Col>
             <Col xs={12} sm={8} lg={4}>
               <MiniStatCard
-                title="Areas sin Resp."
+                title="Áreas sin Resp."
                 value={data.orgAdmin.totalAreas - data.orgAdmin.areasConResponsable}
                 icon={<WarningOutlined />}
-                color={data.orgAdmin.totalAreas - data.orgAdmin.areasConResponsable > 0 ? 'orange' : 'green'}
+                color={
+                  data.orgAdmin.totalAreas - data.orgAdmin.areasConResponsable > 0
+                    ? 'orange'
+                    : 'green'
+                }
               />
             </Col>
           </Row>
@@ -573,7 +573,10 @@ export default function DashboardPage() {
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     padding: '8px 0',
-                    borderBottom: i < data.orgAdmin.ultimasAuditorias.length - 1 ? '1px solid var(--border-color)' : 'none',
+                    borderBottom:
+                      i < data.orgAdmin.ultimasAuditorias.length - 1
+                        ? '1px solid var(--border-color)'
+                        : 'none',
                     fontSize: 13,
                   }}
                 >
@@ -582,7 +585,12 @@ export default function DashboardPage() {
                     <Tag style={{ fontSize: 11 }}>{a.accion.replace(/_/g, ' ')}</Tag>
                   </span>
                   <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
-                    {new Date(a.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    {new Date(a.fecha).toLocaleDateString('es-AR', {
+                      day: '2-digit',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                   </span>
                 </div>
               ))}
@@ -963,6 +971,7 @@ export default function DashboardPage() {
                     rowKey="id"
                     pagination={false}
                     size="small"
+                    scroll={{ x: 'max-content' }}
                     columns={[
                       { title: 'Organizaci\u00f3n', dataIndex: 'org', ellipsis: true },
                       {
@@ -1174,6 +1183,7 @@ export default function DashboardPage() {
                 rowKey="id"
                 pagination={false}
                 size="small"
+                scroll={{ x: 'max-content' }}
                 columns={[
                   {
                     title: 'Número',
@@ -1198,7 +1208,9 @@ export default function DashboardPage() {
                   {
                     title: 'Urgencia',
                     dataIndex: 'urgencia',
-                    render: (v: string) => <Tag color={URGENCIA_COLOR[v]}>{v}</Tag>,
+                    render: (v: string) => (
+                      <Tag color={URGENCIA_COLOR[v] ?? 'default'}>{urgenciaLabel(v)}</Tag>
+                    ),
                   },
                 ]}
               />
@@ -1226,6 +1238,7 @@ export default function DashboardPage() {
               rowKey="id"
               pagination={false}
               size="small"
+              scroll={{ x: 'max-content' }}
               columns={[
                 {
                   title: 'N°',
@@ -1281,6 +1294,7 @@ export default function DashboardPage() {
             rowKey="id"
             pagination={false}
             size="small"
+            scroll={{ x: 'max-content' }}
             columns={[
               {
                 title: 'Solicitud',
@@ -1405,6 +1419,7 @@ export default function DashboardPage() {
                         rowKey="medioPago"
                         pagination={false}
                         size="small"
+                        scroll={{ x: 'max-content' }}
                         columns={[
                           {
                             title: 'Medio',

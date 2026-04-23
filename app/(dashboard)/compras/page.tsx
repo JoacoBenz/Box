@@ -5,6 +5,7 @@ import { Table, Tag, Button, Typography, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useRouter } from 'next/navigation';
 import { URGENCIAS } from '@/types';
+import { urgenciaLabel } from '@/lib/constants';
 import type { UrgenciaSolicitud } from '@/types';
 import dayjs from 'dayjs';
 
@@ -100,7 +101,7 @@ export default function ComprasPage() {
       width: 110,
       render: (val: string) => {
         const u = URGENCIAS[val as UrgenciaSolicitud];
-        return u ? <Tag color={u.color}>{u.label}</Tag> : <Tag>{val}</Tag>;
+        return u ? <Tag color={u.color}>{u.label}</Tag> : <Tag>{urgenciaLabel(val)}</Tag>;
       },
     },
     {
@@ -171,6 +172,7 @@ export default function ComprasPage() {
         loading={loading}
         pagination={{ pageSize: 20, showSizeChanger: false }}
         size="middle"
+        scroll={{ x: 'max-content' }}
         locale={{ emptyText: 'No hay pagos programados pendientes' }}
         rowClassName={(record: any) =>
           record.urgencia === 'critica'

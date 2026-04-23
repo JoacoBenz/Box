@@ -6,6 +6,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { useRouter } from 'next/navigation';
 import { CheckOutlined, CheckCircleOutlined, RightOutlined } from '@ant-design/icons';
 import { URGENCIAS } from '@/types';
+import { urgenciaLabel } from '@/lib/constants';
 import type { UrgenciaSolicitud } from '@/types';
 import { useIsMobile } from '@/hooks/useIsMobile';
 
@@ -317,7 +318,7 @@ export default function AprobacionesPage() {
       width: 110,
       render: (val: string) => {
         const u = URGENCIAS[val as UrgenciaSolicitud];
-        return u ? <Tag color={u.color}>{u.label}</Tag> : <Tag>{val}</Tag>;
+        return u ? <Tag color={u.color}>{u.label}</Tag> : <Tag>{urgenciaLabel(val)}</Tag>;
       },
     },
     {

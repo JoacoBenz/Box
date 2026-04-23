@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { URGENCIAS } from '@/types';
 import type { UrgenciaSolicitud } from '@/types';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { urgenciaLabel } from '@/lib/constants';
 
 const { Title } = Typography;
 
@@ -77,7 +78,7 @@ export default function RecepcionesPage() {
       width: 110,
       render: (val: string) => {
         const u = URGENCIAS[val as UrgenciaSolicitud];
-        return u ? <Tag color={u.color}>{u.label}</Tag> : <Tag>{val}</Tag>;
+        return u ? <Tag color={u.color}>{u.label}</Tag> : <Tag>{urgenciaLabel(val)}</Tag>;
       },
     },
   ];
@@ -143,7 +144,11 @@ export default function RecepcionesPage() {
                     <span style={{ color: 'var(--color-primary)', fontWeight: 600, fontSize: 14 }}>
                       {s.numero}
                     </span>
-                    {u ? <Tag color={u.color}>{u.label}</Tag> : <Tag>{s.urgencia}</Tag>}
+                    {u ? (
+                      <Tag color={u.color}>{u.label}</Tag>
+                    ) : (
+                      <Tag>{urgenciaLabel(s.urgencia)}</Tag>
+                    )}
                   </div>
                   <div
                     style={{

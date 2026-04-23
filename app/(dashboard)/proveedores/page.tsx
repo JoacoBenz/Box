@@ -207,6 +207,7 @@ export default function ProveedoresPage() {
         loading={loading}
         pagination={{ pageSize: 20, showSizeChanger: false }}
         size="middle"
+        scroll={{ x: 'max-content' }}
       />
 
       <ProveedorCreateModal

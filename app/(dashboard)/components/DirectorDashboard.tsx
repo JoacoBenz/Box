@@ -1,19 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import {
-  Card,
-  Col,
-  Row,
-  Typography,
-  Empty,
-  Select,
-  Progress,
-  Table,
-  Tag,
-  Button,
-  App,
-} from 'antd';
+import { Card, Col, Row, Typography, Empty, Select, Progress, Table, Tag, Button, App } from 'antd';
 import {
   PieChart,
   Pie,
@@ -38,6 +26,7 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from '@/components/ThemeProvider';
 import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types';
 import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types';
+import { formatMoney, formatMoneyShort } from '@/lib/format';
 
 const { Text } = Typography;
 
@@ -53,20 +42,6 @@ const DONUT_COLORS_STATIC = [
   '#14b8a6',
   '#f97316',
 ];
-
-function formatMoney(amount: number): string {
-  return new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-function formatMoneyShort(amount: number): string {
-  if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
-  if (amount >= 1_000) return `$${(amount / 1_000).toFixed(0)}K`;
-  return formatMoney(amount);
-}
 
 // ── Count-up hook ──
 function useCountUp(rawTarget: number | undefined | null, duration = 800) {
@@ -114,12 +89,23 @@ function MetricCard({
   const current = value ?? 0;
   const prev = previousValue ?? 0;
   const hasTrend = prev > 0 && current > 0;
-  const pctChange = hasTrend ? Math.round(((current - prev) / prev) * 100) : null;
+  const rawPct = hasTrend ? Math.round(((current - prev) / prev) * 100) : null;
+  // Cap absurd deltas that happen when the prior period is near-zero (e.g. new tenants).
+  // Anything > 999% or < -99% gets shown as ">999%" / "<-99%" to avoid "+3167%" noise.
+  const PCT_CAP = 999;
+  const pctDisplay =
+    rawPct === null
+      ? null
+      : rawPct > PCT_CAP
+        ? { value: PCT_CAP, capped: true, positive: true }
+        : rawPct < -99
+          ? { value: -99, capped: true, positive: false }
+          : { value: rawPct, capped: false, positive: rawPct > 0 };
 
   return (
     <Card
       style={{ borderRadius: 16, border: `1px solid ${tokens.borderColor}` }}
-      styles={{ body: { padding: '20px 24px' } }}
+      styles={{ body: { padding: 'clamp(12px, 3vw, 20px) clamp(14px, 3.5vw, 24px)' } }}
     >
       <Text
         type="secondary"
@@ -132,23 +118,39 @@ function MetricCard({
       >
         {title}
       </Text>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-        <div style={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1.3, marginTop: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+        <div
+          style={{
+            fontSize: 'clamp(18px, 5vw, 26px)',
+            fontWeight: 800,
+            color,
+            lineHeight: 1.3,
+            marginTop: 4,
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
           {formatMoney(count)}
         </div>
-        {pctChange !== null && (
+        {pctDisplay !== null && (
           <span
             style={{
               fontSize: 12,
               fontWeight: 600,
-              color: pctChange > 0 ? '#ef4444' : '#22c55e',
+              color: pctDisplay.positive ? '#ef4444' : '#22c55e',
               display: 'inline-flex',
               alignItems: 'center',
               gap: 2,
+              flexShrink: 0,
             }}
+            title={
+              pctDisplay.capped ? `Variación real: ${rawPct}% (se muestra limitado)` : undefined
+            }
           >
-            {pctChange > 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-            {Math.abs(pctChange)}%
+            {pctDisplay.positive ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
+            {pctDisplay.capped ? '>' : ''}
+            {Math.abs(pctDisplay.value)}%
           </span>
         )}
       </div>
@@ -353,7 +355,7 @@ export default function DirectorDashboard({
     <Select
       value={directorAreaId}
       onChange={onAreaChange}
-      placeholder="Todas las areas"
+      placeholder="Todas las áreas"
       allowClear
       size="small"
       style={{ minWidth: 160 }}
@@ -370,10 +372,10 @@ export default function DirectorDashboard({
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={12} lg={6}>
           <MetricCard
-            title="Gasto del Ano"
+            title="Gasto del Año"
             value={data.gastoAnual}
             previousValue={data.gastoAnualAnterior}
-            subtitle="vs ano anterior"
+            subtitle="vs año anterior"
             color={tokens.colorPrimary}
           />
         </Col>
@@ -389,7 +391,7 @@ export default function DirectorDashboard({
         <Col xs={12} lg={6}>
           <Card
             style={{ borderRadius: 16, border: `1px solid ${tokens.borderColor}` }}
-            styles={{ body: { padding: '20px 24px' } }}
+            styles={{ body: { padding: 'clamp(12px, 3vw, 20px) clamp(14px, 3.5vw, 24px)' } }}
           >
             <Text
               type="secondary"
@@ -408,25 +410,32 @@ export default function DirectorDashboard({
                 alignItems: 'baseline',
                 gap: 4,
                 marginTop: 4,
+                flexWrap: 'wrap',
               }}
             >
               <ClockCircleOutlined style={{ fontSize: 18, color: tokens.colorPrimary }} />
-              <span style={{ fontSize: 26, fontWeight: 800, color: tokens.colorPrimary }}>
+              <span
+                style={{
+                  fontSize: 'clamp(18px, 5vw, 26px)',
+                  fontWeight: 800,
+                  color: tokens.colorPrimary,
+                }}
+              >
                 {tiempoCiclo.totalDias}
               </span>
               <span style={{ fontSize: 13, color: tokens.textSecondary, fontWeight: 500 }}>
-                dias
+                días
               </span>
             </div>
             <div style={{ fontSize: 11, color: tokens.textMuted, marginTop: 4 }}>
-              {tiempoCiclo.aprobacionDias}d aprobacion + {tiempoCiclo.pagoDias}d pago
+              {tiempoCiclo.aprobacionDias}d aprobación + {tiempoCiclo.pagoDias}d pago
             </div>
           </Card>
         </Col>
         <Col xs={12} lg={6}>
           <Card
             style={{ borderRadius: 16, border: `1px solid ${tokens.borderColor}` }}
-            styles={{ body: { padding: '20px 24px' } }}
+            styles={{ body: { padding: 'clamp(12px, 3vw, 20px) clamp(14px, 3.5vw, 24px)' } }}
           >
             <Text
               type="secondary"
@@ -439,7 +448,14 @@ export default function DirectorDashboard({
             >
               Pendientes
             </Text>
-            <div style={{ fontSize: 26, fontWeight: 800, color: '#f59e0b', marginTop: 4 }}>
+            <div
+              style={{
+                fontSize: 'clamp(18px, 5vw, 26px)',
+                fontWeight: 800,
+                color: '#f59e0b',
+                marginTop: 4,
+              }}
+            >
               {data.pendientesAprobar ?? 0}
             </div>
             <div style={{ fontSize: 11, color: tokens.textMuted }}>
@@ -468,7 +484,14 @@ export default function DirectorDashboard({
               style={{ borderRadius: 16 }}
               styles={{ body: { padding: '16px 24px' } }}
             >
-              <div style={{ display: 'flex', gap: 0, alignItems: 'stretch' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 0,
+                  alignItems: 'stretch',
+                  flexWrap: 'wrap',
+                }}
+              >
                 {PIPELINE_STAGES.map((stage, idx) => {
                   const match = pipelineData.find((p) => p.estado === stage);
                   const count = match?.cantidad ?? 0;
@@ -478,14 +501,21 @@ export default function DirectorDashboard({
                     <div
                       key={stage}
                       style={{
-                        flex: 1,
+                        flex: '1 1 96px',
+                        minWidth: 96,
                         textAlign: 'center',
                         padding: '12px 8px',
                         position: 'relative',
                         borderRight: isLast ? 'none' : `1px dashed ${tokens.borderColor}`,
                       }}
                     >
-                      <div style={{ fontSize: 28, fontWeight: 800, color: tokens.textPrimary }}>
+                      <div
+                        style={{
+                          fontSize: 'clamp(20px, 5vw, 28px)',
+                          fontWeight: 800,
+                          color: tokens.textPrimary,
+                        }}
+                      >
                         {count}
                       </div>
                       <Tag
@@ -515,7 +545,7 @@ export default function DirectorDashboard({
             <Card
               title={
                 <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
-                  Pendientes de Aprobacion
+                  Pendientes de Aprobación
                 </span>
               }
               extra={
@@ -606,11 +636,11 @@ export default function DirectorDashboard({
 
       {/* ── Charts Row ── */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        {/* Donut: Gasto por Area */}
+        {/* Donut: Gasto por Área */}
         <Col xs={24} lg={12}>
           <Card
             title={
-              <span style={{ fontWeight: 700, color: tokens.textPrimary }}>Gasto por Area</span>
+              <span style={{ fontWeight: 700, color: tokens.textPrimary }}>Gasto por Área</span>
             }
             style={{ borderRadius: 16 }}
             styles={{ body: { padding: '16px 24px' } }}
@@ -903,14 +933,14 @@ export default function DirectorDashboard({
         </Col>
       </Row>
 
-      {/* ── Presupuesto por Area (sorted by urgency) ── */}
+      {/* ── Presupuesto por Área (sorted by urgency) ── */}
       {budgetSorted.length > 0 && (
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
           <Col span={24}>
             <Card
               title={
                 <span style={{ fontWeight: 700, color: tokens.textPrimary }}>
-                  Presupuesto por Area
+                  Presupuesto por Área
                 </span>
               }
               style={{ borderRadius: 16 }}
@@ -921,9 +951,10 @@ export default function DirectorDashboard({
                 dataSource={budgetSorted}
                 pagination={false}
                 size="small"
+                scroll={{ x: 900 }}
                 columns={[
                   {
-                    title: 'Area',
+                    title: 'Área',
                     dataIndex: 'areaNombre',
                     key: 'areaNombre',
                     width: 180,
@@ -967,7 +998,7 @@ export default function DirectorDashboard({
                       r.presupuestoAnual !== null ? formatMoney(r.presupuestoAnual) : '—',
                   },
                   {
-                    title: 'Gastado (ano)',
+                    title: 'Gastado (año)',
                     key: 'gastoAnio',
                     width: 130,
                     render: (_, r: any) => formatMoney(r.gastoAnual),

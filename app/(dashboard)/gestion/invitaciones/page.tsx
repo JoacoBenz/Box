@@ -175,6 +175,7 @@ export default function InvitacionesPage() {
         loading={loading}
         pagination={false}
         size="middle"
+        scroll={{ x: 'max-content' }}
       />
 
       <Modal

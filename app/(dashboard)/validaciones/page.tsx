@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types';
 import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { urgenciaLabel } from '@/lib/constants';
 
 const { Title } = Typography;
 
@@ -89,7 +90,7 @@ export default function ValidacionesPage() {
       width: 110,
       render: (val: string) => {
         const u = URGENCIAS[val as UrgenciaSolicitud];
-        return u ? <Tag color={u.color}>{u.label}</Tag> : <Tag>{val}</Tag>;
+        return u ? <Tag color={u.color}>{u.label}</Tag> : <Tag>{urgenciaLabel(val)}</Tag>;
       },
     },
     {
@@ -149,7 +150,7 @@ export default function ValidacionesPage() {
             {urgencia ? (
               <Tag color={urgencia.color}>{urgencia.label}</Tag>
             ) : (
-              <Tag>{sol.urgencia}</Tag>
+              <Tag>{urgenciaLabel(sol.urgencia)}</Tag>
             )}
             {estado ? <Tag color={estado.color}>{estado.label}</Tag> : <Tag>{sol.estado}</Tag>}
           </div>

@@ -2,6 +2,7 @@
 
 import { Table } from 'antd';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { formatMoney } from '@/lib/format';
 
 export interface ItemRow {
   id: number;
@@ -38,14 +39,14 @@ const columns = [
     dataIndex: 'precio_estimado',
     key: 'precio_estimado',
     width: 130,
-    render: (v: number | null) => (v != null ? `$${v.toFixed(2)}` : '—'),
+    render: (v: number | null) => (v != null ? formatMoney(v) : '—'),
   },
   {
     title: 'Subtotal Est.',
     key: 'subtotal',
     width: 130,
     render: (_: unknown, r: ItemRow) =>
-      r.precio_estimado != null ? `$${(r.precio_estimado * r.cantidad).toFixed(2)}` : '—',
+      r.precio_estimado != null ? formatMoney(r.precio_estimado * r.cantidad) : '—',
   },
 ];
 
@@ -76,7 +77,7 @@ function ItemCard({ item }: { item: ItemRow }) {
         <span>
           {item.cantidad} {item.unidad}
         </span>
-        {item.precio_estimado != null && <span>× ${item.precio_estimado.toFixed(2)}</span>}
+        {item.precio_estimado != null && <span>× {formatMoney(item.precio_estimado)}</span>}
         {item.link_producto && (
           <a
             href={item.link_producto}
@@ -90,7 +91,7 @@ function ItemCard({ item }: { item: ItemRow }) {
       </div>
       {subtotal != null && (
         <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>
-          ${subtotal.toFixed(2)}
+          {formatMoney(subtotal)}
         </div>
       )}
     </div>

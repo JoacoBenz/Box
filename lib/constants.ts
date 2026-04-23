@@ -36,3 +36,19 @@ export const URGENCIA_COLOR: Record<string, string> = {
   urgente: 'orange',
   critica: 'red',
 };
+
+export const URGENCIA_LABEL: Record<string, string> = {
+  baja: 'Baja',
+  normal: 'Normal',
+  urgente: 'Urgente',
+  critica: 'Crítica',
+};
+
+/**
+ * Canonical display for a `urgencia` value. Falls back to capitalizing the first letter
+ * of an unknown value so tables never show raw lowercase strings like "alta".
+ */
+export function urgenciaLabel(value: string | null | undefined): string {
+  if (!value) return '—';
+  return URGENCIA_LABEL[value] ?? value.charAt(0).toUpperCase() + value.slice(1);
+}

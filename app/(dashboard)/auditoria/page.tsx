@@ -401,6 +401,7 @@ export default function AuditoriaPage() {
           rowKey="id"
           pagination={false}
           size="small"
+          scroll={{ x: 'max-content' }}
           onRow={(record) => ({
             onClick: () => setDetailLog(record),
             style: { cursor: 'pointer' },

@@ -289,13 +289,14 @@ export function FacturacionContent() {
               />
             </Descriptions.Item>
             <Descriptions.Item label="Responsables de área">
-              <Text>
-                {usage.roles.responsable_area.areas_con_responsable} / {usage.areas.count} áreas con
-                responsable (máx {usage.roles.responsable_area.limit_per_area} por área)
-              </Text>
+              <UsageBar
+                count={usage.roles.responsable_area.areas_con_responsable}
+                limit={usage.areas.count}
+                unit={`áreas con responsable (máx ${usage.roles.responsable_area.limit_per_area} por área)`}
+              />
             </Descriptions.Item>
             <Descriptions.Item label="Solicitantes">
-              <Text>Sin límite</Text>
+              <Text>Sin límite en el plan</Text>
             </Descriptions.Item>
           </Descriptions>
         </Card>
@@ -309,10 +310,23 @@ function UsageBar({ count, limit, unit }: { count: number; limit: number; unit: 
   const status = pct >= 100 ? 'exception' : pct >= 80 ? 'active' : 'normal';
   return (
     <div style={{ maxWidth: 400 }}>
-      <Progress percent={pct} status={status} format={() => `${count} / ${limit}`} size="small" />
-      <Text type="secondary" style={{ fontSize: 12 }}>
-        {unit}
-      </Text>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          gap: 8,
+          marginBottom: 2,
+        }}
+      >
+        <Text strong style={{ fontSize: 14 }}>
+          {count} / {limit}
+        </Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          {unit}
+        </Text>
+      </div>
+      <Progress percent={pct} status={status} showInfo={false} size="small" />
     </div>
   );
 }

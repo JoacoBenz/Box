@@ -222,6 +222,7 @@ export default function MiAreaUsuariosPage() {
         loading={loading}
         pagination={{ pageSize: 20, showSizeChanger: false }}
         size="middle"
+        scroll={{ x: 'max-content' }}
         locale={{ emptyText: 'No hay usuarios en tu área' }}
       />
 

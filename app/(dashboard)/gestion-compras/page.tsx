@@ -16,6 +16,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import Link from 'next/link';
 import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types';
+import { urgenciaLabel } from '@/lib/constants';
 import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types';
 import dayjs from 'dayjs';
 import { useFormValid } from '@/hooks/useFormValid';
@@ -144,7 +145,7 @@ export default function GestionComprasPage() {
       width: 100,
       render: (val: UrgenciaSolicitud) => {
         const info = URGENCIAS[val];
-        return info ? <Tag color={info.color}>{info.label}</Tag> : <Tag>{val}</Tag>;
+        return info ? <Tag color={info.color}>{info.label}</Tag> : <Tag>{urgenciaLabel(val)}</Tag>;
       },
     },
     {
@@ -232,6 +233,7 @@ export default function GestionComprasPage() {
         loading={loading}
         pagination={{ pageSize: 20, showSizeChanger: false }}
         size="middle"
+        scroll={{ x: 'max-content' }}
         locale={{ emptyText: 'No hay solicitudes para mostrar' }}
         rowClassName={(record: any) =>
           record.urgencia === 'critica'

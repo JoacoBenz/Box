@@ -203,6 +203,7 @@ export default function ReportesPage() {
               rowKey="producto"
               size="small"
               pagination={{ pageSize: 10 }}
+              scroll={{ x: 'max-content' }}
               columns={[
                 { title: 'Producto', dataIndex: 'producto', key: 'producto', ellipsis: true },
                 {
@@ -336,6 +337,7 @@ export default function ReportesPage() {
               rowKey="producto"
               size="small"
               pagination={false}
+              scroll={{ x: 'max-content' }}
               columns={[
                 { title: 'Producto', dataIndex: 'producto', key: 'producto', ellipsis: true },
                 {

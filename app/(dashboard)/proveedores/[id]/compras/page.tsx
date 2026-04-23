@@ -11,6 +11,7 @@ import {
   DollarOutlined,
 } from '@ant-design/icons';
 import { URGENCIAS, ESTADOS_SOLICITUD } from '@/types';
+import { urgenciaLabel } from '@/lib/constants';
 import type { UrgenciaSolicitud, EstadoSolicitud } from '@/types';
 
 const { Title, Text } = Typography;
@@ -118,7 +119,7 @@ export default function ProveedorComprasPage() {
       width: 110,
       render: (u: string) => {
         const cfg = URGENCIAS[u as UrgenciaSolicitud];
-        return <Tag color={cfg?.color ?? 'default'}>{cfg?.label ?? u}</Tag>;
+        return <Tag color={cfg?.color ?? 'default'}>{cfg?.label ?? urgenciaLabel(u)}</Tag>;
       },
     },
     {
@@ -274,6 +275,7 @@ export default function ProveedorComprasPage() {
                 loading={loading}
                 pagination={{ pageSize: 20, showSizeChanger: false }}
                 size="middle"
+                scroll={{ x: 'max-content' }}
                 rowClassName={urgenciaClass}
               />
             ),
@@ -289,6 +291,7 @@ export default function ProveedorComprasPage() {
                 loading={loading}
                 pagination={{ pageSize: 20, showSizeChanger: false }}
                 size="middle"
+                scroll={{ x: 'max-content' }}
               />
             ),
           },

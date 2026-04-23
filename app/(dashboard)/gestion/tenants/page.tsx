@@ -390,6 +390,7 @@ export default function AdminTenantsPage() {
         loading={loading}
         pagination={{ pageSize: 20, showSizeChanger: false }}
         size="middle"
+        scroll={{ x: 'max-content' }}
         locale={{ emptyText: 'No hay organizaciones registradas' }}
       />
 
