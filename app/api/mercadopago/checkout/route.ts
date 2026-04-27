@@ -1,5 +1,5 @@
 import { withAuth } from '@/lib/api-handler';
-import { isMpEnabled } from '@/lib/mercadopago';
+import { getPreApproval, isMpEnabled } from '@/lib/mercadopago';
 import { getSubscriptionStatusFresh } from '@/lib/subscription';
 import { prisma } from '@/lib/prisma';
 import { logApiError } from '@/lib/logger';
@@ -11,8 +11,11 @@ import { logApiError } from '@/lib/logger';
  * trial en una suscripción recurrente. Devuelve { url } — el `init_point`
  * de MP donde el cliente autoriza la tarjeta.
  *
- * Usa `external_reference = tenant_id` para que el webhook pueda
- * asociar la preapproval con el tenant correcto.
+ * IMPORTANTE: la preapproval se crea via API (POST /preapproval) para
+ * garantizar que `external_reference` quede ligado al objeto. El flujo
+ * por URL `?preapproval_plan_id=...&external_reference=...` ignora ese
+ * parámetro silenciosamente — MP no lo propaga al objeto preapproval, y
+ * el webhook recibe `external_reference: ""` y no puede atar a un tenant.
  */
 export const POST = withAuth(
   { roles: ['admin', 'director', 'super_admin'] },
@@ -58,12 +61,28 @@ export const POST = withAuth(
         );
       }
 
-      const checkoutUrl = new URL('https://www.mercadopago.com.ar/subscriptions/checkout');
-      checkoutUrl.searchParams.set('preapproval_plan_id', planId);
-      checkoutUrl.searchParams.set('external_reference', String(session.tenantId));
-      checkoutUrl.searchParams.set('payer_email', payerEmail);
+      const preapproval = getPreApproval()!;
+      const baseUrl = process.env.NEXTAUTH_URL ?? new URL(request.url).origin;
 
-      return Response.json({ url: checkoutUrl.toString() });
+      const created = await preapproval.create({
+        body: {
+          preapproval_plan_id: planId,
+          external_reference: String(session.tenantId),
+          payer_email: payerEmail,
+          reason: `Box GdC - ${tenant?.nombre ?? `Tenant ${session.tenantId}`}`,
+          back_url: `${baseUrl}/perfil?tab=facturacion&checkout=success`,
+          status: 'pending',
+        },
+      });
+
+      if (!created.init_point) {
+        return Response.json(
+          { error: { code: 'CHECKOUT_ERROR', message: 'MP no devolvió init_point' } },
+          { status: 500 },
+        );
+      }
+
+      return Response.json({ url: created.init_point });
     } catch (err: any) {
       logApiError('/api/mercadopago/checkout', 'POST', err);
       const detail = err?.message ?? err?.cause?.message ?? String(err);
