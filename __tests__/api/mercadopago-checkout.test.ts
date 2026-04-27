@@ -107,22 +107,8 @@ describe('POST /api/mercadopago/checkout', () => {
     expect(json.error.code).toBe('ALREADY_ACTIVE');
   });
 
-  it('devuelve 400 cuando no hay email del pagador', async () => {
-    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing' });
-    mocks.session.email = '';
-    mocks.getServerSession.mockResolvedValue({ ...mocks.session, email: '' });
-    mocks.prisma.tenants.findUnique.mockResolvedValue({
-      nombre: 'Escuela Test',
-      email_contacto: '',
-    });
-    const res = await POST(makeRequest());
-    expect(res.status).toBe(400);
-    const json = await res.json();
-    expect(json.error.code).toBe('NO_EMAIL');
-    mocks.session.email = 'director@escuela.edu.ar';
-  });
-
-  it('crea preapproval via API con auto_recurring + external_reference y devuelve init_point', async () => {
+  it('crea preapproval sin payer_email en producción (admin ≠ pagador)', async () => {
+    delete process.env.MP_TEST_BUYER_EMAIL;
     mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing', planId: 1 });
     const res = await POST(makeRequest());
     expect(res.status).toBe(200);
@@ -133,7 +119,6 @@ describe('POST /api/mercadopago/checkout', () => {
     expect(mocks.preapprovalCreate).toHaveBeenCalledWith({
       body: expect.objectContaining({
         external_reference: '4',
-        payer_email: 'director@escuela.edu.ar',
         status: 'pending',
         back_url: 'https://app.test/perfil?tab=facturacion&checkout=success',
         auto_recurring: {
@@ -144,21 +129,19 @@ describe('POST /api/mercadopago/checkout', () => {
         },
       }),
     });
+    // No pasamos payer_email — MP lo recolecta cuando el usuario autoriza
+    expect(mocks.preapprovalCreate.mock.calls[0][0].body.payer_email).toBeUndefined();
     // No pasamos preapproval_plan_id porque MP exige card_token_id en ese flow
     expect(mocks.preapprovalCreate.mock.calls[0][0].body.preapproval_plan_id).toBeUndefined();
   });
 
-  it('usa email del tenant cuando session.email no existe', async () => {
+  it('MP_TEST_BUYER_EMAIL fuerza payer_email solo en sandbox', async () => {
+    process.env.MP_TEST_BUYER_EMAIL = 'TESTUSER123@testuser.com';
     mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing', planId: 1 });
-    mocks.getServerSession.mockResolvedValue({ ...mocks.session, email: null });
-    mocks.prisma.tenants.findUnique.mockResolvedValue({
-      nombre: 'Escuela Test',
-      email_contacto: 'admin@escuela.edu.ar',
-    });
     const res = await POST(makeRequest());
     expect(res.status).toBe(200);
     expect(mocks.preapprovalCreate).toHaveBeenCalledWith({
-      body: expect.objectContaining({ payer_email: 'admin@escuela.edu.ar' }),
+      body: expect.objectContaining({ payer_email: 'TESTUSER123@testuser.com' }),
     });
   });
 
