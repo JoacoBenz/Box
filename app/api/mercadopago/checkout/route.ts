@@ -7,15 +7,19 @@ import { logApiError } from '@/lib/logger';
 /**
  * POST /api/mercadopago/checkout
  *
- * Crea una Preapproval de Mercado Pago para que el admin convierta el
- * trial en una suscripción recurrente. Devuelve { url } — el `init_point`
- * de MP donde el cliente autoriza la tarjeta.
+ * Crea una Preapproval de Mercado Pago via API y devuelve el `init_point`
+ * donde el cliente autoriza la tarjeta.
  *
- * IMPORTANTE: la preapproval se crea via API (POST /preapproval) para
- * garantizar que `external_reference` quede ligado al objeto. El flujo
- * por URL `?preapproval_plan_id=...&external_reference=...` ignora ese
- * parámetro silenciosamente — MP no lo propaga al objeto preapproval, y
- * el webhook recibe `external_reference: ""` y no puede atar a un tenant.
+ * Decisiones de diseño:
+ * 1. Creamos la preapproval server-side con `external_reference = tenant_id`
+ *    para que el webhook pueda atar el evento al tenant.
+ * 2. Usamos `auto_recurring` (frecuencia + monto + currency) en vez de
+ *    `preapproval_plan_id`. MP exige `card_token_id` para crear preapprovals
+ *    plan-based via API (autoriza inmediatamente). Con `auto_recurring` +
+ *    `status: 'pending'` MP nos da un init_point para que el usuario autorice
+ *    en su pantalla, sin tener que tokenizar la tarjeta del lado nuestro.
+ * 3. Los términos del plan (monto, frecuencia) salen de la tabla `planes`
+ *    para no duplicar lógica.
  */
 export const POST = withAuth(
   { roles: ['admin', 'director', 'super_admin'] },
@@ -26,7 +30,6 @@ export const POST = withAuth(
         { status: 503 },
       );
     }
-    const planId = process.env.MP_PLAN_ID!;
 
     const subscription = await getSubscriptionStatusFresh(session.tenantId);
     if (!subscription) {
@@ -48,10 +51,16 @@ export const POST = withAuth(
     }
 
     try {
-      const tenant = await prisma.tenants.findUnique({
-        where: { id: session.tenantId },
-        select: { nombre: true, email_contacto: true },
-      });
+      const [tenant, plan] = await Promise.all([
+        prisma.tenants.findUnique({
+          where: { id: session.tenantId },
+          select: { nombre: true, email_contacto: true },
+        }),
+        prisma.planes.findUnique({
+          where: { id: subscription.planId },
+          select: { precio_ars: true },
+        }),
+      ]);
 
       const payerEmail = session.email ?? tenant?.email_contacto ?? '';
       if (!payerEmail) {
@@ -60,18 +69,29 @@ export const POST = withAuth(
           { status: 400 },
         );
       }
+      if (!plan?.precio_ars) {
+        return Response.json(
+          { error: { code: 'NO_PLAN', message: 'No se encontró el plan' } },
+          { status: 500 },
+        );
+      }
 
       const preapproval = getPreApproval()!;
       const baseUrl = process.env.NEXTAUTH_URL ?? new URL(request.url).origin;
 
       const created = await preapproval.create({
         body: {
-          preapproval_plan_id: planId,
           external_reference: String(session.tenantId),
           payer_email: payerEmail,
           reason: `Box GdC - ${tenant?.nombre ?? `Tenant ${session.tenantId}`}`,
           back_url: `${baseUrl}/perfil?tab=facturacion&checkout=success`,
           status: 'pending',
+          auto_recurring: {
+            frequency: 1,
+            frequency_type: 'months',
+            transaction_amount: plan.precio_ars,
+            currency_id: 'ARS',
+          },
         },
       });
 
