@@ -96,7 +96,23 @@ async function handleEvent(body: MpWebhookBody): Promise<void> {
   const preapproval = getPreApproval();
   if (!preapproval) return;
 
-  const sub = await preapproval.get({ id: dataId });
+  let sub: Awaited<ReturnType<typeof preapproval.get>>;
+  try {
+    sub = await preapproval.get({ id: dataId });
+  } catch (err: any) {
+    // El "Enviar prueba" del dashboard de MP manda data.id="123456" — un
+    // string que no existe. preapproval.get() tira 404 y caería como 500
+    // global, gatillando reintentos. No hay nada que sincronizar; salimos OK.
+    if (err?.status === 404 || err?.cause?.status === 404) {
+      logApiError(
+        '/api/mercadopago/webhook',
+        'POST',
+        new Error(`preapproval ${dataId} not found (likely synthetic test event)`),
+      );
+      return;
+    }
+    throw err;
+  }
   if (!sub) return;
 
   const status = sub.status ?? 'pending';
