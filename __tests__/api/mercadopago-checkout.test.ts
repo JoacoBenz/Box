@@ -107,7 +107,7 @@ describe('POST /api/mercadopago/checkout', () => {
     expect(json.error.code).toBe('ALREADY_ACTIVE');
   });
 
-  it('crea preapproval sin payer_email en producción (admin ≠ pagador)', async () => {
+  it('crea preapproval con session.email como hint en producción', async () => {
     delete process.env.MP_TEST_BUYER_EMAIL;
     mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing', planId: 1 });
     const res = await POST(makeRequest());
@@ -119,6 +119,7 @@ describe('POST /api/mercadopago/checkout', () => {
     expect(mocks.preapprovalCreate).toHaveBeenCalledWith({
       body: expect.objectContaining({
         external_reference: '4',
+        payer_email: 'director@escuela.edu.ar',
         status: 'pending',
         back_url: 'https://app.test/perfil?tab=facturacion&checkout=success',
         auto_recurring: {
@@ -129,13 +130,11 @@ describe('POST /api/mercadopago/checkout', () => {
         },
       }),
     });
-    // No pasamos payer_email — MP lo recolecta cuando el usuario autoriza
-    expect(mocks.preapprovalCreate.mock.calls[0][0].body.payer_email).toBeUndefined();
     // No pasamos preapproval_plan_id porque MP exige card_token_id en ese flow
     expect(mocks.preapprovalCreate.mock.calls[0][0].body.preapproval_plan_id).toBeUndefined();
   });
 
-  it('MP_TEST_BUYER_EMAIL fuerza payer_email solo en sandbox', async () => {
+  it('MP_TEST_BUYER_EMAIL sobreescribe el email del pagador en sandbox', async () => {
     process.env.MP_TEST_BUYER_EMAIL = 'TESTUSER123@testuser.com';
     mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing', planId: 1 });
     const res = await POST(makeRequest());
@@ -143,6 +142,49 @@ describe('POST /api/mercadopago/checkout', () => {
     expect(mocks.preapprovalCreate).toHaveBeenCalledWith({
       body: expect.objectContaining({ payer_email: 'TESTUSER123@testuser.com' }),
     });
+  });
+
+  it('cae a email_contacto del tenant si session.email no existe', async () => {
+    delete process.env.MP_TEST_BUYER_EMAIL;
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing', planId: 1 });
+    mocks.getServerSession.mockResolvedValue({ ...mocks.session, email: null });
+    mocks.prisma.tenants.findUnique.mockResolvedValue({
+      nombre: 'Escuela Test',
+      email_contacto: 'admin@escuela.edu.ar',
+    });
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(200);
+    expect(mocks.preapprovalCreate).toHaveBeenCalledWith({
+      body: expect.objectContaining({ payer_email: 'admin@escuela.edu.ar' }),
+    });
+  });
+
+  it('400 NO_EMAIL si no hay ningún email disponible', async () => {
+    delete process.env.MP_TEST_BUYER_EMAIL;
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing', planId: 1 });
+    mocks.getServerSession.mockResolvedValue({ ...mocks.session, email: null });
+    mocks.prisma.tenants.findUnique.mockResolvedValue({
+      nombre: 'Escuela Test',
+      email_contacto: '',
+    });
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error.code).toBe('NO_EMAIL');
+  });
+
+  it('expone detalle del error de MP cuando preapproval.create falla', async () => {
+    process.env.MP_TEST_BUYER_EMAIL = 'TESTUSER123@testuser.com';
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing', planId: 1 });
+    mocks.preapprovalCreate.mockRejectedValueOnce({
+      message: 'card_token_id is required',
+      status: 400,
+    });
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json.error.detail).toBe('card_token_id is required');
+    expect(json.error.mpStatus).toBe(400);
   });
 
   it('funciona para suscripciones canceladas (reactivación)', async () => {
