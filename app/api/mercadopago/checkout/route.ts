@@ -54,7 +54,7 @@ export const POST = withAuth(
       const [tenant, plan] = await Promise.all([
         prisma.tenants.findUnique({
           where: { id: session.tenantId },
-          select: { nombre: true, email_contacto: true },
+          select: { nombre: true },
         }),
         prisma.planes.findUnique({
           where: { id: subscription.planId },
@@ -62,19 +62,6 @@ export const POST = withAuth(
         }),
       ]);
 
-      // En sandbox, MP exige que payer y collector sean ambos test o ambos
-      // reales. Si MP_ACCESS_TOKEN es del seller test user, el email del pagador
-      // tiene que ser el del buyer test user (TESTUSER...@testuser.com), no
-      // el de un usuario real de la app. MP_TEST_BUYER_EMAIL sobreescribe sólo
-      // en sandbox; en producción no se define y usamos el email del usuario.
-      const payerEmail =
-        process.env.MP_TEST_BUYER_EMAIL ?? session.email ?? tenant?.email_contacto ?? '';
-      if (!payerEmail) {
-        return Response.json(
-          { error: { code: 'NO_EMAIL', message: 'Falta email del pagador' } },
-          { status: 400 },
-        );
-      }
       if (!plan?.precio_ars) {
         return Response.json(
           { error: { code: 'NO_PLAN', message: 'No se encontró el plan' } },
@@ -85,21 +72,30 @@ export const POST = withAuth(
       const preapproval = getPreApproval()!;
       const baseUrl = process.env.NEXTAUTH_URL ?? new URL(request.url).origin;
 
-      const created = await preapproval.create({
-        body: {
-          external_reference: String(session.tenantId),
-          payer_email: payerEmail,
-          reason: `Box GdC - ${tenant?.nombre ?? `Tenant ${session.tenantId}`}`,
-          back_url: `${baseUrl}/perfil?tab=facturacion&checkout=success`,
-          status: 'pending',
-          auto_recurring: {
-            frequency: 1,
-            frequency_type: 'months',
-            transaction_amount: plan.precio_ars,
-            currency_id: 'ARS',
-          },
+      const body: Parameters<typeof preapproval.create>[0]['body'] = {
+        external_reference: String(session.tenantId),
+        reason: `Box GdC - ${tenant?.nombre ?? `Tenant ${session.tenantId}`}`,
+        back_url: `${baseUrl}/perfil?tab=facturacion&checkout=success`,
+        status: 'pending',
+        auto_recurring: {
+          frequency: 1,
+          frequency_type: 'months',
+          transaction_amount: plan.precio_ars,
+          currency_id: 'ARS',
         },
-      });
+      };
+
+      // Sandbox: MP exige que payer y collector sean ambos test o ambos reales.
+      // Si MP_ACCESS_TOKEN es del seller test user, el payer_email tiene que
+      // matchear un buyer test user. Usamos MP_TEST_BUYER_EMAIL como puente.
+      // Producción: NO pasamos payer_email — MP le pide login al usuario que
+      // entre al init_point y toma el email de la cuenta con la que autoriza.
+      // Esto permite que admin de la app ≠ dueño de la cuenta MP que paga.
+      if (process.env.MP_TEST_BUYER_EMAIL) {
+        body.payer_email = process.env.MP_TEST_BUYER_EMAIL;
+      }
+
+      const created = await preapproval.create({ body });
 
       if (!created.init_point) {
         return Response.json(
