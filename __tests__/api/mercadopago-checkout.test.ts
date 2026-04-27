@@ -9,14 +9,11 @@ const mocks = vi.hoisted(() => {
     email: 'director@escuela.edu.ar',
     areaId: 1,
   };
-  const preapprovalCreate = vi.fn();
   return {
     session,
     getServerSession: vi.fn().mockResolvedValue(session),
     isMpEnabled: vi.fn().mockReturnValue(true),
     getSubscriptionStatusFresh: vi.fn(),
-    preapprovalCreate,
-    getPreApproval: vi.fn(() => ({ create: preapprovalCreate })),
     prisma: {
       tenants: { findUnique: vi.fn() },
       planes: { findUnique: vi.fn() },
@@ -42,7 +39,6 @@ vi.mock('@/lib/tenant-override', () => ({
 }));
 vi.mock('@/lib/mercadopago', () => ({
   isMpEnabled: mocks.isMpEnabled,
-  getPreApproval: mocks.getPreApproval,
 }));
 vi.mock('@/lib/subscription', () => ({
   getSubscriptionStatusFresh: mocks.getSubscriptionStatusFresh,
@@ -65,11 +61,6 @@ beforeEach(() => {
     nombre: 'Escuela Test',
     email_contacto: 'contacto@escuela.edu.ar',
   });
-  mocks.prisma.planes.findUnique.mockResolvedValue({ precio_ars: 152000 });
-  mocks.preapprovalCreate.mockResolvedValue({
-    id: 'preapp_xyz',
-    init_point: 'https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_id=preapp_xyz',
-  });
 });
 
 import { POST } from '@/app/api/mercadopago/checkout/route';
@@ -85,6 +76,15 @@ function makeRequest() {
 describe('POST /api/mercadopago/checkout', () => {
   it('devuelve 503 cuando MP no está configurado', async () => {
     mocks.isMpEnabled.mockReturnValue(false);
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(503);
+    const json = await res.json();
+    expect(json.error.code).toBe('MP_DISABLED');
+  });
+
+  it('devuelve 503 cuando falta MP_PLAN_ID', async () => {
+    delete process.env.MP_PLAN_ID;
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing' });
     const res = await POST(makeRequest());
     expect(res.status).toBe(503);
     const json = await res.json();
@@ -107,46 +107,31 @@ describe('POST /api/mercadopago/checkout', () => {
     expect(json.error.code).toBe('ALREADY_ACTIVE');
   });
 
-  it('crea preapproval con session.email como hint en producción', async () => {
+  it('devuelve URL hosted con plan_id, external_reference, payer_email y back_url al callback', async () => {
     delete process.env.MP_TEST_BUYER_EMAIL;
-    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing', planId: 1 });
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing' });
     const res = await POST(makeRequest());
     expect(res.status).toBe(200);
     const json = await res.json();
-    expect(json.url).toBe(
-      'https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_id=preapp_xyz',
-    );
-    expect(mocks.preapprovalCreate).toHaveBeenCalledWith({
-      body: expect.objectContaining({
-        external_reference: '4',
-        payer_email: 'director@escuela.edu.ar',
-        status: 'pending',
-        back_url: 'https://app.test/perfil?tab=facturacion&checkout=success',
-        auto_recurring: {
-          frequency: 1,
-          frequency_type: 'months',
-          transaction_amount: 152000,
-          currency_id: 'ARS',
-        },
-      }),
-    });
-    // No pasamos preapproval_plan_id porque MP exige card_token_id en ese flow
-    expect(mocks.preapprovalCreate.mock.calls[0][0].body.preapproval_plan_id).toBeUndefined();
+    expect(json.url).toContain('mercadopago.com.ar/subscriptions/checkout');
+    expect(json.url).toContain('preapproval_plan_id=plan_abc123');
+    expect(json.url).toContain('external_reference=4');
+    expect(json.url).toContain('payer_email=director%40escuela.edu.ar');
+    expect(json.url).toContain('back_url=https%3A%2F%2Fapp.test%2Fapi%2Fmercadopago%2Freturn');
   });
 
   it('MP_TEST_BUYER_EMAIL sobreescribe el email del pagador en sandbox', async () => {
     process.env.MP_TEST_BUYER_EMAIL = 'TESTUSER123@testuser.com';
-    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing', planId: 1 });
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing' });
     const res = await POST(makeRequest());
     expect(res.status).toBe(200);
-    expect(mocks.preapprovalCreate).toHaveBeenCalledWith({
-      body: expect.objectContaining({ payer_email: 'TESTUSER123@testuser.com' }),
-    });
+    const json = await res.json();
+    expect(json.url).toContain('payer_email=TESTUSER123%40testuser.com');
   });
 
   it('cae a email_contacto del tenant si session.email no existe', async () => {
     delete process.env.MP_TEST_BUYER_EMAIL;
-    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing', planId: 1 });
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing' });
     mocks.getServerSession.mockResolvedValue({ ...mocks.session, email: null });
     mocks.prisma.tenants.findUnique.mockResolvedValue({
       nombre: 'Escuela Test',
@@ -154,14 +139,13 @@ describe('POST /api/mercadopago/checkout', () => {
     });
     const res = await POST(makeRequest());
     expect(res.status).toBe(200);
-    expect(mocks.preapprovalCreate).toHaveBeenCalledWith({
-      body: expect.objectContaining({ payer_email: 'admin@escuela.edu.ar' }),
-    });
+    const json = await res.json();
+    expect(json.url).toContain('payer_email=admin%40escuela.edu.ar');
   });
 
   it('400 NO_EMAIL si no hay ningún email disponible', async () => {
     delete process.env.MP_TEST_BUYER_EMAIL;
-    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing', planId: 1 });
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing' });
     mocks.getServerSession.mockResolvedValue({ ...mocks.session, email: null });
     mocks.prisma.tenants.findUnique.mockResolvedValue({
       nombre: 'Escuela Test',
@@ -173,47 +157,17 @@ describe('POST /api/mercadopago/checkout', () => {
     expect(json.error.code).toBe('NO_EMAIL');
   });
 
-  it('expone detalle del error de MP cuando preapproval.create falla', async () => {
-    process.env.MP_TEST_BUYER_EMAIL = 'TESTUSER123@testuser.com';
-    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing', planId: 1 });
-    mocks.preapprovalCreate.mockRejectedValueOnce({
-      message: 'card_token_id is required',
-      status: 400,
-    });
-    const res = await POST(makeRequest());
-    expect(res.status).toBe(500);
-    const json = await res.json();
-    expect(json.error.detail).toBe('card_token_id is required');
-    expect(json.error.mpStatus).toBe(400);
-  });
-
   it('funciona para suscripciones canceladas (reactivación)', async () => {
-    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'canceled', planId: 1 });
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'canceled' });
     const res = await POST(makeRequest());
     expect(res.status).toBe(200);
-    expect(mocks.preapprovalCreate).toHaveBeenCalled();
+    const json = await res.json();
+    expect(json.url).toContain('mercadopago.com.ar/subscriptions/checkout');
   });
 
   it('funciona para suscripciones unpaid (reactivación)', async () => {
-    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'unpaid', planId: 1 });
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'unpaid' });
     const res = await POST(makeRequest());
     expect(res.status).toBe(200);
-    expect(mocks.preapprovalCreate).toHaveBeenCalled();
-  });
-
-  it('devuelve 500 si el plan no se encuentra', async () => {
-    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing', planId: 99 });
-    mocks.prisma.planes.findUnique.mockResolvedValue(null);
-    const res = await POST(makeRequest());
-    expect(res.status).toBe(500);
-    const json = await res.json();
-    expect(json.error.code).toBe('NO_PLAN');
-  });
-
-  it('devuelve 500 si MP no devuelve init_point', async () => {
-    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing', planId: 1 });
-    mocks.preapprovalCreate.mockResolvedValueOnce({ id: 'x', init_point: undefined });
-    const res = await POST(makeRequest());
-    expect(res.status).toBe(500);
   });
 });
