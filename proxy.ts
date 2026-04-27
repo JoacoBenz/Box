@@ -9,6 +9,7 @@ import { BILLING_BASE_PATH, BILLING_TAB_KEY } from '@/lib/billing-links';
 
 const PUBLIC_ROUTES = [
   '/inicio',
+  '/demo',
   '/login',
   '/registro',
   '/recuperar',
@@ -119,5 +120,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|logo.svg).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|logo.svg|demo/).*)'],
 };
