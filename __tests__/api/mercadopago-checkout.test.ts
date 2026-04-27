@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => {
     getPreApproval: vi.fn(() => ({ create: preapprovalCreate })),
     prisma: {
       tenants: { findUnique: vi.fn() },
+      planes: { findUnique: vi.fn() },
     },
   };
 });
@@ -64,6 +65,7 @@ beforeEach(() => {
     nombre: 'Escuela Test',
     email_contacto: 'contacto@escuela.edu.ar',
   });
+  mocks.prisma.planes.findUnique.mockResolvedValue({ precio_ars: 152000 });
   mocks.preapprovalCreate.mockResolvedValue({
     id: 'preapp_xyz',
     init_point: 'https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_id=preapp_xyz',
@@ -120,8 +122,8 @@ describe('POST /api/mercadopago/checkout', () => {
     mocks.session.email = 'director@escuela.edu.ar';
   });
 
-  it('crea preapproval via API con external_reference y devuelve init_point', async () => {
-    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing' });
+  it('crea preapproval via API con auto_recurring + external_reference y devuelve init_point', async () => {
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing', planId: 1 });
     const res = await POST(makeRequest());
     expect(res.status).toBe(200);
     const json = await res.json();
@@ -130,17 +132,24 @@ describe('POST /api/mercadopago/checkout', () => {
     );
     expect(mocks.preapprovalCreate).toHaveBeenCalledWith({
       body: expect.objectContaining({
-        preapproval_plan_id: 'plan_abc123',
         external_reference: '4',
         payer_email: 'director@escuela.edu.ar',
         status: 'pending',
         back_url: 'https://app.test/perfil?tab=facturacion&checkout=success',
+        auto_recurring: {
+          frequency: 1,
+          frequency_type: 'months',
+          transaction_amount: 152000,
+          currency_id: 'ARS',
+        },
       }),
     });
+    // No pasamos preapproval_plan_id porque MP exige card_token_id en ese flow
+    expect(mocks.preapprovalCreate.mock.calls[0][0].body.preapproval_plan_id).toBeUndefined();
   });
 
   it('usa email del tenant cuando session.email no existe', async () => {
-    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing' });
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing', planId: 1 });
     mocks.getServerSession.mockResolvedValue({ ...mocks.session, email: null });
     mocks.prisma.tenants.findUnique.mockResolvedValue({
       nombre: 'Escuela Test',
@@ -154,21 +163,30 @@ describe('POST /api/mercadopago/checkout', () => {
   });
 
   it('funciona para suscripciones canceladas (reactivación)', async () => {
-    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'canceled' });
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'canceled', planId: 1 });
     const res = await POST(makeRequest());
     expect(res.status).toBe(200);
     expect(mocks.preapprovalCreate).toHaveBeenCalled();
   });
 
   it('funciona para suscripciones unpaid (reactivación)', async () => {
-    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'unpaid' });
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'unpaid', planId: 1 });
     const res = await POST(makeRequest());
     expect(res.status).toBe(200);
     expect(mocks.preapprovalCreate).toHaveBeenCalled();
   });
 
+  it('devuelve 500 si el plan no se encuentra', async () => {
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing', planId: 99 });
+    mocks.prisma.planes.findUnique.mockResolvedValue(null);
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json.error.code).toBe('NO_PLAN');
+  });
+
   it('devuelve 500 si MP no devuelve init_point', async () => {
-    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing' });
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing', planId: 1 });
     mocks.preapprovalCreate.mockResolvedValueOnce({ id: 'x', init_point: undefined });
     const res = await POST(makeRequest());
     expect(res.status).toBe(500);
