@@ -62,7 +62,13 @@ export const POST = withAuth(
         }),
       ]);
 
-      const payerEmail = session.email ?? tenant?.email_contacto ?? '';
+      // En sandbox, MP exige que payer y collector sean ambos test o ambos
+      // reales. Si MP_ACCESS_TOKEN es del seller test user, el email del pagador
+      // tiene que ser el del buyer test user (TESTUSER...@testuser.com), no
+      // el de un usuario real de la app. MP_TEST_BUYER_EMAIL sobreescribe sólo
+      // en sandbox; en producción no se define y usamos el email del usuario.
+      const payerEmail =
+        process.env.MP_TEST_BUYER_EMAIL ?? session.email ?? tenant?.email_contacto ?? '';
       if (!payerEmail) {
         return Response.json(
           { error: { code: 'NO_EMAIL', message: 'Falta email del pagador' } },

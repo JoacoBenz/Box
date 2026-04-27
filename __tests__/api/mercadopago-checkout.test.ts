@@ -162,6 +162,16 @@ describe('POST /api/mercadopago/checkout', () => {
     });
   });
 
+  it('MP_TEST_BUYER_EMAIL sobreescribe el email del pagador (sandbox)', async () => {
+    process.env.MP_TEST_BUYER_EMAIL = 'TESTUSER123@testuser.com';
+    mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'trialing', planId: 1 });
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(200);
+    expect(mocks.preapprovalCreate).toHaveBeenCalledWith({
+      body: expect.objectContaining({ payer_email: 'TESTUSER123@testuser.com' }),
+    });
+  });
+
   it('funciona para suscripciones canceladas (reactivación)', async () => {
     mocks.getSubscriptionStatusFresh.mockResolvedValue({ estado: 'canceled', planId: 1 });
     const res = await POST(makeRequest());
