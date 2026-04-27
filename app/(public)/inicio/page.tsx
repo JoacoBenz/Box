@@ -580,6 +580,18 @@ export default function LandingPage() {
           background: #fff; color: #1a1a2e; border: 2px solid #e5e5e5;
         }
         .lp-cta-secondary:hover { border-color: #00C2CB; color: #0891b2; }
+        .lp-cta-demo {
+          background: rgba(255,255,255,0.08) !important;
+          border-color: rgba(34,211,238,0.5) !important;
+          color: #67e8f9 !important;
+          backdrop-filter: blur(8px);
+        }
+        .lp-cta-demo:hover {
+          background: rgba(34,211,238,0.15) !important;
+          border-color: #67e8f9 !important;
+          color: #fff !important;
+          transform: translateY(-2px);
+        }
 
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
@@ -1097,6 +1109,9 @@ export default function LandingPage() {
           <div className="lp-hero-ctas">
             <Link href="/registro" className="lp-cta-main">
               Crear mi cuenta
+            </Link>
+            <Link href="/demo" className="lp-cta-secondary lp-cta-demo">
+              🎬 Ver Demo
             </Link>
             <Link
               href="/login"
