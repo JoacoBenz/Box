@@ -54,7 +54,7 @@ export const POST = withAuth(
       const [tenant, plan] = await Promise.all([
         prisma.tenants.findUnique({
           where: { id: session.tenantId },
-          select: { nombre: true },
+          select: { nombre: true, email_contacto: true },
         }),
         prisma.planes.findUnique({
           where: { id: subscription.planId },
@@ -69,11 +69,27 @@ export const POST = withAuth(
         );
       }
 
+      // payer_email es REQUIRED por la API de MP, no es opcional como dice el
+      // SDK type. En producción MP lo trata como hint: pre-llena el email en
+      // su pantalla de login, pero el usuario puede entrar con OTRA cuenta MP
+      // y autorizar con esa — el `payer` final es quien autoriza, no este hint.
+      // En sandbox MP cruza `payer_email` con sus test users y exige match
+      // test/real con el collector — por eso MP_TEST_BUYER_EMAIL existe.
+      const payerEmail =
+        process.env.MP_TEST_BUYER_EMAIL ?? session.email ?? tenant?.email_contacto ?? '';
+      if (!payerEmail) {
+        return Response.json(
+          { error: { code: 'NO_EMAIL', message: 'Falta email del pagador' } },
+          { status: 400 },
+        );
+      }
+
       const preapproval = getPreApproval()!;
       const baseUrl = process.env.NEXTAUTH_URL ?? new URL(request.url).origin;
 
       const body: Parameters<typeof preapproval.create>[0]['body'] = {
         external_reference: String(session.tenantId),
+        payer_email: payerEmail,
         reason: `Box GdC - ${tenant?.nombre ?? `Tenant ${session.tenantId}`}`,
         back_url: `${baseUrl}/perfil?tab=facturacion&checkout=success`,
         status: 'pending',
@@ -84,16 +100,6 @@ export const POST = withAuth(
           currency_id: 'ARS',
         },
       };
-
-      // Sandbox: MP exige que payer y collector sean ambos test o ambos reales.
-      // Si MP_ACCESS_TOKEN es del seller test user, el payer_email tiene que
-      // matchear un buyer test user. Usamos MP_TEST_BUYER_EMAIL como puente.
-      // Producción: NO pasamos payer_email — MP le pide login al usuario que
-      // entre al init_point y toma el email de la cuenta con la que autoriza.
-      // Esto permite que admin de la app ≠ dueño de la cuenta MP que paga.
-      if (process.env.MP_TEST_BUYER_EMAIL) {
-        body.payer_email = process.env.MP_TEST_BUYER_EMAIL;
-      }
 
       const created = await preapproval.create({ body });
 
@@ -106,10 +112,26 @@ export const POST = withAuth(
 
       return Response.json({ url: created.init_point });
     } catch (err: any) {
+      // El SDK de MP arroja `await response.json()` directo, así que `err` es
+      // el body completo que devolvió MP. Lo serializamos entero al log y
+      // exponemos los campos típicos al cliente para poder debuggear.
       logApiError('/api/mercadopago/checkout', 'POST', err);
-      const detail = err?.message ?? err?.cause?.message ?? String(err);
+      const mpStatus = err?.status ?? err?.api_response?.status;
+      const detail =
+        err?.message ??
+        err?.error ??
+        err?.cause?.[0]?.description ??
+        err?.cause?.message ??
+        (typeof err === 'object' ? JSON.stringify(err).slice(0, 300) : String(err));
       return Response.json(
-        { error: { code: 'CHECKOUT_ERROR', message: 'No se pudo crear el checkout', detail } },
+        {
+          error: {
+            code: 'CHECKOUT_ERROR',
+            message: 'No se pudo crear el checkout',
+            detail,
+            mpStatus,
+          },
+        },
         { status: 500 },
       );
     }
