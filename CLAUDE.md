@@ -33,10 +33,14 @@
 
 ### Billing — dónde tocar qué
 
-- **Subir el precio o cambiar los caps del plan**: editar `prisma/seed.ts` y la migración
-  inicial `20260418000000_add_billing/migration.sql`, y **crear un Preapproval Plan
-  nuevo en MP** (no se pueden editar precios de planes existentes). Actualizar `MP_PLAN_ID`
-  en Vercel.
+- **Subir el precio o cambiar los caps del plan**: editar `prisma/seed.ts` (para seeds
+  futuros) y **crear una migración nueva** con
+  `UPDATE "planes" SET ... WHERE nombre = 'box-principal'`. Nunca editar la migración
+  inicial `20260418000000_add_billing` — ya está aplicada en prod. Después editar el
+  monto del Preapproval Plan directo en el dashboard de MP (sí lo permite — confirmado
+  2026-04 al bajar a 110k). Para suscriptores ya activos: cada `preapproval` tiene su
+  propio `transaction_amount` snapshoteado al firmar, verificar en MP si propagó o
+  si hay que actualizar/resuscribir individualmente.
 - **Agregar un nuevo límite (ej: proveedores)**: agregar `limite_<recurso>` a `model planes`
   en `schema.prisma`, nueva migración, helper `canCreate<Recurso>` en `lib/plan-limits.ts`,
   check en el handler POST correspondiente + test en `plan-limits.test.ts`.
