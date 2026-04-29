@@ -1,6 +1,6 @@
 # Mercado Pago setup para Box
 
-Box cobra 152.000 ARS/mes con Preapproval de Mercado Pago (recurrencia
+Box cobra 110.000 ARS/mes con Preapproval de Mercado Pago (recurrencia
 automática), con trial de 14 días sin tarjeta.
 
 ## TL;DR — orden de deploy a producción
@@ -45,7 +45,7 @@ En **"Tus integraciones" → tu app → Suscripciones**:
    - **Nombre**: `Box Principal`
    - **Descripción**: `Sistema de gestión de compras — plan mensual`
    - **Moneda**: ARS
-   - **Monto**: `152000`
+   - **Monto**: `110000`
    - **Frecuencia**: `1 mes`
    - **Free trial**: 14 días (o dejarlo sin trial, ya lo manejamos en DB).
 3. Guardar → copiá el **ID del plan** (`2c9380848...`) → va como `MP_PLAN_ID`.
@@ -61,7 +61,7 @@ curl -X POST https://api.mercadopago.com/preapproval_plan \
     "auto_recurring": {
       "frequency": 1,
       "frequency_type": "months",
-      "transaction_amount": 152000,
+      "transaction_amount": 110000,
       "currency_id": "ARS"
     },
     "back_url": "https://box-three-zeta.vercel.app/perfil?tab=facturacion"

@@ -58,7 +58,7 @@ export default function TerminosPage() {
         <p>
           Al registrarse, el Cliente accede a una prueba gratuita de 14 días. Finalizada la prueba,
           debe activar una suscripción paga para continuar utilizando el Servicio. El precio vigente
-          al momento de estos Términos es de ARS 152.000 por mes, facturable de manera recurrente
+          al momento de estos Términos es de ARS 110.000 por mes, facturable de manera recurrente
           hasta la cancelación. Los precios pueden actualizarse con un aviso previo de 30 días
           corridos.
         </p>

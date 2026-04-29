@@ -31,7 +31,7 @@ async function main() {
   await prisma.planes.upsert({
     where: { nombre: 'box-principal' },
     update: {
-      precio_ars: 152000,
+      precio_ars: 110000,
       trial_dias: 14,
       limite_areas: 3,
       limite_cc_por_area: 2,
@@ -43,7 +43,7 @@ async function main() {
     },
     create: {
       nombre: 'box-principal',
-      precio_ars: 152000,
+      precio_ars: 110000,
       trial_dias: 14,
       limite_areas: 3,
       limite_cc_por_area: 2,

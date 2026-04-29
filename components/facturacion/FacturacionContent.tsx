@@ -185,7 +185,7 @@ export function FacturacionContent() {
           <Descriptions.Item label="Plan">
             <Text strong>Box Principal</Text>
             <div>
-              <Text type="secondary">152.000 ARS / mes</Text>
+              <Text type="secondary">110.000 ARS / mes</Text>
             </div>
           </Descriptions.Item>
           <Descriptions.Item label="Estado">

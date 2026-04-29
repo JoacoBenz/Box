@@ -74,7 +74,7 @@ código de captura es no-op. Para upload de source maps en prod, setear también
 
 ### Mercado Pago (billing)
 
-Box cobra 152.000 ARS/mes con Preapproval de Mercado Pago (recurrencia
+Box cobra 110.000 ARS/mes con Preapproval de Mercado Pago (recurrencia
 automática), trial de 14 días sin tarjeta. La integración se activa cuando
 las 3 vars están seteadas:
 
@@ -123,7 +123,7 @@ __tests__/                # Vitest (unit + integration)
 
 | Dimensión | Límite |
 |---|---|
-| Precio | 152.000 ARS / mes |
+| Precio | 110.000 ARS / mes |
 | Trial | 14 días sin tarjeta |
 | Áreas | 3 por tenant |
 | Centros de costo | 2 por área (6 en total) |
