@@ -31,7 +31,7 @@ import {
 const defaultPlan = {
   id: 1,
   nombre: 'box-principal',
-  precio_ars: 152000,
+  precio_ars: 110000,
   trial_dias: 14,
 };
 

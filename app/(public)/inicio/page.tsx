@@ -1033,7 +1033,7 @@ export default function LandingPage() {
             <div className="lp-pricing-header">
               <div className="lp-pricing-name">Box Principal</div>
               <div className="lp-pricing-price">
-                <span className="lp-pricing-amount">152.000</span>
+                <span className="lp-pricing-amount">110.000</span>
                 <span className="lp-pricing-currency">ARS</span>
                 <span className="lp-pricing-period">/ mes</span>
               </div>

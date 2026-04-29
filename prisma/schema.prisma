@@ -42,7 +42,7 @@ model tenants {
 model planes {
   id                      Int      @id @default(autoincrement())
   nombre                  String   @unique @db.VarChar(100)
-  precio_ars              Int // pesos enteros (152000 = 152k ARS)
+  precio_ars              Int // pesos enteros (110000 = 110k ARS)
   trial_dias              Int      @default(14)
   limite_areas            Int      @default(3)
   limite_cc_por_area      Int      @default(2)
