@@ -1,6 +1,7 @@
 import { withTenant, parseId } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
 import { apiError, verificarResponsableDeArea } from '@/lib/permissions';
+import { checkOptimisticLock } from '@/lib/optimistic-lock';
 import { registrarAuditoria } from '@/lib/audit';
 import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
 import { getTenantConfigBool } from '@/lib/tenant-config';
@@ -28,19 +29,9 @@ export const POST = withTenant(async (request, { session, db, ip }, params) => {
     return apiError('BAD_REQUEST', 'La solicitud debe tener al menos un ítem', 400);
   }
 
-  // Optimistic locking: verify no concurrent modification
   const body = await request.json().catch(() => ({}));
-  const expectedUpdatedAt = body?.updated_at;
-  if (expectedUpdatedAt) {
-    const current = solicitud.updated_at.toISOString();
-    if (current !== expectedUpdatedAt) {
-      return apiError(
-        'CONFLICT',
-        'Esta solicitud fue modificada por otro usuario. Recargá la página.',
-        409,
-      );
-    }
-  }
+  const lockError = checkOptimisticLock(body?.updated_at, solicitud.updated_at);
+  if (lockError) return lockError;
 
   // Check if the solicitante is the responsable of the solicitud's area
   const esResponsableDelArea =

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/lib/api-handler';
 import { verificarRol, apiError } from '@/lib/permissions';
+import { checkOptimisticLock } from '@/lib/optimistic-lock';
 import { registrarAuditoria } from '@/lib/audit';
 import { crearNotificacion } from '@/lib/notifications';
 import { prisma } from '@/lib/prisma';
@@ -41,18 +42,8 @@ export const POST = withAuth({}, async (request, { session, db, ip }, params) =>
     return apiError('FORBIDDEN', 'Solo el solicitante, un director o un admin pueden anular', 403);
   }
 
-  // Optimistic locking
-  const expectedUpdatedAt = body.updated_at;
-  if (expectedUpdatedAt) {
-    const current = solicitud.updated_at.toISOString();
-    if (current !== expectedUpdatedAt) {
-      return apiError(
-        'CONFLICT',
-        'Esta solicitud fue modificada por otro usuario. Recargá la página.',
-        409,
-      );
-    }
-  }
+  const lockError = checkOptimisticLock(body.updated_at, solicitud.updated_at);
+  if (lockError) return lockError;
 
   const estadoAnterior = solicitud.estado;
 

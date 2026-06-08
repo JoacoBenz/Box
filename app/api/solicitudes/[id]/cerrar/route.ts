@@ -1,5 +1,6 @@
 import { withAuth, parseId } from '@/lib/api-handler';
 import { apiError } from '@/lib/permissions';
+import { checkOptimisticLock } from '@/lib/optimistic-lock';
 import { registrarAuditoria } from '@/lib/audit';
 import { crearNotificacion } from '@/lib/notifications';
 import { sincronizarProductos } from '@/lib/productos';
@@ -13,24 +14,18 @@ export const POST = withAuth(
     const solicitud = await db.solicitudes.findFirst({ where: { id: solicitudId } });
     if (!solicitud) return apiError('NOT_FOUND', 'No encontrada', 404);
     if (solicitud.estado !== 'recibida_con_obs') {
-      return apiError('BAD_REQUEST', 'Solo se pueden cerrar solicitudes recibidas con observaciones', 400);
+      return apiError(
+        'BAD_REQUEST',
+        'Solo se pueden cerrar solicitudes recibidas con observaciones',
+        400,
+      );
     }
 
     const body = await request.json().catch(() => ({}));
     const resolucion = body?.resolucion ?? 'Resuelto';
 
-    // Optimistic locking: verify no concurrent modification
-    const expectedUpdatedAt = body?.updated_at;
-    if (expectedUpdatedAt) {
-      const current = solicitud.updated_at.toISOString();
-      if (current !== expectedUpdatedAt) {
-        return apiError(
-          'CONFLICT',
-          'Esta solicitud fue modificada por otro usuario. Recargá la página.',
-          409,
-        );
-      }
-    }
+    const lockError = checkOptimisticLock(body?.updated_at, solicitud.updated_at);
+    if (lockError) return lockError;
 
     await db.solicitudes.update({ where: { id: solicitudId }, data: { estado: 'cerrada' } });
 

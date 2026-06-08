@@ -1,6 +1,7 @@
 import { withAuth, validateBody, parseId } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
 import { verificarSegregacion, apiError } from '@/lib/permissions';
+import { checkOptimisticLock } from '@/lib/optimistic-lock';
 import { registrarAuditoria } from '@/lib/audit';
 import { crearNotificacion } from '@/lib/notifications';
 import { rechazoSchema } from '@/lib/validators';
@@ -32,18 +33,8 @@ export const POST = withAuth(
     const validation = validateBody(rechazoSchema, body);
     if (!validation.success) return validation.response;
 
-    // Optimistic locking: verify no concurrent modification
-    const expectedUpdatedAt = body?.updated_at;
-    if (expectedUpdatedAt) {
-      const current = solicitud.updated_at.toISOString();
-      if (current !== expectedUpdatedAt) {
-        return apiError(
-          'CONFLICT',
-          'Esta solicitud fue modificada por otro usuario. Recargá la página.',
-          409,
-        );
-      }
-    }
+    const lockError = checkOptimisticLock(body?.updated_at, solicitud.updated_at);
+    if (lockError) return lockError;
 
     await db.solicitudes.update({
       where: { id: solicitudId },

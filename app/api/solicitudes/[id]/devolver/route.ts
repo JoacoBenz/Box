@@ -1,5 +1,6 @@
 import { withAuth, validateBody, parseId } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
+import { checkOptimisticLock } from '@/lib/optimistic-lock';
 import {
   verificarRol,
   verificarSegregacion,
@@ -23,18 +24,8 @@ export const POST = withAuth({}, async (request, { session, db, ip }, params) =>
   const solicitud = await db.solicitudes.findFirst({ where: { id: solicitudId } });
   if (!solicitud) return apiError('NOT_FOUND', 'No encontrada', 404);
 
-  // Optimistic locking: verify no concurrent modification
-  const expectedUpdatedAt = body?.updated_at;
-  if (expectedUpdatedAt) {
-    const current = solicitud.updated_at.toISOString();
-    if (current !== expectedUpdatedAt) {
-      return apiError(
-        'CONFLICT',
-        'Esta solicitud fue modificada por otro usuario. Recargá la página.',
-        409,
-      );
-    }
-  }
+  const lockError = checkOptimisticLock(body?.updated_at, solicitud.updated_at);
+  if (lockError) return lockError;
 
   if (origen === 'responsable') {
     if (!verificarRol(session.roles, ['responsable_area'])) {

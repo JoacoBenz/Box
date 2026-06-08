@@ -89,17 +89,36 @@ export async function POST(request: NextRequest) {
 
     const verifyUrl = `${APP_URL}/verificar-email?token=${token}`;
 
-    await sendEmail({
-      to: email,
-      subject: 'Verificá tu email — Gestión de Compras',
-      html: `
+    try {
+      await sendEmail({
+        to: email,
+        subject: 'Verificá tu email — Gestión de Compras',
+        html: `
         <h2>Hola ${nombreUsuario},</h2>
         <p>Gracias por registrar <strong>${nombreOrganizacion}</strong>.</p>
         <p>Para completar el registro, verificá tu email:</p>
         <p><a href="${verifyUrl}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Verificar email</a></p>
         <p>Este enlace expira en 24 horas.</p>
       `,
-    });
+      });
+    } catch (emailError) {
+      // Email failed: roll back the pending registration so the user can retry
+      // immediately instead of being locked out by the "pending" check for 24h.
+      logApiError('/api/registro', 'POST:sendEmail', emailError);
+      await prisma.registros_pendientes
+        .deleteMany({ where: { token_hash: tokenHash } })
+        .catch((cleanupError) => logApiError('/api/registro', 'POST:cleanup', cleanupError));
+      return Response.json(
+        {
+          error: {
+            code: 'EMAIL_FAILED',
+            message:
+              'No pudimos enviar el email de verificación. Intentá de nuevo en unos minutos.',
+          },
+        },
+        { status: 502 },
+      );
+    }
 
     return Response.json(
       { message: 'Te enviamos un email de verificación. Revisá tu bandeja de entrada.' },

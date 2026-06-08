@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
   const now = new Date();
   let emailsSent = 0;
   let skipped = 0;
+  let failed = 0;
 
   try {
     const tenants = await prisma.tenants.findMany({
@@ -77,13 +78,19 @@ export async function POST(request: NextRequest) {
           const html = buildEmailHtml(user.nombre, userSolicitudes, tenant.nombre, config, APP_URL);
           const subject = buildSubject(userSolicitudes.length, config.heading, userHasUrgent);
 
-          await sendEmail({ to: user.email, subject, html });
-          emailsSent++;
+          // Isolate each send: one failed address must not abort the whole batch.
+          try {
+            await sendEmail({ to: user.email, subject, html });
+            emailsSent++;
+          } catch (emailError) {
+            failed++;
+            logApiError('/api/cron/email-aprobaciones', 'POST:sendEmail', emailError);
+          }
         }
       }
     }
 
-    return Response.json({ ok: true, emails_sent: emailsSent, skipped });
+    return Response.json({ ok: true, emails_sent: emailsSent, skipped, failed });
   } catch (error) {
     logApiError('/api/cron/email-aprobaciones', 'POST', error);
     return Response.json({ error: 'Error interno' }, { status: 500 });
