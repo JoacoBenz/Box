@@ -26,6 +26,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import type { RolNombre } from '@/types';
 import { useAdminTenant } from '@/components/admin/TenantSelector';
 import { useTheme } from '@/components/ThemeProvider';
+import { BoxLogo } from './BoxLogo';
 
 const { Sider } = Layout;
 
@@ -56,7 +57,8 @@ export function Sidebar({
   drawerOpen,
   onDrawerClose,
 }: SidebarProps) {
-  const { tokens } = useTheme();
+  const { tokens, mode } = useTheme();
+  const logoVariant = mode === 'dark' ? 'dark' : 'light';
   const pathname = usePathname();
   const router = useRouter();
   const [pulse, setPulse] = useState(true);
@@ -317,17 +319,7 @@ export function Sidebar({
               borderBottom: `1px solid ${tokens.sidebarBorder}`,
             }}
           >
-            <span style={{ fontSize: 24 }}>📦</span>
-            <span
-              style={{
-                fontWeight: 700,
-                fontSize: 15,
-                color: tokens.textPrimary,
-                letterSpacing: '-0.3px',
-              }}
-            >
-              Box
-            </span>
+            <BoxLogo collapsed={false} variant={logoVariant} height={30} />
           </div>
           {isAdmin && (
             <div style={{ padding: '12px 12px 0' }}>
@@ -386,46 +378,7 @@ export function Sidebar({
               borderBottom: `1px solid ${tokens.sidebarBorder}`,
             }}
           >
-            <div
-              className={pulse ? 'sidebar-icon-pulse' : undefined}
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 10,
-                background: tokens.logoGradient,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <path d="M16 10a4 4 0 01-8 0" />
-              </svg>
-            </div>
-            {!collapsed && (
-              <span
-                style={{
-                  fontWeight: 700,
-                  fontSize: 15,
-                  color: tokens.textPrimary,
-                  letterSpacing: '-0.3px',
-                }}
-              >
-                Box
-              </span>
-            )}
+            <BoxLogo collapsed={collapsed} variant={logoVariant} pulse={pulse} height={30} />
           </div>
 
           {/* Admin org selector */}
