@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verificarSegregacion, apiError } from '@/lib/permissions';
 import { checkOptimisticLock } from '@/lib/optimistic-lock';
 import { registrarAuditoria } from '@/lib/audit';
-import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
+import { crearNotificacion, notificarPorRol, notificarResponsableArea } from '@/lib/notifications';
 import { getTenantConfigBool } from '@/lib/tenant-config';
 import { canUserApproveAmount } from '@/lib/approval-limits';
 import { verificarPresupuesto, verificarPresupuestoArea } from '@/lib/budget-control';
@@ -103,19 +103,14 @@ export const POST = withAuth(
     }
 
     if (solicitud.validado_por_id) {
-      const area = await prisma.areas.findFirst({
-        where: { id: solicitud.area_id, tenant_id: session.tenantId },
+      await notificarResponsableArea({
+        tenantId: session.tenantId,
+        areaId: solicitud.area_id,
+        tipo: 'solicitud_aprobada',
+        titulo: 'Solicitud aprobada',
+        mensaje: `La solicitud "${solicitud.titulo}" fue aprobada`,
+        solicitudId,
       });
-      if (area?.responsable_id) {
-        await crearNotificacion({
-          tenantId: session.tenantId,
-          destinatarioId: area.responsable_id,
-          tipo: 'solicitud_aprobada',
-          titulo: 'Solicitud aprobada',
-          mensaje: `La solicitud "${solicitud.titulo}" fue aprobada`,
-          solicitudId,
-        });
-      }
     }
 
     // Budget control warning

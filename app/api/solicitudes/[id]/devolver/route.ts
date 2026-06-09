@@ -1,5 +1,4 @@
 import { withAuth, validateBody, parseId } from '@/lib/api-handler';
-import { prisma } from '@/lib/prisma';
 import { checkOptimisticLock } from '@/lib/optimistic-lock';
 import {
   verificarRol,
@@ -8,7 +7,7 @@ import {
   apiError,
 } from '@/lib/permissions';
 import { registrarAuditoria } from '@/lib/audit';
-import { crearNotificacion } from '@/lib/notifications';
+import { crearNotificacion, notificarResponsableArea } from '@/lib/notifications';
 import { devolucionSchema } from '@/lib/validators';
 
 export const POST = withAuth({}, async (request, { session, db, ip }, params) => {
@@ -70,19 +69,14 @@ export const POST = withAuth({}, async (request, { session, db, ip }, params) =>
       data: { estado: 'devuelta_dir', observaciones_director: validation.data.observaciones },
     });
 
-    const area = await prisma.areas.findFirst({
-      where: { id: solicitud.area_id, tenant_id: session.tenantId },
+    await notificarResponsableArea({
+      tenantId: session.tenantId,
+      areaId: solicitud.area_id,
+      tipo: 'solicitud_devuelta_dir',
+      titulo: 'Solicitud devuelta por Dirección',
+      mensaje: `${session.nombre}: ${validation.data.observaciones}`,
+      solicitudId,
     });
-    if (area?.responsable_id) {
-      await crearNotificacion({
-        tenantId: session.tenantId,
-        destinatarioId: area.responsable_id,
-        tipo: 'solicitud_devuelta_dir',
-        titulo: 'Solicitud devuelta por Dirección',
-        mensaje: `${session.nombre}: ${validation.data.observaciones}`,
-        solicitudId,
-      });
-    }
     await crearNotificacion({
       tenantId: session.tenantId,
       destinatarioId: solicitud.solicitante_id,
