@@ -105,8 +105,9 @@ async function main() {
 
   const adminRole = await prisma.roles.findUnique({ where: { nombre: 'admin' } });
   const directorRole = await prisma.roles.findUnique({ where: { nombre: 'director' } });
+  const solicitanteRole = await prisma.roles.findUnique({ where: { nombre: 'solicitante' } });
 
-  if (!adminRole || !directorRole) throw new Error('Roles not found');
+  if (!adminRole || !directorRole || !solicitanteRole) throw new Error('Roles not found');
 
   // Create default area
   const areaDir = await prisma.areas.upsert({
@@ -139,12 +140,36 @@ async function main() {
     update: {},
     create: { usuario_id: adminUser.id, rol_id: directorRole.id },
   });
+  await prisma.usuarios_roles.upsert({
+    where: { usuario_id_rol_id: { usuario_id: adminUser.id, rol_id: solicitanteRole.id } },
+    update: {},
+    create: { usuario_id: adminUser.id, rol_id: solicitanteRole.id },
+  });
 
   // Set area responsable
   await prisma.areas.update({
     where: { id: areaDir.id },
     data: { responsable_id: adminUser.id },
   });
+
+  // Create trial subscription for demo tenant
+  const plan = await prisma.planes.findUnique({ where: { nombre: 'box-principal' } });
+  if (plan) {
+    const now = new Date();
+    const trialEndsAt = new Date(now.getTime() + plan.trial_dias * 24 * 60 * 60 * 1000);
+    await prisma.suscripciones.upsert({
+      where: { tenant_id: testTenant.id },
+      update: { trial_ends_at: trialEndsAt, estado: 'trialing' },
+      create: {
+        tenant_id: testTenant.id,
+        plan_id: plan.id,
+        estado: 'trialing',
+        trial_starts_at: now,
+        trial_ends_at: trialEndsAt,
+      },
+    });
+    console.log('Demo subscription created (14-day trial)');
+  }
 
   console.log('Test tenant seeded. Login: admin@demo.com / admin1234');
 }
