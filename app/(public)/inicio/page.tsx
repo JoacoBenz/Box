@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { BoxLogo } from '@/components/layout/BoxLogo';
 
 const FEATURES = [
   {
@@ -391,8 +392,7 @@ function AppShowcase() {
         {/* App header inside frame */}
         <div className="lp-app-header">
           <div className="lp-app-logo">
-            <span style={{ fontSize: 18 }}>📦</span>
-            <span style={{ fontWeight: 800, fontSize: 15, color: '#00C2CB' }}>Box</span>
+            <BoxLogo variant="light" height={20} />
           </div>
           <div className="lp-app-tabs">
             {SCREENS.map((s, i) => (
@@ -905,7 +905,9 @@ export default function LandingPage() {
 
       {/* NAV */}
       <nav className={`lp-nav ${scrollY > 20 ? 'scrolled' : ''}`}>
-        <div className="lp-nav-logo">📦 Box</div>
+        <div className="lp-nav-logo">
+          <BoxLogo variant="light" height={28} />
+        </div>
         <div className="lp-nav-links">
           <Link href="/login" className="lp-nav-links lp-btn-ghost">
             Ingresar
