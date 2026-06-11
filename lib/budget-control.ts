@@ -50,8 +50,8 @@ export async function verificarPresupuestoArea(
 
   const gastos = await prisma.$queryRaw<{ gasto_anual: number; gasto_mensual: number }[]>`
     SELECT
-      COALESCE(SUM(c.monto_total), 0)::float AS gasto_anual,
-      COALESCE(SUM(CASE WHEN c.fecha_compra >= ${startOfMonth} THEN c.monto_total ELSE 0 END), 0)::float AS gasto_mensual
+      COALESCE(SUM(c.monto_total), 0)::numeric AS gasto_anual,
+      COALESCE(SUM(CASE WHEN c.fecha_compra >= ${startOfMonth} THEN c.monto_total ELSE 0 END), 0)::numeric AS gasto_mensual
     FROM compras c
     JOIN solicitudes s ON s.id = c.solicitud_id
     WHERE s.tenant_id = ${tenantId}
@@ -136,8 +136,8 @@ export async function verificarPresupuesto(
   // Use SQL SUM for efficient aggregation instead of fetching all rows
   const gastos = await prisma.$queryRaw<{ gasto_anual: number; gasto_mensual: number }[]>`
     SELECT
-      COALESCE(SUM(c.monto_total), 0)::float AS gasto_anual,
-      COALESCE(SUM(CASE WHEN c.fecha_compra >= ${startOfMonth} THEN c.monto_total ELSE 0 END), 0)::float AS gasto_mensual
+      COALESCE(SUM(c.monto_total), 0)::numeric AS gasto_anual,
+      COALESCE(SUM(CASE WHEN c.fecha_compra >= ${startOfMonth} THEN c.monto_total ELSE 0 END), 0)::numeric AS gasto_mensual
     FROM compras c
     JOIN solicitudes s ON s.id = c.solicitud_id
     WHERE s.tenant_id = ${tenantId}
@@ -214,10 +214,10 @@ export async function getResumenPresupuesto(tenantId: number): Promise<AreaBudge
     SELECT
       a.id AS area_id,
       a.nombre AS area_nombre,
-      a.presupuesto_mensual::float AS presupuesto_mensual,
-      a.presupuesto_anual::float AS presupuesto_anual,
-      COALESCE(SUM(CASE WHEN c.fecha_compra >= ${startOfMonth} THEN c.monto_total ELSE 0 END), 0)::float AS gasto_mensual,
-      COALESCE(SUM(CASE WHEN c.fecha_compra >= ${startOfYear} THEN c.monto_total ELSE 0 END), 0)::float AS gasto_anual
+      a.presupuesto_mensual::numeric AS presupuesto_mensual,
+      a.presupuesto_anual::numeric AS presupuesto_anual,
+      COALESCE(SUM(CASE WHEN c.fecha_compra >= ${startOfMonth} THEN c.monto_total ELSE 0 END), 0)::numeric AS gasto_mensual,
+      COALESCE(SUM(CASE WHEN c.fecha_compra >= ${startOfYear} THEN c.monto_total ELSE 0 END), 0)::numeric AS gasto_anual
     FROM areas a
     LEFT JOIN solicitudes s ON s.area_id = a.id AND s.tenant_id = a.tenant_id
       AND s.estado IN ('abonada', 'recibida', 'recibida_con_obs', 'cerrada')

@@ -1,19 +1,8 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
-import {
-  Card,
-  Col,
-  Row,
-  Typography,
-  Empty,
-  Select,
-  Progress,
-  Table,
-  Tag,
-  Button,
-  App,
-} from 'antd';
+import { useEffect, useState, useCallback } from 'react';
+import { useCountUp } from '@/hooks/useCountUp';
+import { Card, Col, Row, Typography, Empty, Select, Progress, Table, Tag, Button, App } from 'antd';
 import {
   PieChart,
   Pie,
@@ -66,33 +55,6 @@ function formatMoneyShort(amount: number): string {
   if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
   if (amount >= 1_000) return `$${(amount / 1_000).toFixed(0)}K`;
   return formatMoney(amount);
-}
-
-// ── Count-up hook ──
-function useCountUp(rawTarget: number | undefined | null, duration = 800) {
-  const target = rawTarget ?? 0;
-  const [value, setValue] = useState(0);
-  const ref = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (target === 0) {
-      setValue(0);
-      return;
-    }
-    const start = performance.now();
-    function tick(now: number) {
-      const progress = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.round(eased * target));
-      if (progress < 1) ref.current = requestAnimationFrame(tick);
-    }
-    ref.current = requestAnimationFrame(tick);
-    return () => {
-      if (ref.current) cancelAnimationFrame(ref.current);
-    };
-  }, [target, duration]);
-
-  return value;
 }
 
 // ── Metric Card with big number + trend ──

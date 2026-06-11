@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useCountUp } from '@/hooks/useCountUp';
 import { Button, Card, Col, Row, Tag, Typography, Empty, Progress, Table } from 'antd';
 import {
   DollarOutlined,
@@ -53,33 +54,6 @@ function formatMoney(amount: number): string {
     currency: 'ARS',
     maximumFractionDigits: 0,
   }).format(amount);
-}
-
-// ── Count-up hook ──
-function useCountUp(rawTarget: number | undefined | null, duration = 800) {
-  const target = rawTarget ?? 0;
-  const [value, setValue] = useState(0);
-  const ref = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (target === 0) {
-      setValue(0);
-      return;
-    }
-    const start = performance.now();
-    function tick(now: number) {
-      const progress = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.round(eased * target));
-      if (progress < 1) ref.current = requestAnimationFrame(tick);
-    }
-    ref.current = requestAnimationFrame(tick);
-    return () => {
-      if (ref.current) cancelAnimationFrame(ref.current);
-    };
-  }, [target, duration]);
-
-  return value;
 }
 
 // ── Stat Card Component ──
@@ -494,11 +468,7 @@ export default function DashboardPage() {
       {/* ── ORG ADMIN DASHBOARD ───────────────────────── */}
       {/* ═══════════════════════════════════════════════════ */}
       {hasOrgAdmin && !hasDirector && (
-        <DirectorDashboard
-          data={data}
-          directorAreaId={null}
-          onAreaChange={() => {}}
-        />
+        <DirectorDashboard data={data} directorAreaId={null} onAreaChange={() => {}} />
       )}
       {hasOrgAdmin && (
         <div style={{ marginBottom: 28 }}>
@@ -550,7 +520,11 @@ export default function DashboardPage() {
                 title="Areas sin Resp."
                 value={data.orgAdmin.totalAreas - data.orgAdmin.areasConResponsable}
                 icon={<WarningOutlined />}
-                color={data.orgAdmin.totalAreas - data.orgAdmin.areasConResponsable > 0 ? 'orange' : 'green'}
+                color={
+                  data.orgAdmin.totalAreas - data.orgAdmin.areasConResponsable > 0
+                    ? 'orange'
+                    : 'green'
+                }
               />
             </Col>
           </Row>
@@ -573,7 +547,10 @@ export default function DashboardPage() {
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     padding: '8px 0',
-                    borderBottom: i < data.orgAdmin.ultimasAuditorias.length - 1 ? '1px solid var(--border-color)' : 'none',
+                    borderBottom:
+                      i < data.orgAdmin.ultimasAuditorias.length - 1
+                        ? '1px solid var(--border-color)'
+                        : 'none',
                     fontSize: 13,
                   }}
                 >
@@ -582,7 +559,12 @@ export default function DashboardPage() {
                     <Tag style={{ fontSize: 11 }}>{a.accion.replace(/_/g, ' ')}</Tag>
                   </span>
                   <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
-                    {new Date(a.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    {new Date(a.fecha).toLocaleDateString('es-AR', {
+                      day: '2-digit',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                   </span>
                 </div>
               ))}

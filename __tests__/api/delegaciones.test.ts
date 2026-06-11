@@ -4,13 +4,14 @@ const { mockSession, mockDb } = vi.hoisted(() => {
   const mockSession = {
     userId: 1,
     tenantId: 1,
-    roles: ['director'],
-    nombre: 'Director',
-    email: 'dir@test.com',
+    roles: ['admin'] as string[],
+    nombre: 'Admin',
+    email: 'admin@test.com',
     areaId: 1,
   };
   const mockDb = {
     delegaciones: { findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
+    usuarios: { findFirst: vi.fn() },
   };
   return { mockSession, mockDb };
 });
@@ -55,6 +56,19 @@ vi.mock('@/lib/cache', () => ({ invalidateCache: vi.fn() }));
 import { GET, POST } from '@/app/api/delegaciones/route';
 import { PATCH } from '@/app/api/delegaciones/[id]/route';
 
+function makeReq(body: any) {
+  return new Request('http://localhost/api/delegaciones', {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+const futureStart = new Date();
+futureStart.setDate(futureStart.getDate() + 1);
+const futureEnd = new Date();
+futureEnd.setDate(futureEnd.getDate() + 7);
+
 describe('GET /api/delegaciones', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -74,27 +88,79 @@ describe('GET /api/delegaciones', () => {
 describe('POST /api/delegaciones', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSession.roles = ['admin'];
   });
 
-  it('creates a delegation', async () => {
+  it('creates delegation successfully', async () => {
+    mockDb.usuarios.findFirst.mockResolvedValue({ id: 2, nombre: 'User', activo: true });
     mockDb.delegaciones.create.mockResolvedValue({ id: 1 });
-    const futureStart = new Date();
-    futureStart.setDate(futureStart.getDate() + 1);
-    const futureEnd = new Date();
-    futureEnd.setDate(futureEnd.getDate() + 7);
-    const req = new Request('http://localhost/api/delegaciones', {
-      method: 'POST',
-      body: JSON.stringify({
+    const res = await POST(
+      makeReq({
         delegado_id: 2,
         rol_delegado: 'director',
         fecha_inicio: futureStart.toISOString(),
         fecha_fin: futureEnd.toISOString(),
         motivo: 'Vacaciones',
       }),
-      headers: { 'Content-Type': 'application/json' },
-    });
-    const res = await POST(req);
+    );
     expect(res.status).toBe(201);
+  });
+
+  it('rejects super_admin delegation even for admin', async () => {
+    const res = await POST(
+      makeReq({
+        delegado_id: 2,
+        rol_delegado: 'super_admin',
+        fecha_inicio: futureStart.toISOString(),
+        fecha_fin: futureEnd.toISOString(),
+      }),
+    );
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error.code).toBe('VALIDATION');
+  });
+
+  it('rejects invalid role name', async () => {
+    const res = await POST(
+      makeReq({
+        delegado_id: 2,
+        rol_delegado: 'nonexistent',
+        fecha_inicio: futureStart.toISOString(),
+        fecha_fin: futureEnd.toISOString(),
+      }),
+    );
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error.code).toBe('VALIDATION');
+  });
+
+  it('rejects delegado not in tenant', async () => {
+    mockDb.usuarios.findFirst.mockResolvedValue(null);
+    const res = await POST(
+      makeReq({
+        delegado_id: 2,
+        rol_delegado: 'director',
+        fecha_inicio: futureStart.toISOString(),
+        fecha_fin: futureEnd.toISOString(),
+      }),
+    );
+    expect(res.status).toBe(404);
+    const json = await res.json();
+    expect(json.error.code).toBe('NOT_FOUND');
+  });
+
+  it('rejects self-delegation', async () => {
+    const res = await POST(
+      makeReq({
+        delegado_id: 1,
+        rol_delegado: 'director',
+        fecha_inicio: futureStart.toISOString(),
+        fecha_fin: futureEnd.toISOString(),
+      }),
+    );
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error.code).toBe('VALIDATION');
   });
 });
 

@@ -98,29 +98,6 @@ export const PATCH = withAdminOverride(
         { status: 404 },
       );
 
-    // Prevent removing last admin
-    const currentRoles = usuario.usuarios_roles.map((ur) => ur.rol.nombre);
-    if (currentRoles.includes('admin') && !roleNames.includes('admin')) {
-      const adminCount = await prisma.usuarios.count({
-        where: {
-          tenant_id: effectiveTenantId ?? session.tenantId,
-          activo: true,
-          usuarios_roles: { some: { rol: { nombre: 'admin' } } },
-        },
-      });
-      if (adminCount <= 1) {
-        return Response.json(
-          {
-            error: {
-              code: 'CONFLICT',
-              message: 'No podés quitar el rol admin al único administrador',
-            },
-          },
-          { status: 409 },
-        );
-      }
-    }
-
     const rolesData = await prisma.roles.findMany({ where: { nombre: { in: roleNames } } });
 
     const updateData: {
@@ -131,26 +108,56 @@ export const PATCH = withAdminOverride(
     } = { nombre, area_id, centro_costo_id: centro_costo_id ?? null };
     if (password) updateData.password_hash = await bcrypt.hash(password, 12);
 
-    await prisma.$transaction(async (tx) => {
-      await tx.usuarios.update({ where: { id: userId }, data: updateData });
-      await tx.usuarios_roles.deleteMany({ where: { usuario_id: userId } });
-      await tx.usuarios_roles.createMany({
-        data: rolesData.map((r) => ({ usuario_id: userId, rol_id: r.id })),
-      });
-      // If user has responsable_area role, set them as the area's responsable
-      if (roleNames.includes('responsable_area') && area_id) {
-        await tx.areas.update({ where: { id: area_id }, data: { responsable_id: userId } });
-      }
-      // If user lost responsable_area role, clear them from the area's responsable_id
-      if (!roleNames.includes('responsable_area') && area_id) {
-        const currentArea = await tx.areas.findFirst({
-          where: { id: area_id, responsable_id: userId },
-        });
-        if (currentArea) {
-          await tx.areas.update({ where: { id: area_id }, data: { responsable_id: null } });
+    try {
+      await prisma.$transaction(async (tx) => {
+        // Prevent removing last admin — checked inside transaction to avoid race condition
+        const currentRoles = usuario.usuarios_roles.map((ur) => ur.rol.nombre);
+        if (currentRoles.includes('admin') && !roleNames.includes('admin')) {
+          const adminCount = await tx.usuarios.count({
+            where: {
+              tenant_id: effectiveTenantId ?? session.tenantId,
+              activo: true,
+              usuarios_roles: { some: { rol: { nombre: 'admin' } } },
+            },
+          });
+          if (adminCount <= 1) {
+            throw new Error('LAST_ADMIN');
+          }
         }
+
+        await tx.usuarios.update({ where: { id: userId }, data: updateData });
+        await tx.usuarios_roles.deleteMany({ where: { usuario_id: userId } });
+        await tx.usuarios_roles.createMany({
+          data: rolesData.map((r) => ({ usuario_id: userId, rol_id: r.id })),
+        });
+        // If user has responsable_area role, set them as the area's responsable
+        if (roleNames.includes('responsable_area') && area_id) {
+          await tx.areas.update({ where: { id: area_id }, data: { responsable_id: userId } });
+        }
+        // If user lost responsable_area role, clear them from the area's responsable_id
+        if (!roleNames.includes('responsable_area') && area_id) {
+          const currentArea = await tx.areas.findFirst({
+            where: { id: area_id, responsable_id: userId },
+          });
+          if (currentArea) {
+            await tx.areas.update({ where: { id: area_id }, data: { responsable_id: null } });
+          }
+        }
+      });
+    } catch (err) {
+      if (err instanceof Error && err.message === 'LAST_ADMIN') {
+        return Response.json(
+          {
+            error: {
+              code: 'CONFLICT',
+              message: 'No podés quitar el rol admin al único administrador',
+            },
+          },
+          { status: 409 },
+        );
       }
-    });
+      throw err;
+    }
 
     // Invalidate cached roles for the edited user
     invalidateCache(`t:${session.tenantId}:roles:${userId}`);

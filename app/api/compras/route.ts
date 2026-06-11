@@ -137,31 +137,47 @@ export const POST = withAuth(
       );
     }
 
-    const compra = await prisma.$transaction(async (tx) => {
-      const nuevaCompra = await tx.compras.create({
-        data: {
-          tenant_id: session.tenantId,
-          solicitud_id: parsed.data.solicitud_id,
-          ejecutado_por_id: session.userId,
-          proveedor_id: parsed.data.proveedor_id ?? solicitud.proveedor_id ?? null,
-          proveedor_nombre: parsed.data.proveedor_nombre,
-          proveedor_detalle: parsed.data.proveedor_detalle ?? null,
-          fecha_compra: new Date(parsed.data.fecha_compra),
-          monto_total: parsed.data.monto_total,
-          medio_pago: parsed.data.medio_pago,
-          referencia_bancaria: parsed.data.referencia_bancaria ?? null,
-          numero_factura: parsed.data.numero_factura ?? null,
-          observaciones: parsed.data.observaciones ?? null,
-        },
-      });
+    let compra;
+    try {
+      compra = await prisma.$transaction(async (tx) => {
+        const nuevaCompra = await tx.compras.create({
+          data: {
+            tenant_id: session.tenantId,
+            solicitud_id: parsed.data.solicitud_id,
+            ejecutado_por_id: session.userId,
+            proveedor_id: parsed.data.proveedor_id ?? solicitud.proveedor_id ?? null,
+            proveedor_nombre: parsed.data.proveedor_nombre,
+            proveedor_detalle: parsed.data.proveedor_detalle ?? null,
+            fecha_compra: new Date(parsed.data.fecha_compra),
+            monto_total: parsed.data.monto_total,
+            medio_pago: parsed.data.medio_pago,
+            referencia_bancaria: parsed.data.referencia_bancaria ?? null,
+            numero_factura: parsed.data.numero_factura ?? null,
+            observaciones: parsed.data.observaciones ?? null,
+          },
+        });
 
-      await tx.solicitudes.update({
-        where: { id: parsed.data.solicitud_id },
-        data: { estado: 'abonada' },
-      });
+        await tx.solicitudes.update({
+          where: { id: parsed.data.solicitud_id },
+          data: { estado: 'abonada' },
+        });
 
-      return nuevaCompra;
-    });
+        return nuevaCompra;
+      });
+    } catch (err: any) {
+      if (err?.code === 'P2002' && parsed.data.numero_factura) {
+        return Response.json(
+          {
+            error: {
+              code: 'DUPLICATE',
+              message: `Ya existe una compra con la factura ${parsed.data.numero_factura}`,
+            },
+          },
+          { status: 409 },
+        );
+      }
+      throw err;
+    }
 
     // Upload file after transaction
     let uploadWarning: string | null = null;
@@ -224,11 +240,7 @@ export const POST = withAuth(
     );
 
     // Budget threshold notifications after purchase
-    const postBudget = await verificarPresupuestoArea(
-      session.tenantId,
-      solicitud.area_id,
-      0,
-    );
+    const postBudget = await verificarPresupuestoArea(session.tenantId, solicitud.area_id, 0);
     const pctMensual = postBudget.status.presupuestoMensual
       ? Math.round((postBudget.status.gastoMensual / postBudget.status.presupuestoMensual) * 100)
       : 0;
@@ -238,12 +250,14 @@ export const POST = withAuth(
     const pctMax = Math.max(pctMensual, pctAnual);
     if (pctMax >= 80) {
       const tipo = pctMax >= 100 ? 'excedido' : 'alto';
-      const titulo = pctMax >= 100
-        ? `Presupuesto excedido: ${postBudget.status.area}`
-        : `Presupuesto al ${pctMax}%: ${postBudget.status.area}`;
-      const mensaje = pctMax >= 100
-        ? `El área "${postBudget.status.area}" superó su presupuesto (${pctMax}%) tras registrar la compra de "${solicitud.titulo}".`
-        : `El área "${postBudget.status.area}" alcanzó el ${pctMax}% de su presupuesto tras la compra de "${solicitud.titulo}".`;
+      const titulo =
+        pctMax >= 100
+          ? `Presupuesto excedido: ${postBudget.status.area}`
+          : `Presupuesto al ${pctMax}%: ${postBudget.status.area}`;
+      const mensaje =
+        pctMax >= 100
+          ? `El área "${postBudget.status.area}" superó su presupuesto (${pctMax}%) tras registrar la compra de "${solicitud.titulo}".`
+          : `El área "${postBudget.status.area}" alcanzó el ${pctMax}% de su presupuesto tras la compra de "${solicitud.titulo}".`;
       await Promise.all([
         notificarPorRol(session.tenantId, 'director', titulo, mensaje, solicitud.id),
         notificarPorRol(session.tenantId, 'tesoreria', titulo, mensaje, solicitud.id),
@@ -263,9 +277,10 @@ export const POST = withAuth(
     if (pctMax >= 70) {
       presupuestoAlerta = {
         porcentaje: pctMax,
-        mensaje: pctMax >= 100
-          ? `El presupuesto del área quedó excedido (${pctMax}%)`
-          : `El presupuesto del área quedó al ${pctMax}%`,
+        mensaje:
+          pctMax >= 100
+            ? `El presupuesto del área quedó excedido (${pctMax}%)`
+            : `El presupuesto del área quedó al ${pctMax}%`,
       };
     }
 
