@@ -94,9 +94,9 @@ async function main() {
   // --- Demo tenant (for testing) ---
   const testTenant = await prisma.tenants.upsert({
     where: { slug: 'org-demo' },
-    update: {},
+    update: { nombre: 'BEXOVAR' },
     create: {
-      nombre: 'Organización Demo',
+      nombre: 'BEXOVAR',
       slug: 'org-demo',
       email_contacto: 'admin@demo.com',
       moneda: 'ARS',

@@ -171,9 +171,7 @@ const AppShell: React.FC<{
             padding: '0 22px',
           }}
         >
-          <span style={{ fontSize: 15, fontWeight: 600, color: BRAND.text }}>
-            Organización Demo
-          </span>
+          <span style={{ fontSize: 15, fontWeight: 600, color: BRAND.text }}>BEXOVAR</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <div style={{ position: 'relative', transform: `rotate(${notifShake}deg)` }}>
               <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
