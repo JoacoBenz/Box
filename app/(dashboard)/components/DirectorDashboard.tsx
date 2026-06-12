@@ -27,6 +27,7 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from '@/components/ThemeProvider';
 import { ESTADOS_SOLICITUD, URGENCIAS } from '@/types';
 import type { EstadoSolicitud, UrgenciaSolicitud } from '@/types';
+import { formatMoney } from './dashboard-shared';
 
 const { Text } = Typography;
 
@@ -42,14 +43,6 @@ const DONUT_COLORS_STATIC = [
   '#14b8a6',
   '#f97316',
 ];
-
-function formatMoney(amount: number): string {
-  return new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
 
 function formatMoneyShort(amount: number): string {
   if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
