@@ -116,8 +116,9 @@ const AppShell: React.FC<{
   notif?: number;
   notifShake?: number;
   children: React.ReactNode;
-}> = ({ active, user, role, notif = 0, notifShake = 0, children }) => {
-  const items = ['Dashboard', 'Nueva Solicitud', 'Solicitudes', 'Aprobaciones', 'Reportes'];
+  items?: string[];
+}> = ({ active, user, role, notif = 0, notifShake = 0, children, items }) => {
+  const menu = items ?? ['Dashboard', 'Nueva Solicitud', 'Solicitudes', 'Aprobaciones', 'Reportes'];
   return (
     <div
       style={{
@@ -142,7 +143,7 @@ const AppShell: React.FC<{
         <div style={{ marginLeft: 8, marginBottom: 26 }}>
           <BoxLogo height={30} />
         </div>
-        {items.map((it) => (
+        {menu.map((it) => (
           <div
             key={it}
             style={{
@@ -537,6 +538,8 @@ export const FormScene: React.FC = () => {
 export const Detalle: React.FC<{
   user: string;
   role: string;
+  sidebarActive?: string;
+  sidebarItems?: string[];
   fromTag: { label: string; color: string; bg: string };
   toTag: { label: string; color: string; bg: string };
   button: string;
@@ -545,7 +548,20 @@ export const Detalle: React.FC<{
   heroGreen?: boolean;
   confetti?: boolean;
   notif?: number;
-}> = ({ user, role, fromTag, toTag, button, caption, clickAt, heroGreen, confetti, notif = 0 }) => {
+}> = ({
+  user,
+  role,
+  fromTag,
+  toTag,
+  button,
+  caption,
+  clickAt,
+  heroGreen,
+  confetti,
+  notif = 0,
+  sidebarActive = 'Solicitudes',
+  sidebarItems,
+}) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const enter = spring({ frame, fps, config: { damping: 13 } });
@@ -573,7 +589,14 @@ export const Detalle: React.FC<{
       <div
         style={{ transform: `scale(${0.92 + enter * 0.08})`, opacity: enter, position: 'relative' }}
       >
-        <AppShell active="Solicitudes" user={user} role={role} notif={notif} notifShake={shake}>
+        <AppShell
+          active={sidebarActive}
+          user={user}
+          role={role}
+          notif={notif}
+          notifShake={shake}
+          items={sidebarItems}
+        >
           <div
             style={{
               background: heroBg,
@@ -862,6 +885,8 @@ export const BoxDemo: React.FC = () => (
       <Detalle
         user="Martín Acosta"
         role="Responsable de Área"
+        sidebarActive="Validaciones"
+        sidebarItems={['Dashboard', 'Nueva Solicitud', 'Solicitudes', 'Validaciones', 'Reportes']}
         notif={1}
         fromTag={{ label: 'Enviada', color: '#1d4ed8', bg: '#dbeafe' }}
         toTag={{ label: 'Validada', color: '#0e7490', bg: '#cffafe' }}
@@ -874,6 +899,8 @@ export const BoxDemo: React.FC = () => (
       <Detalle
         user="Carlos Pereyra"
         role="Director"
+        sidebarActive="Aprobaciones"
+        sidebarItems={['Dashboard', 'Solicitudes', 'Aprobaciones', 'Reportes']}
         fromTag={{ label: 'Validada', color: '#0e7490', bg: '#cffafe' }}
         toTag={{ label: 'Aprobada', color: '#15803d', bg: '#dcfce7' }}
         button="Aprobar"

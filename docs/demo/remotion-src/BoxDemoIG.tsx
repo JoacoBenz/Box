@@ -227,6 +227,8 @@ export const BoxDemoIG: React.FC = () => (
         <Detalle
           user="Martín Acosta"
           role="Responsable de Área"
+          sidebarActive="Validaciones"
+          sidebarItems={['Dashboard', 'Nueva Solicitud', 'Solicitudes', 'Validaciones', 'Reportes']}
           notif={1}
           fromTag={{ label: 'Enviada', color: '#1d4ed8', bg: '#dbeafe' }}
           toTag={{ label: 'Validada', color: '#0e7490', bg: '#cffafe' }}
@@ -241,6 +243,8 @@ export const BoxDemoIG: React.FC = () => (
         <Detalle
           user="Carlos Pereyra"
           role="Director"
+          sidebarActive="Aprobaciones"
+          sidebarItems={['Dashboard', 'Solicitudes', 'Aprobaciones', 'Reportes']}
           fromTag={{ label: 'Validada', color: '#0e7490', bg: '#cffafe' }}
           toTag={{ label: 'Aprobada', color: '#15803d', bg: '#dcfce7' }}
           button="Aprobar"
