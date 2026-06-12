@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
         <h2>Hola ${nombreUsuario},</h2>
         <p>Gracias por registrar <strong>${nombreOrganizacion}</strong>.</p>
         <p>Para completar el registro, verificá tu email:</p>
-        <p><a href="${verifyUrl}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Verificar email</a></p>
+        <p><a href="${verifyUrl}" style="display:inline-block;padding:12px 24px;background:#0891b2;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Verificar email</a></p>
         <p>Este enlace expira en 24 horas.</p>
       `,
       });

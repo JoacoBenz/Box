@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
           html: `
             <h2>Hola ${usuario.nombre},</h2>
             <p>Recibimos una solicitud para restablecer tu contraseña.</p>
-            <p><a href="${resetUrl}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Restablecer contraseña</a></p>
+            <p><a href="${resetUrl}" style="display:inline-block;padding:12px 24px;background:#0891b2;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Restablecer contraseña</a></p>
             <p>Este enlace expira en 1 hora.</p>
             <p>Si no solicitaste esto, ignorá este email.</p>
           `,

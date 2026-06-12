@@ -40,7 +40,7 @@ const FEATURES = [
 const SCREEN_DATA = {
   dashboard: {
     stats: [
-      { label: 'Solicitudes', value: '24', color: '#4f46e5', icon: '📋' },
+      { label: 'Solicitudes', value: '24', color: '#0891b2', icon: '📋' },
       { label: 'Aprobadas', value: '18', color: '#16a34a', icon: '✅' },
       { label: 'En proceso', value: '4', color: '#f59e0b', icon: '⏳' },
       { label: 'Gasto mensual', value: '$1.2M', color: '#0891b2', icon: '💰' },
@@ -48,7 +48,7 @@ const SCREEN_DATA = {
     bars: [42, 68, 53, 84, 74, 100, 63],
     barLabels: ['E', 'F', 'M', 'A', 'M', 'J', 'J'],
     areas: [
-      { name: 'Administración', pct: 35, color: '#4f46e5' },
+      { name: 'Administración', pct: 35, color: '#0891b2' },
       { name: 'Dirección', pct: 25, color: '#0891b2' },
       { name: 'Mantenimiento', pct: 22, color: '#f59e0b' },
       { name: 'Sistemas', pct: 18, color: '#16a34a' },
@@ -130,7 +130,7 @@ const SCREEN_DATA = {
   ],
   reportes: {
     totals: [
-      { label: 'Total gastado', value: '$2.450.000', color: '#4f46e5' },
+      { label: 'Total gastado', value: '$2.450.000', color: '#0891b2' },
       { label: 'Presupuesto', value: '$3.000.000', color: '#16a34a' },
       { label: 'Disponible', value: '$550.000', color: '#f59e0b' },
     ],
@@ -412,7 +412,7 @@ function AppShowcase() {
                 width: 28,
                 height: 28,
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                background: 'linear-gradient(135deg, #00C2CB, #0891b2)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -488,7 +488,7 @@ export default function LandingPage() {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
         .landing-page {
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
           color: #1a1a2e;
           overflow-x: hidden;
           background: #fff;
@@ -626,7 +626,7 @@ export default function LandingPage() {
         .sc-sol-row:first-child { border-top: none; }
         .sc-sol-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
         .sc-sol-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-        .sc-sol-num { color: #4f46e5; font-weight: 600; font-size: 11px; white-space: nowrap; }
+        .sc-sol-num { color: #0891b2; font-weight: 600; font-size: 11px; white-space: nowrap; }
         .sc-sol-title { font-weight: 600; font-size: 12px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .sc-sol-monto { font-weight: 700; font-size: 12px; color: #333; white-space: nowrap; }
         .sc-badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 9px; font-weight: 600; white-space: nowrap; }

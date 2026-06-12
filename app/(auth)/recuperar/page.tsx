@@ -92,9 +92,10 @@ export default function RecuperarPage() {
                   fontWeight: 600,
                   fontSize: 15,
                   borderRadius: 10,
-                  background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                  background: 'linear-gradient(135deg, #00C2CB, #0891b2)',
                   border: 'none',
-                  boxShadow: '0 4px 14px rgba(79, 70, 229, 0.4)',
+                  color: '#fff',
+                  boxShadow: '0 4px 15px rgba(0,194,203,0.35)',
                 }}
               >
                 Enviar enlace
