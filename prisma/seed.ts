@@ -121,10 +121,10 @@ async function main() {
   // Create admin user
   const adminUser = await prisma.usuarios.upsert({
     where: { tenant_id_email: { tenant_id: testTenant.id, email: 'admin@demo.com' } },
-    update: {},
+    update: { nombre: 'Martín Acosta' },
     create: {
       tenant_id: testTenant.id,
-      nombre: 'Admin Demo',
+      nombre: 'Martín Acosta',
       email: 'admin@demo.com',
       password_hash: passwordHash,
       area_id: areaDir.id,

@@ -862,7 +862,7 @@ export const BoxDemo: React.FC = () => (
     </Sequence>
     <Sequence from={S4} durationInFrames={S5 - S4}>
       <Detalle
-        user="Admin Demo"
+        user="Martín Acosta"
         role="Responsable de Área"
         notif={1}
         fromTag={{ label: 'Enviada', color: '#1d4ed8', bg: '#dbeafe' }}
