@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   AbsoluteFill,
+  Audio,
   Sequence,
   interpolate,
   spring,
@@ -869,9 +870,29 @@ export const Cierre: React.FC = () => {
   );
 };
 
+// ── Voiceover (es) — one clip per scene, shared by both cuts ──
+export const Voiceover: React.FC = () => (
+  <>
+    {[
+      [S1 + 5, 'v1.wav'],
+      [S2 + 8, 'v2.wav'],
+      [S3 + 10, 'v3.wav'],
+      [S4 + 10, 'v4.wav'],
+      [S5 + 10, 'v5.wav'],
+      [S6 + 8, 'v6.wav'],
+      [S7 + 5, 'v7.wav'],
+    ].map(([from, file]) => (
+      <Sequence key={file as string} from={from as number}>
+        <Audio src={staticFile(file as string)} />
+      </Sequence>
+    ))}
+  </>
+);
+
 // ════════ Master ════════
 export const BoxDemo: React.FC = () => (
   <AbsoluteFill style={{ background: BRAND.bg }}>
+    <Voiceover />
     <Sequence from={S1} durationInFrames={S2 - S1}>
       <Intro />
     </Sequence>

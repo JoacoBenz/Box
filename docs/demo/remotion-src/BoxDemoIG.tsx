@@ -7,7 +7,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from 'remotion';
-import { BRAND, FONT, Problema, FormScene, Detalle, Dash, Cierre } from './BoxDemo';
+import { BRAND, FONT, Problema, FormScene, Detalle, Dash, Cierre, Voiceover } from './BoxDemo';
 
 // Same scene timings as the landscape cut (30fps)
 const S1 = 0;
@@ -211,6 +211,7 @@ const CierreIG: React.FC = () => (
 
 export const BoxDemoIG: React.FC = () => (
   <AbsoluteFill style={{ background: BRAND.bg }}>
+    <Voiceover />
     <Sequence from={S1} durationInFrames={S2 - S1}>
       <IntroIG />
     </Sequence>
