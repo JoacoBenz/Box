@@ -229,19 +229,22 @@ export async function getResumenPresupuesto(tenantId: number): Promise<AreaBudge
   `;
 
   return rows.map((r) => {
-    const pm = r.presupuesto_mensual;
-    const pa = r.presupuesto_anual;
+    // numeric llega como string con el driver pg — convertir antes de exponer
+    const pm = r.presupuesto_mensual != null ? Number(r.presupuesto_mensual) : null;
+    const pa = r.presupuesto_anual != null ? Number(r.presupuesto_anual) : null;
+    const gastoMensual = Number(r.gasto_mensual);
+    const gastoAnual = Number(r.gasto_anual);
     return {
       areaId: r.area_id,
       areaNombre: r.area_nombre,
       presupuestoMensual: pm,
       presupuestoAnual: pa,
-      gastoMensual: r.gasto_mensual,
-      gastoAnual: r.gasto_anual,
-      disponibleMensual: pm !== null ? pm - r.gasto_mensual : null,
-      disponibleAnual: pa !== null ? pa - r.gasto_anual : null,
-      porcentajeMensual: pm ? Math.round((r.gasto_mensual / pm) * 100) : 0,
-      porcentajeAnual: pa ? Math.round((r.gasto_anual / pa) * 100) : 0,
+      gastoMensual,
+      gastoAnual,
+      disponibleMensual: pm !== null ? pm - gastoMensual : null,
+      disponibleAnual: pa !== null ? pa - gastoAnual : null,
+      porcentajeMensual: pm ? Math.round((gastoMensual / pm) * 100) : 0,
+      porcentajeAnual: pa ? Math.round((gastoAnual / pa) * 100) : 0,
     };
   });
 }
