@@ -325,10 +325,10 @@ export default function DirectorDashboard({
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={12} lg={6}>
           <MetricCard
-            title="Gasto del Ano"
+            title="Gasto del Año"
             value={data.gastoAnual}
             previousValue={data.gastoAnualAnterior}
-            subtitle="vs ano anterior"
+            subtitle="vs año anterior"
             color={tokens.colorPrimary}
           />
         </Col>
@@ -370,11 +370,11 @@ export default function DirectorDashboard({
                 {tiempoCiclo.totalDias}
               </span>
               <span style={{ fontSize: 13, color: tokens.textSecondary, fontWeight: 500 }}>
-                dias
+                días
               </span>
             </div>
             <div style={{ fontSize: 11, color: tokens.textMuted, marginTop: 4 }}>
-              {tiempoCiclo.aprobacionDias}d aprobacion + {tiempoCiclo.pagoDias}d pago
+              {tiempoCiclo.aprobacionDias}d aprobación + {tiempoCiclo.pagoDias}d pago
             </div>
           </Card>
         </Col>

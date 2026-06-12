@@ -16,7 +16,7 @@ import { MiniStatCard, SectionTitle } from './dashboard-shared';
 export default function OrgAdminPanel({ data }: { data: Record<string, any> }) {
   return (
     <div style={{ marginBottom: 28 }}>
-      <SectionTitle>Panel de Administracion</SectionTitle>
+      <SectionTitle>Panel de Administración</SectionTitle>
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col xs={12} sm={8} lg={4}>
           <MiniStatCard
@@ -29,7 +29,7 @@ export default function OrgAdminPanel({ data }: { data: Record<string, any> }) {
         </Col>
         <Col xs={12} sm={8} lg={4}>
           <MiniStatCard
-            title="Areas"
+            title="Áreas"
             value={data.orgAdmin.totalAreas}
             icon={<ApartmentOutlined />}
             color="green"
@@ -61,7 +61,7 @@ export default function OrgAdminPanel({ data }: { data: Record<string, any> }) {
         </Col>
         <Col xs={12} sm={8} lg={4}>
           <MiniStatCard
-            title="Areas sin Resp."
+            title="Áreas sin Resp."
             value={data.orgAdmin.totalAreas - data.orgAdmin.areasConResponsable}
             icon={<WarningOutlined />}
             color={

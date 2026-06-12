@@ -106,8 +106,10 @@ async function main() {
   const adminRole = await prisma.roles.findUnique({ where: { nombre: 'admin' } });
   const directorRole = await prisma.roles.findUnique({ where: { nombre: 'director' } });
   const solicitanteRole = await prisma.roles.findUnique({ where: { nombre: 'solicitante' } });
+  const respAreaRole = await prisma.roles.findUnique({ where: { nombre: 'responsable_area' } });
 
-  if (!adminRole || !directorRole || !solicitanteRole) throw new Error('Roles not found');
+  if (!adminRole || !directorRole || !solicitanteRole || !respAreaRole)
+    throw new Error('Roles not found');
 
   // Create default area
   const areaDir = await prisma.areas.upsert({
@@ -144,6 +146,12 @@ async function main() {
     where: { usuario_id_rol_id: { usuario_id: adminUser.id, rol_id: solicitanteRole.id } },
     update: {},
     create: { usuario_id: adminUser.id, rol_id: solicitanteRole.id },
+  });
+  // El admin es responsable_id del área — sin este rol no puede validar solicitudes
+  await prisma.usuarios_roles.upsert({
+    where: { usuario_id_rol_id: { usuario_id: adminUser.id, rol_id: respAreaRole.id } },
+    update: {},
+    create: { usuario_id: adminUser.id, rol_id: respAreaRole.id },
   });
 
   // Set area responsable
