@@ -15,7 +15,7 @@ import { JAKARTA_B64 } from './font';
 loadFont({ family: 'Jakarta', url: `data:font/woff2;base64,${JAKARTA_B64}`, format: 'woff2' });
 
 // ── Brand ──
-const BRAND = {
+export const BRAND = {
   primary: '#0891b2',
   accent: '#00C2CB',
   grad: 'linear-gradient(135deg, #00C2CB, #0891b2)',
@@ -29,7 +29,7 @@ const BRAND = {
   blue: '#3b82f6',
   red: '#ef4444',
 };
-const FONT = 'Jakarta, sans-serif';
+export const FONT = 'Jakarta, sans-serif';
 
 // Scene boundaries (frames @30fps)
 const S1 = 0; // intro            5s
@@ -260,7 +260,7 @@ const ClickPulse: React.FC<{ frame: number; start: number; x: number; y: number 
 };
 
 // ════════ Scene 1: Intro ════════
-const Intro: React.FC = () => {
+export const Intro: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const s = spring({ frame, fps, config: { damping: 11, mass: 0.7 } });
@@ -317,7 +317,7 @@ const Intro: React.FC = () => {
 };
 
 // ════════ Scene 2: Problema ════════
-const Problema: React.FC = () => {
+export const Problema: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const lines = ['¿Compras por WhatsApp?', '¿Aprobaciones por mail?', '¿Excel desactualizado?'];
@@ -375,7 +375,7 @@ const Problema: React.FC = () => {
 };
 
 // ════════ Scene 3: Form ════════
-const FormScene: React.FC = () => {
+export const FormScene: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const enter = spring({ frame, fps, config: { damping: 13 } });
@@ -534,7 +534,7 @@ const FormScene: React.FC = () => {
 };
 
 // ════════ Scenes 4 & 5: Detalle (validar / aprobar) ════════
-const Detalle: React.FC<{
+export const Detalle: React.FC<{
   user: string;
   role: string;
   fromTag: { label: string; color: string; bg: string };
@@ -691,7 +691,7 @@ const Detalle: React.FC<{
 };
 
 // ════════ Scene 6: Dashboard ════════
-const Dash: React.FC = () => {
+export const Dash: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const enter = spring({ frame, fps, config: { damping: 13 } });
@@ -789,7 +789,7 @@ const Dash: React.FC = () => {
 };
 
 // ════════ Scene 7: Cierre ════════
-const Cierre: React.FC = () => {
+export const Cierre: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const s = spring({ frame, fps, config: { damping: 12 } });
