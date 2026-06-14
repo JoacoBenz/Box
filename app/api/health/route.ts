@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import pkg from '@/package.json';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -23,6 +24,10 @@ export async function GET() {
   return NextResponse.json(
     {
       status: dbOk ? 'ok' : 'degraded',
+      // Flat fields for the Mission Control observability contract.
+      db: dbOk ? 'ok' : 'error',
+      version: pkg.version,
+      templateVersion: null,
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
       checks: {
