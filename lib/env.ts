@@ -13,6 +13,11 @@ const envSchema = z.object({
   MP_ACCESS_TOKEN: z.string().optional(),
   MP_WEBHOOK_SECRET: z.string().optional(),
   MP_PLAN_ID: z.string().optional(),
+  // Mission Control (opcional): cuando ambas están seteadas, lib/logger.ts
+  // envía warn/error al dashboard. APP_RELEASE etiqueta los reportes (deploy).
+  MISSION_CONTROL_URL: z.string().optional(),
+  MISSION_CONTROL_API_KEY: z.string().optional(),
+  APP_RELEASE: z.string().optional(),
 });
 
 function validateEnv() {
