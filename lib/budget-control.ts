@@ -50,8 +50,8 @@ export async function verificarPresupuestoArea(
 
   const gastos = await prisma.$queryRaw<{ gasto_anual: number; gasto_mensual: number }[]>`
     SELECT
-      COALESCE(SUM(c.monto_total), 0)::float AS gasto_anual,
-      COALESCE(SUM(CASE WHEN c.fecha_compra >= ${startOfMonth} THEN c.monto_total ELSE 0 END), 0)::float AS gasto_mensual
+      COALESCE(SUM(c.monto_total), 0)::numeric AS gasto_anual,
+      COALESCE(SUM(CASE WHEN c.fecha_compra >= ${startOfMonth} THEN c.monto_total ELSE 0 END), 0)::numeric AS gasto_mensual
     FROM compras c
     JOIN solicitudes s ON s.id = c.solicitud_id
     WHERE s.tenant_id = ${tenantId}
@@ -260,8 +260,8 @@ export async function verificarPresupuesto(
   // Use SQL SUM for efficient aggregation instead of fetching all rows
   const gastos = await prisma.$queryRaw<{ gasto_anual: number; gasto_mensual: number }[]>`
     SELECT
-      COALESCE(SUM(c.monto_total), 0)::float AS gasto_anual,
-      COALESCE(SUM(CASE WHEN c.fecha_compra >= ${startOfMonth} THEN c.monto_total ELSE 0 END), 0)::float AS gasto_mensual
+      COALESCE(SUM(c.monto_total), 0)::numeric AS gasto_anual,
+      COALESCE(SUM(CASE WHEN c.fecha_compra >= ${startOfMonth} THEN c.monto_total ELSE 0 END), 0)::numeric AS gasto_mensual
     FROM compras c
     JOIN solicitudes s ON s.id = c.solicitud_id
     WHERE s.tenant_id = ${tenantId}
@@ -340,10 +340,10 @@ export async function getResumenPresupuesto(tenantId: number): Promise<AreaBudge
     SELECT
       a.id AS area_id,
       a.nombre AS area_nombre,
-      a.presupuesto_mensual::float AS presupuesto_mensual,
-      a.presupuesto_anual::float AS presupuesto_anual,
-      COALESCE(SUM(CASE WHEN c.fecha_compra >= ${startOfMonth} THEN c.monto_total ELSE 0 END), 0)::float AS gasto_mensual,
-      COALESCE(SUM(CASE WHEN c.fecha_compra >= ${startOfYear} THEN c.monto_total ELSE 0 END), 0)::float AS gasto_anual
+      a.presupuesto_mensual::numeric AS presupuesto_mensual,
+      a.presupuesto_anual::numeric AS presupuesto_anual,
+      COALESCE(SUM(CASE WHEN c.fecha_compra >= ${startOfMonth} THEN c.monto_total ELSE 0 END), 0)::numeric AS gasto_mensual,
+      COALESCE(SUM(CASE WHEN c.fecha_compra >= ${startOfYear} THEN c.monto_total ELSE 0 END), 0)::numeric AS gasto_anual
     FROM areas a
     LEFT JOIN solicitudes s ON s.area_id = a.id AND s.tenant_id = a.tenant_id
       AND s.estado IN ('abonada', 'recibida_con_obs', 'cerrada')
@@ -355,19 +355,22 @@ export async function getResumenPresupuesto(tenantId: number): Promise<AreaBudge
   `;
 
   return rows.map((r) => {
-    const pm = r.presupuesto_mensual;
-    const pa = r.presupuesto_anual;
+    // numeric llega como string con el driver pg — convertir antes de exponer
+    const pm = r.presupuesto_mensual != null ? Number(r.presupuesto_mensual) : null;
+    const pa = r.presupuesto_anual != null ? Number(r.presupuesto_anual) : null;
+    const gastoMensual = Number(r.gasto_mensual);
+    const gastoAnual = Number(r.gasto_anual);
     return {
       areaId: r.area_id,
       areaNombre: r.area_nombre,
       presupuestoMensual: pm,
       presupuestoAnual: pa,
-      gastoMensual: r.gasto_mensual,
-      gastoAnual: r.gasto_anual,
-      disponibleMensual: pm !== null ? pm - r.gasto_mensual : null,
-      disponibleAnual: pa !== null ? pa - r.gasto_anual : null,
-      porcentajeMensual: pm ? Math.round((r.gasto_mensual / pm) * 100) : 0,
-      porcentajeAnual: pa ? Math.round((r.gasto_anual / pa) * 100) : 0,
+      gastoMensual,
+      gastoAnual,
+      disponibleMensual: pm !== null ? pm - gastoMensual : null,
+      disponibleAnual: pa !== null ? pa - gastoAnual : null,
+      porcentajeMensual: pm ? Math.round((gastoMensual / pm) * 100) : 0,
+      porcentajeAnual: pa ? Math.round((gastoAnual / pa) * 100) : 0,
     };
   });
 }

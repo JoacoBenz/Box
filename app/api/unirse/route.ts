@@ -213,10 +213,11 @@ export async function POST(request: NextRequest) {
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
     const verifyUrl = `${appUrl}/verificar-email?token=${token}&tipo=unirse`;
-    await sendEmail({
-      to: email,
-      subject: 'Verificá tu email — Box',
-      html: `
+    try {
+      await sendEmail({
+        to: email,
+        subject: 'Verificá tu email — Box',
+        html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
           <h2>¡Hola ${nombre}!</h2>
           <p>Gracias por unirte a <strong>${tenant!.nombre}</strong>.</p>
@@ -230,7 +231,35 @@ export async function POST(request: NextRequest) {
           <p style="color: #666; font-size: 14px;">Si no creaste esta cuenta, ignorá este email.</p>
         </div>
       `,
-    });
+      });
+    } catch (emailError) {
+      // Email failed: roll back the inactive account so the user can retry instead
+      // of being permanently blocked by the "email already exists" check.
+      logApiError('/api/unirse', 'POST:sendEmail', emailError);
+      try {
+        // tokens_verificacion_email has no cascade, so remove it before the user.
+        await prisma.tokens_verificacion_email.deleteMany({ where: { usuario_id: usuario.id } });
+        await prisma.usuarios.delete({ where: { id: usuario.id } }); // cascades usuarios_roles
+        if (codigo) {
+          await prisma.codigos_invitacion.updateMany({
+            where: { codigo },
+            data: { usos: { decrement: 1 } },
+          });
+        }
+      } catch (cleanupError) {
+        logApiError('/api/unirse', 'POST:cleanup', cleanupError);
+      }
+      return Response.json(
+        {
+          error: {
+            code: 'EMAIL_FAILED',
+            message:
+              'No pudimos enviar el email de verificación. Intentá de nuevo en unos minutos.',
+          },
+        },
+        { status: 502 },
+      );
+    }
 
     // Notify admins if area was not matched
     if (!matchedAreaId) {

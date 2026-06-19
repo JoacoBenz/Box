@@ -55,6 +55,37 @@ export async function notificarAdmins(titulo: string, mensaje: string): Promise<
   }
 }
 
+/**
+ * Looks up the area's responsable and notifies them if they exist and aren't excluded.
+ * Used across workflow handlers (rechazar, devolver, anular, aprobar) to avoid
+ * repeating the area lookup + conditional notification logic.
+ */
+export async function notificarResponsableArea(opts: {
+  tenantId: number;
+  areaId: number;
+  tipo: string;
+  titulo: string;
+  mensaje: string;
+  solicitudId: number;
+  excludeIds?: number[];
+}): Promise<void> {
+  const area = await prisma.areas.findFirst({
+    where: { id: opts.areaId, tenant_id: opts.tenantId },
+    select: { responsable_id: true },
+  });
+  if (!area?.responsable_id) return;
+  if (opts.excludeIds?.includes(area.responsable_id)) return;
+
+  await crearNotificacion({
+    tenantId: opts.tenantId,
+    destinatarioId: area.responsable_id,
+    tipo: opts.tipo,
+    titulo: opts.titulo,
+    mensaje: opts.mensaje,
+    solicitudId: opts.solicitudId,
+  });
+}
+
 export async function notificarPorRol(
   tenantId: number,
   rolNombre: string,
