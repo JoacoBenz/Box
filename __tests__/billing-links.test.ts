@@ -72,9 +72,12 @@ describe('isBillingReason', () => {
 // ── isBillingBlockedReason ──
 
 describe('isBillingBlockedReason', () => {
-  it.each(BILLING_BLOCKED_REASONS.map((r) => [r]))('returns true for blocked reason "%s"', (reason) => {
-    expect(isBillingBlockedReason(reason)).toBe(true);
-  });
+  it.each(BILLING_BLOCKED_REASONS.map((r) => [r]))(
+    'returns true for blocked reason "%s"',
+    (reason) => {
+      expect(isBillingBlockedReason(reason)).toBe(true);
+    },
+  );
 
   it('returns false for "active" (not a blocked reason)', () => {
     expect(isBillingBlockedReason('active')).toBe(false);

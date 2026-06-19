@@ -14,7 +14,11 @@ vi.mock('@/lib/prisma', () => ({
   }),
 }));
 
-import { verificarPresupuesto, verificarPresupuestoArea, getResumenPresupuesto } from '@/lib/budget-control';
+import {
+  verificarPresupuesto,
+  verificarPresupuestoArea,
+  getResumenPresupuesto,
+} from '@/lib/budget-control';
 
 beforeEach(() => {
   mockFindFirst.mockReset();
