@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { mockRedirect } = vi.hoisted(() => ({
-  mockRedirect: vi.fn(() => {
+  mockRedirect: vi.fn<(url: string) => never>(() => {
     // Stub: el redirect real throwea internamente para interrumpir el render.
     // En tests simplemente returnamos para poder inspeccionar la llamada.
     return undefined as never;

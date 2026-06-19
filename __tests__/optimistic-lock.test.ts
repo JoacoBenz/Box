@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-  apiError: vi.fn(
-    (code: string, message: string, status: number) =>
-      Response.json({ error: { code, message } }, { status }),
+  apiError: vi.fn((code: string, message: string, status: number) =>
+    Response.json({ error: { code, message } }, { status }),
   ),
 }));
 
@@ -53,11 +52,7 @@ describe('checkOptimisticLock', () => {
     checkOptimisticLock(staleDate.toISOString(), baseDate);
 
     expect(mocks.apiError).toHaveBeenCalledOnce();
-    expect(mocks.apiError).toHaveBeenCalledWith(
-      'CONFLICT',
-      expect.any(String),
-      409,
-    );
+    expect(mocks.apiError).toHaveBeenCalledWith('CONFLICT', expect.any(String), 409);
   });
 
   // ── ISO string comparison ──
