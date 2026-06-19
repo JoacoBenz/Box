@@ -79,7 +79,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         colorError: tokens.colorError,
         colorInfo: tokens.colorSecondary,
         borderRadius: 10,
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        fontFamily:
+          "var(--font-sans), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         fontSize: 14,
         colorBgLayout: tokens.bgLayout,
         colorBgContainer: tokens.bgCard,

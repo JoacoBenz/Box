@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useFormValid } from '@/hooks/useFormValid';
 import { useTheme } from '@/components/ThemeProvider';
+import { BoxLogo } from '@/components/layout/BoxLogo';
 
 const { Title, Text } = Typography;
 
@@ -17,7 +18,7 @@ export default function LoginPage() {
   const [form] = Form.useForm();
   const { hasErrors, formProps } = useFormValid(form);
   const [loading, setLoading] = useState(false);
-  const { tokens } = useTheme();
+  const { tokens, mode } = useTheme();
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(() => {
     const err = searchParams.get('error');
@@ -104,13 +105,8 @@ export default function LoginPage() {
         styles={{ body: { padding: '40px 36px' } }}
       >
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <span style={{ fontSize: 36 }}>📦</span>
-            <span
-              style={{ fontWeight: 800, fontSize: 22, letterSpacing: '-0.5px', color: '#00C2CB' }}
-            >
-              Box
-            </span>
+          <div style={{ display: 'inline-flex', alignItems: 'center', marginBottom: 16 }}>
+            <BoxLogo variant={mode === 'dark' ? 'dark' : 'light'} height={44} />
           </div>
           <Title level={3} style={{ marginBottom: 4, fontWeight: 700 }}>
             Gestión de Compras
