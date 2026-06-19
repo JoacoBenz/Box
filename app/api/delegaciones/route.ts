@@ -5,6 +5,15 @@ import { verificarRol, apiError } from '@/lib/permissions';
 import { registrarAuditoria } from '@/lib/audit';
 import { invalidateCache } from '@/lib/cache';
 
+const ROLES_DELEGABLES = [
+  'solicitante',
+  'responsable_area',
+  'director',
+  'compras',
+  'tesoreria',
+  'admin',
+] as const;
+
 export const GET = withAdminOverride({}, async (_request, { session, db }) => {
   // Admin sees all, others see their own delegations
   const where = verificarRol(session.roles, ['admin'])
@@ -43,7 +52,12 @@ export const POST = withAuth(
       return apiError('VALIDATION', 'La fecha de fin debe ser posterior a la de inicio', 400);
     }
 
-    // Can only delegate roles you have
+    // Validate role is in the delegable whitelist
+    if (!ROLES_DELEGABLES.includes(rol_delegado as any)) {
+      return apiError('VALIDATION', `El rol "${rol_delegado}" no es delegable`, 400);
+    }
+
+    // Can only delegate roles you have (admins can delegate any delegable role)
     if (
       !session.roles.includes(rol_delegado as any) &&
       !session.roles.includes('admin') &&
@@ -54,6 +68,11 @@ export const POST = withAuth(
 
     const db = tenantPrisma(session.tenantId);
 
+    const delegado = await db.usuarios.findFirst({ where: { id: delegado_id, activo: true } });
+    if (!delegado) {
+      return apiError('NOT_FOUND', 'Usuario delegado no encontrado', 404);
+    }
+
     const delegacion = await db.delegaciones.create({
       data: {
         tenant_id: session.tenantId,
@@ -63,7 +82,7 @@ export const POST = withAuth(
         fecha_inicio: inicio,
         fecha_fin: fin,
         motivo: motivo || null,
-      } as any,
+      },
     });
 
     await registrarAuditoria({

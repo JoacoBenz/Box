@@ -1,8 +1,9 @@
 import { withAuth, parseId } from '@/lib/api-handler';
 import { prisma } from '@/lib/prisma';
 import { verificarSegregacion, apiError } from '@/lib/permissions';
+import { checkOptimisticLock } from '@/lib/optimistic-lock';
 import { registrarAuditoria } from '@/lib/audit';
-import { crearNotificacion, notificarPorRol } from '@/lib/notifications';
+import { crearNotificacion, notificarPorRol, notificarResponsableArea } from '@/lib/notifications';
 import { getTenantConfigBool } from '@/lib/tenant-config';
 import { canUserApproveAmount } from '@/lib/approval-limits';
 import { verificarPresupuesto, verificarPresupuestoArea } from '@/lib/budget-control';
@@ -46,19 +47,9 @@ export const POST = withAuth(
       return apiError('INSUFFICIENT_AUTHORITY', amountCheck.reason!, 403);
     }
 
-    // Optimistic locking: verify no concurrent modification
     const body = await request.json().catch(() => ({}));
-    const expectedUpdatedAt = body?.updated_at;
-    if (expectedUpdatedAt) {
-      const current = solicitud.updated_at.toISOString();
-      if (current !== expectedUpdatedAt) {
-        return apiError(
-          'CONFLICT',
-          'Esta solicitud fue modificada por otro usuario. Recargá la página.',
-          409,
-        );
-      }
-    }
+    const lockError = checkOptimisticLock(body?.updated_at, solicitud.updated_at);
+    if (lockError) return lockError;
 
     // Check if tenant has users with 'compras' role to route there
     const comprasRole = await prisma.roles.findUnique({ where: { nombre: 'compras' } });
@@ -112,19 +103,14 @@ export const POST = withAuth(
     }
 
     if (solicitud.validado_por_id) {
-      const area = await prisma.areas.findFirst({
-        where: { id: solicitud.area_id, tenant_id: session.tenantId },
+      await notificarResponsableArea({
+        tenantId: session.tenantId,
+        areaId: solicitud.area_id,
+        tipo: 'solicitud_aprobada',
+        titulo: 'Solicitud aprobada',
+        mensaje: `La solicitud "${solicitud.titulo}" fue aprobada`,
+        solicitudId,
       });
-      if (area?.responsable_id) {
-        await crearNotificacion({
-          tenantId: session.tenantId,
-          destinatarioId: area.responsable_id,
-          tipo: 'solicitud_aprobada',
-          titulo: 'Solicitud aprobada',
-          mensaje: `La solicitud "${solicitud.titulo}" fue aprobada`,
-          solicitudId,
-        });
-      }
     }
 
     // Budget control warning
@@ -161,20 +147,32 @@ export const POST = withAuth(
         solicitud.area_id,
         Number(montoTotal),
       );
-      if (areaBudget.status.presupuestoMensual !== null || areaBudget.status.presupuestoAnual !== null) {
+      if (
+        areaBudget.status.presupuestoMensual !== null ||
+        areaBudget.status.presupuestoAnual !== null
+      ) {
         const pctMensual = areaBudget.status.presupuestoMensual
-          ? Math.round(((areaBudget.status.gastoMensual + Number(montoTotal)) / areaBudget.status.presupuestoMensual) * 100)
+          ? Math.round(
+              ((areaBudget.status.gastoMensual + Number(montoTotal)) /
+                areaBudget.status.presupuestoMensual) *
+                100,
+            )
           : 0;
         const pctAnual = areaBudget.status.presupuestoAnual
-          ? Math.round(((areaBudget.status.gastoAnual + Number(montoTotal)) / areaBudget.status.presupuestoAnual) * 100)
+          ? Math.round(
+              ((areaBudget.status.gastoAnual + Number(montoTotal)) /
+                areaBudget.status.presupuestoAnual) *
+                100,
+            )
           : 0;
         const pct = Math.max(pctMensual, pctAnual);
         if (pct >= 70) {
           presupuestoAlerta = {
             porcentaje: pct,
-            mensaje: pct >= 100
-              ? `Al aprobar, el presupuesto del área quedará excedido (${pct}%)`
-              : `Al aprobar, el presupuesto del área quedará al ${pct}%`,
+            mensaje:
+              pct >= 100
+                ? `Al aprobar, el presupuesto del área quedará excedido (${pct}%)`
+                : `Al aprobar, el presupuesto del área quedará al ${pct}%`,
           };
         }
       }

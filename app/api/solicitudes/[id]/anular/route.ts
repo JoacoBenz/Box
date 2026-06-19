@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/lib/api-handler';
 import { verificarRol, apiError } from '@/lib/permissions';
+import { checkOptimisticLock } from '@/lib/optimistic-lock';
 import { registrarAuditoria } from '@/lib/audit';
-import { crearNotificacion } from '@/lib/notifications';
-import { prisma } from '@/lib/prisma';
+import { crearNotificacion, notificarResponsableArea } from '@/lib/notifications';
 
 // States that can be cancelled
 const ESTADOS_ANULABLES = ['enviada', 'validada', 'aprobada', 'en_compras', 'pago_programado'];
@@ -41,18 +41,8 @@ export const POST = withAuth({}, async (request, { session, db, ip }, params) =>
     return apiError('FORBIDDEN', 'Solo el solicitante, un director o un admin pueden anular', 403);
   }
 
-  // Optimistic locking
-  const expectedUpdatedAt = body.updated_at;
-  if (expectedUpdatedAt) {
-    const current = solicitud.updated_at.toISOString();
-    if (current !== expectedUpdatedAt) {
-      return apiError(
-        'CONFLICT',
-        'Esta solicitud fue modificada por otro usuario. Recargá la página.',
-        409,
-      );
-    }
-  }
+  const lockError = checkOptimisticLock(body.updated_at, solicitud.updated_at);
+  if (lockError) return lockError;
 
   const estadoAnterior = solicitud.estado;
 
@@ -78,24 +68,15 @@ export const POST = withAuth({}, async (request, { session, db, ip }, params) =>
 
   // Notify responsable if solicitud was already validated/approved
   if (['validada', 'aprobada', 'en_compras', 'pago_programado'].includes(estadoAnterior)) {
-    const area = await prisma.areas.findFirst({
-      where: { id: solicitud.area_id, tenant_id: session.tenantId },
-      select: { responsable_id: true },
+    await notificarResponsableArea({
+      tenantId: session.tenantId,
+      areaId: solicitud.area_id,
+      tipo: 'solicitud_anulada',
+      titulo: `Solicitud ${solicitud.numero} anulada`,
+      mensaje: `"${solicitud.titulo}" fue anulada por ${session.nombre}. Motivo: ${motivo}`,
+      solicitudId,
+      excludeIds: [session.userId, solicitud.solicitante_id],
     });
-    if (
-      area?.responsable_id &&
-      area.responsable_id !== session.userId &&
-      area.responsable_id !== solicitud.solicitante_id
-    ) {
-      await crearNotificacion({
-        tenantId: session.tenantId,
-        destinatarioId: area.responsable_id,
-        tipo: 'solicitud_anulada',
-        titulo: `Solicitud ${solicitud.numero} anulada`,
-        mensaje: `"${solicitud.titulo}" fue anulada por ${session.nombre}. Motivo: ${motivo}`,
-        solicitudId,
-      });
-    }
   }
 
   await registrarAuditoria({

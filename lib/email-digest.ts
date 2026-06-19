@@ -114,7 +114,7 @@ export function buildEmailHtml(
 
       return `
       <tr style="border-bottom: 1px solid #e5e7eb;">
-        <td style="padding: 12px 8px; font-weight: 600; color: #4f46e5; font-size: 13px; white-space: nowrap;">
+        <td style="padding: 12px 8px; font-weight: 600; color: #0891b2; font-size: 13px; white-space: nowrap;">
           ${sol.numero}
           ${urgente ? `<br><span style="color: #dc2626; font-size: 11px; font-weight: 700;">⏰ ${diasHabiles}d</span>` : ''}
         </td>
@@ -146,7 +146,7 @@ export function buildEmailHtml(
     <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
     <body style="margin: 0; padding: 0; background: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
       <div style="max-width: 640px; margin: 0 auto; padding: 24px 16px;">
-        <div style="background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 16px 16px 0 0; padding: 24px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #00C2CB, #0891b2); border-radius: 16px 16px 0 0; padding: 24px; text-align: center;">
           <div style="display: inline-block; background: rgba(255,255,255,0.2); border-radius: 12px; padding: 8px 12px; margin-bottom: 12px;">
             <span style="font-size: 20px;">📦</span>
             <span style="color: white; font-weight: 800; font-size: 16px; margin-left: 4px;">Box</span>
@@ -180,7 +180,7 @@ export function buildEmailHtml(
                   <td colspan="3" style="padding: 14px 8px; font-weight: 700; font-size: 15px; color: #374151;">
                     Total estimado
                   </td>
-                  <td style="padding: 14px 8px; text-align: right; font-weight: 800; font-size: 16px; color: #4f46e5;">
+                  <td style="padding: 14px 8px; text-align: right; font-weight: 800; font-size: 16px; color: #0891b2;">
                     ${formatMonto(montoTotal)}
                   </td>
                 </tr>
@@ -189,7 +189,7 @@ export function buildEmailHtml(
           </div>
           <div style="text-align: center; margin-top: 28px;">
             <a href="${appUrl}${config.ctaPath}"
-               style="display: inline-block; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; padding: 14px 40px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 15px; box-shadow: 0 4px 12px rgba(79,70,229,0.3);">
+               style="display: inline-block; background: linear-gradient(135deg, #00C2CB, #0891b2); color: white; padding: 14px 40px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 15px; box-shadow: 0 4px 12px rgba(0,194,203,0.3);">
               ${config.ctaLabel} →
             </a>
           </div>
@@ -198,7 +198,7 @@ export function buildEmailHtml(
               Este email fue enviado automáticamente por Box — Gestión de Compras.
             </p>
             <p style="color: #9ca3af; font-size: 12px; margin: 4px 0 0;">
-              Podés desactivar estos recordatorios desde tu <a href="${appUrl}/perfil" style="color: #4f46e5;">perfil</a>.
+              Podés desactivar estos recordatorios desde tu <a href="${appUrl}/perfil" style="color: #0891b2;">perfil</a>.
             </p>
           </div>
         </div>

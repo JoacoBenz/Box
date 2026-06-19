@@ -1,8 +1,8 @@
 import { withAuth, validateBody, parseId } from '@/lib/api-handler';
-import { prisma } from '@/lib/prisma';
 import { verificarSegregacion, apiError } from '@/lib/permissions';
+import { checkOptimisticLock } from '@/lib/optimistic-lock';
 import { registrarAuditoria } from '@/lib/audit';
-import { crearNotificacion } from '@/lib/notifications';
+import { crearNotificacion, notificarResponsableArea } from '@/lib/notifications';
 import { rechazoSchema } from '@/lib/validators';
 import { getTenantConfigBool } from '@/lib/tenant-config';
 
@@ -32,18 +32,8 @@ export const POST = withAuth(
     const validation = validateBody(rechazoSchema, body);
     if (!validation.success) return validation.response;
 
-    // Optimistic locking: verify no concurrent modification
-    const expectedUpdatedAt = body?.updated_at;
-    if (expectedUpdatedAt) {
-      const current = solicitud.updated_at.toISOString();
-      if (current !== expectedUpdatedAt) {
-        return apiError(
-          'CONFLICT',
-          'Esta solicitud fue modificada por otro usuario. Recargá la página.',
-          409,
-        );
-      }
-    }
+    const lockError = checkOptimisticLock(body?.updated_at, solicitud.updated_at);
+    if (lockError) return lockError;
 
     await db.solicitudes.update({
       where: { id: solicitudId },
@@ -64,19 +54,15 @@ export const POST = withAuth(
       solicitudId,
     });
 
-    const area = await prisma.areas.findFirst({
-      where: { id: solicitud.area_id, tenant_id: session.tenantId },
+    await notificarResponsableArea({
+      tenantId: session.tenantId,
+      areaId: solicitud.area_id,
+      tipo: 'solicitud_rechazada',
+      titulo: 'Solicitud rechazada',
+      mensaje: `"${solicitud.titulo}" fue rechazada. Motivo: ${validation.data.motivo}`,
+      solicitudId,
+      excludeIds: [solicitud.solicitante_id],
     });
-    if (area?.responsable_id && area.responsable_id !== solicitud.solicitante_id) {
-      await crearNotificacion({
-        tenantId: session.tenantId,
-        destinatarioId: area.responsable_id,
-        tipo: 'solicitud_rechazada',
-        titulo: 'Solicitud rechazada',
-        mensaje: `"${solicitud.titulo}" fue rechazada. Motivo: ${validation.data.motivo}`,
-        solicitudId,
-      });
-    }
 
     await registrarAuditoria({
       tenantId: session.tenantId,

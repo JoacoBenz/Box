@@ -1,5 +1,5 @@
 import { withAuth, validateBody, parseId } from '@/lib/api-handler';
-import { prisma } from '@/lib/prisma';
+import { checkOptimisticLock } from '@/lib/optimistic-lock';
 import {
   verificarRol,
   verificarSegregacion,
@@ -7,7 +7,7 @@ import {
   apiError,
 } from '@/lib/permissions';
 import { registrarAuditoria } from '@/lib/audit';
-import { crearNotificacion } from '@/lib/notifications';
+import { crearNotificacion, notificarResponsableArea } from '@/lib/notifications';
 import { devolucionSchema } from '@/lib/validators';
 
 export const POST = withAuth({}, async (request, { session, db, ip }, params) => {
@@ -23,18 +23,8 @@ export const POST = withAuth({}, async (request, { session, db, ip }, params) =>
   const solicitud = await db.solicitudes.findFirst({ where: { id: solicitudId } });
   if (!solicitud) return apiError('NOT_FOUND', 'No encontrada', 404);
 
-  // Optimistic locking: verify no concurrent modification
-  const expectedUpdatedAt = body?.updated_at;
-  if (expectedUpdatedAt) {
-    const current = solicitud.updated_at.toISOString();
-    if (current !== expectedUpdatedAt) {
-      return apiError(
-        'CONFLICT',
-        'Esta solicitud fue modificada por otro usuario. Recargá la página.',
-        409,
-      );
-    }
-  }
+  const lockError = checkOptimisticLock(body?.updated_at, solicitud.updated_at);
+  if (lockError) return lockError;
 
   if (origen === 'responsable') {
     if (!verificarRol(session.roles, ['responsable_area'])) {
@@ -79,19 +69,14 @@ export const POST = withAuth({}, async (request, { session, db, ip }, params) =>
       data: { estado: 'devuelta_dir', observaciones_director: validation.data.observaciones },
     });
 
-    const area = await prisma.areas.findFirst({
-      where: { id: solicitud.area_id, tenant_id: session.tenantId },
+    await notificarResponsableArea({
+      tenantId: session.tenantId,
+      areaId: solicitud.area_id,
+      tipo: 'solicitud_devuelta_dir',
+      titulo: 'Solicitud devuelta por Dirección',
+      mensaje: `${session.nombre}: ${validation.data.observaciones}`,
+      solicitudId,
     });
-    if (area?.responsable_id) {
-      await crearNotificacion({
-        tenantId: session.tenantId,
-        destinatarioId: area.responsable_id,
-        tipo: 'solicitud_devuelta_dir',
-        titulo: 'Solicitud devuelta por Dirección',
-        mensaje: `${session.nombre}: ${validation.data.observaciones}`,
-        solicitudId,
-      });
-    }
     await crearNotificacion({
       tenantId: session.tenantId,
       destinatarioId: solicitud.solicitante_id,

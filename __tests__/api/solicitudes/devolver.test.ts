@@ -42,6 +42,7 @@ vi.mock('@/lib/notifications', () => ({
   crearNotificacion: vi.fn(),
   notificarPorRol: vi.fn(),
   notificarAdmins: vi.fn(),
+  notificarResponsableArea: vi.fn(),
 }));
 vi.mock('@/lib/logger', () => ({ logApiError: vi.fn() }));
 vi.mock('@/lib/tenant-override', () => ({

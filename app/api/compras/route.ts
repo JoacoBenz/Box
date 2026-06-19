@@ -179,31 +179,47 @@ export const POST = withAuth(
       }
     }
 
-    const compra = await prisma.$transaction(async (tx) => {
-      const nuevaCompra = await tx.compras.create({
-        data: {
-          tenant_id: session.tenantId,
-          solicitud_id: parsed.data.solicitud_id,
-          ejecutado_por_id: session.userId,
-          proveedor_id: parsed.data.proveedor_id ?? solicitud.proveedor_id ?? null,
-          proveedor_nombre: parsed.data.proveedor_nombre,
-          proveedor_detalle: parsed.data.proveedor_detalle ?? null,
-          fecha_compra: new Date(parsed.data.fecha_compra),
-          monto_total: parsed.data.monto_total,
-          medio_pago: parsed.data.medio_pago,
-          referencia_bancaria: parsed.data.referencia_bancaria ?? null,
-          numero_factura: parsed.data.numero_factura ?? null,
-          observaciones: parsed.data.observaciones ?? null,
-        },
-      });
+    let compra;
+    try {
+      compra = await prisma.$transaction(async (tx) => {
+        const nuevaCompra = await tx.compras.create({
+          data: {
+            tenant_id: session.tenantId,
+            solicitud_id: parsed.data.solicitud_id,
+            ejecutado_por_id: session.userId,
+            proveedor_id: parsed.data.proveedor_id ?? solicitud.proveedor_id ?? null,
+            proveedor_nombre: parsed.data.proveedor_nombre,
+            proveedor_detalle: parsed.data.proveedor_detalle ?? null,
+            fecha_compra: new Date(parsed.data.fecha_compra),
+            monto_total: parsed.data.monto_total,
+            medio_pago: parsed.data.medio_pago,
+            referencia_bancaria: parsed.data.referencia_bancaria ?? null,
+            numero_factura: parsed.data.numero_factura ?? null,
+            observaciones: parsed.data.observaciones ?? null,
+          },
+        });
 
-      await tx.solicitudes.update({
-        where: { id: parsed.data.solicitud_id },
-        data: { estado: 'abonada' },
-      });
+        await tx.solicitudes.update({
+          where: { id: parsed.data.solicitud_id },
+          data: { estado: 'abonada' },
+        });
 
-      return nuevaCompra;
-    });
+        return nuevaCompra;
+      });
+    } catch (err: any) {
+      if (err?.code === 'P2002' && parsed.data.numero_factura) {
+        return Response.json(
+          {
+            error: {
+              code: 'DUPLICATE',
+              message: `Ya existe una compra con la factura ${parsed.data.numero_factura}`,
+            },
+          },
+          { status: 409 },
+        );
+      }
+      throw err;
+    }
 
     // Upload file after transaction
     let uploadWarning: string | null = null;
