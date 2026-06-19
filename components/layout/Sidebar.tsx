@@ -26,6 +26,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import type { RolNombre } from '@/types';
 import { useAdminTenant } from '@/components/admin/TenantSelector';
 import { useTheme } from '@/components/ThemeProvider';
+import { BoxLogo } from './BoxLogo';
 
 const { Sider } = Layout;
 
@@ -56,7 +57,8 @@ export function Sidebar({
   drawerOpen,
   onDrawerClose,
 }: SidebarProps) {
-  const { tokens } = useTheme();
+  const { tokens, mode } = useTheme();
+  const logoVariant = mode === 'dark' ? 'dark' : 'light';
   const pathname = usePathname();
   const router = useRouter();
   const [pulse, setPulse] = useState(true);
@@ -317,17 +319,7 @@ export function Sidebar({
               borderBottom: `1px solid ${tokens.sidebarBorder}`,
             }}
           >
-            <span style={{ fontSize: 24 }}>📦</span>
-            <span
-              style={{
-                fontWeight: 700,
-                fontSize: 15,
-                color: tokens.textPrimary,
-                letterSpacing: '-0.3px',
-              }}
-            >
-              Box
-            </span>
+            <BoxLogo collapsed={false} variant={logoVariant} height={30} />
           </div>
           {isAdmin && (
             <div style={{ padding: '12px 12px 0' }}>
@@ -386,24 +378,7 @@ export function Sidebar({
               borderBottom: `1px solid ${tokens.sidebarBorder}`,
             }}
           >
-            <span
-              className={pulse ? 'sidebar-icon-pulse' : undefined}
-              style={{ fontSize: 24, lineHeight: 1, flexShrink: 0 }}
-            >
-              📦
-            </span>
-            {!collapsed && (
-              <span
-                style={{
-                  fontWeight: 700,
-                  fontSize: 15,
-                  color: tokens.textPrimary,
-                  letterSpacing: '-0.3px',
-                }}
-              >
-                Box
-              </span>
-            )}
+            <BoxLogo collapsed={collapsed} variant={logoVariant} pulse={pulse} height={30} />
           </div>
 
           {/* Admin org selector */}

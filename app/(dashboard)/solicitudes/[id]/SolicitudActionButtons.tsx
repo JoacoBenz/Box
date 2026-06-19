@@ -384,10 +384,7 @@ export default function SolicitudActionButtons({
           )}
 
           {canProgramarPago && (
-            <Button
-              style={{ background: '#7c3aed', borderColor: '#7c3aed', color: '#fff' }}
-              onClick={() => setProgramarOpen(true)}
-            >
+            <Button type="primary" onClick={() => setProgramarOpen(true)}>
               Programar Pago
             </Button>
           )}
