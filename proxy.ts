@@ -23,6 +23,7 @@ const PUBLIC_ROUTES = [
   '/api/unirse',
   '/api/health',
   '/api/mercadopago/webhook',
+  '/api/cron', // se autoprotege con CRON_SECRET (lib/cron-auth); sin esto el proxy redirige a Vercel Cron
 ];
 
 /**

@@ -44,6 +44,22 @@ describe('isCronAuthorized', () => {
     process.env.CRON_SECRET = 'topsecret';
     expect(isCronAuthorized(cronRequest('topsecret'))).toBe(true);
   });
+
+  it('accepts Vercel Cron Authorization: Bearer header', () => {
+    process.env.CRON_SECRET = 'topsecret';
+    const req = new Request('http://localhost/api/cron/alertas', {
+      headers: { authorization: 'Bearer topsecret' },
+    }) as never;
+    expect(isCronAuthorized(req)).toBe(true);
+  });
+
+  it('rejects a wrong Bearer token', () => {
+    process.env.CRON_SECRET = 'topsecret';
+    const req = new Request('http://localhost/api/cron/alertas', {
+      headers: { authorization: 'Bearer wrong' },
+    }) as never;
+    expect(isCronAuthorized(req)).toBe(false);
+  });
 });
 
 // ── verifyMpSignature: anti-replay ──

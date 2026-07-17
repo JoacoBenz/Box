@@ -80,3 +80,6 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'Error interno' }, { status: 500 });
   }
 }
+
+// Vercel Cron invoca con GET; misma logica, misma auth.
+export { POST as GET };
