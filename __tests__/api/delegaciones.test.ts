@@ -98,6 +98,27 @@ describe('POST /api/delegaciones', () => {
     const res = await POST(req);
     expect(res.status).toBe(201);
   });
+
+  it('rejects a delegado that does not exist in the tenant', async () => {
+    mockDb.usuarios.findFirst.mockResolvedValue(null);
+    const futureStart = new Date();
+    futureStart.setDate(futureStart.getDate() + 1);
+    const futureEnd = new Date();
+    futureEnd.setDate(futureEnd.getDate() + 7);
+    const req = new Request('http://localhost/api/delegaciones', {
+      method: 'POST',
+      body: JSON.stringify({
+        delegado_id: 999,
+        rol_delegado: 'director',
+        fecha_inicio: futureStart.toISOString(),
+        fecha_fin: futureEnd.toISOString(),
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    expect(mockDb.delegaciones.create).not.toHaveBeenCalled();
+  });
 });
 
 describe('PATCH /api/delegaciones/[id]', () => {
