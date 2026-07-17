@@ -1,3 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <text x="50" y="50" font-size="80" text-anchor="middle" dominant-baseline="central">📦</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="9.6 8.5 28 28" fill="none">
+  <!-- "B" glyph from the Box wordmark (components/layout/BoxLogo.tsx) -->
+  <rect x="13" y="11" width="3" height="26" fill="#0f172a" />
+  <path d="M16 11 L27 11 L33 17.5 L27 24 L16 24" stroke="#0284c7" stroke-width="3" fill="none" />
+  <path d="M16 24 L28 24 L34 30.5 L28 37 L16 37" stroke="#0284c7" stroke-width="3" fill="none" />
+  <circle cx="14.5" cy="11" r="2.8" fill="#0f172a" />
 </svg>
