@@ -49,7 +49,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       });
 
       if (body.estado === 'activo' && existing.email_contacto) {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.box.com';
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://box.bexovar.com.ar';
         sendEmail({
           to: existing.email_contacto,
           subject: 'Tu organización fue aprobada — Gestión de Compras',

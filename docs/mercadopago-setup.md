@@ -64,7 +64,7 @@ curl -X POST https://api.mercadopago.com/preapproval_plan \
       "transaction_amount": 110000,
       "currency_id": "ARS"
     },
-    "back_url": "https://box-three-zeta.vercel.app/perfil?tab=facturacion"
+    "back_url": "https://box.bexovar.com.ar/api/mercadopago/return"
   }'
 ```
 
