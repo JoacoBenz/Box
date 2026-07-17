@@ -80,6 +80,11 @@ export function verifyMpSignature(args: {
   const v1 = parts.v1;
   if (!ts || !v1) return false;
 
+  // Anti-replay: rechazar notificaciones firmadas hace más de 5 minutos.
+  // MP manda ts en milisegundos epoch.
+  const ageMs = Math.abs(Date.now() - Number(ts));
+  if (!Number.isFinite(ageMs) || ageMs > 5 * 60 * 1000) return false;
+
   const manifest = `id:${dataId};request-id:${requestIdHeader};ts:${ts};`;
   const expected = crypto.createHmac('sha256', secret).update(manifest).digest('hex');
 

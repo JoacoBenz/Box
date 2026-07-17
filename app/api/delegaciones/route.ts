@@ -54,6 +54,11 @@ export const POST = withAuth(
 
     const db = tenantPrisma(session.tenantId);
 
+    const delegado = await db.usuarios.findFirst({ where: { id: delegado_id, activo: true } });
+    if (!delegado) {
+      return apiError('VALIDATION', 'El usuario delegado no existe en tu organización', 400);
+    }
+
     const delegacion = await db.delegaciones.create({
       data: {
         tenant_id: session.tenantId,

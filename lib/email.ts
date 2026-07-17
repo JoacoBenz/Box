@@ -18,6 +18,13 @@ function getTransporter(): nodemailer.Transporter {
 
 const EMAIL_FROM = process.env.EMAIL_FROM ?? `Box <${process.env.GMAIL_USER ?? 'noreply@box.com'}>`;
 
+/** Escapa input de usuario antes de interpolarlo en HTML de emails. */
+export const escapeHtml = (s: string) =>
+  s.replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+  );
+
 export async function sendEmail({
   to,
   subject,

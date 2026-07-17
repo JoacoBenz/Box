@@ -10,7 +10,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
 import { getTenantConfigBool, getTenantConfig } from './tenant-config';
 import type { RolNombre } from '@/types';
-import { checkRateLimit } from './rate-limit';
+import { checkRateLimitDb } from './rate-limit';
 import { isAccountLocked, recordFailedLogin, clearFailedAttempts } from './account-lockout';
 import { logLoginFailed, logAccountLocked, logRateLimited, logLoginSuccess } from './logger';
 import { registrarAuditoria } from './audit';
@@ -71,7 +71,9 @@ export async function authorizeCredentials(
   }
 
   // Check rate limit
-  const rateLimit = checkRateLimit(`login:${email}`, 10, 60_000);
+  // DB-backed: los contadores en memoria no sirven en serverless (cada instancia
+  // tiene los suyos). Mismo mecanismo que forgot-password/registro.
+  const rateLimit = await checkRateLimitDb(`login:${email}`, 10, 60_000);
   if (!rateLimit.allowed) {
     logRateLimited(`login:${email}`, 'unknown');
     return null;

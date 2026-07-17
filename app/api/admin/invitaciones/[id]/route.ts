@@ -11,11 +11,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const { id } = await params;
-    const inv = await prisma.codigos_invitacion.findUnique({ where: { id: parseInt(id) } });
+    // Scope al tenant del caller — sin esto cualquier admin/director puede togglear
+    // códigos de otra organización (IDOR). super_admin opera cross-tenant.
+    const inv = await prisma.codigos_invitacion.findFirst({
+      where: {
+        id: parseInt(id),
+        ...(verificarRol(session.roles, ['super_admin']) ? {} : { tenant_id: session.tenantId }),
+      },
+    });
     if (!inv) return apiError('NOT_FOUND', 'Código no encontrado', 404);
 
     const updated = await prisma.codigos_invitacion.update({
-      where: { id: parseInt(id) },
+      where: { id: inv.id },
       data: { activo: !inv.activo },
     });
 

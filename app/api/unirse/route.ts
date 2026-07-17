@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+﻿import { NextRequest } from 'next/server';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
@@ -6,7 +6,7 @@ import { unirseSchema } from '@/lib/validators';
 import { checkRateLimitDb } from '@/lib/rate-limit';
 import { notificarPorRol } from '@/lib/notifications';
 import { registrarAuditoria, getClientIp } from '@/lib/audit';
-import { sendEmail } from '@/lib/email';
+import { sendEmail, escapeHtml } from '@/lib/email';
 import { logApiError } from '@/lib/logger';
 
 function normalizar(s: string): string {
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
         {
           error: {
             code: 'RATE_LIMITED',
-            message: 'Demasiados intentos. Intentá de nuevo más tarde.',
+            message: 'Demasiados intentos. IntentÃ¡ de nuevo mÃ¡s tarde.',
           },
         },
         { status: 429 },
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         {
           error: {
             code: 'VALIDATION_ERROR',
-            message: 'Datos inválidos',
+            message: 'Datos invÃ¡lidos',
             details: result.error.issues.map((i) => ({
               field: i.path.join('.'),
               message: i.message,
@@ -63,13 +63,13 @@ export async function POST(request: NextRequest) {
       });
       if (!inv) {
         return Response.json(
-          { error: { code: 'NOT_FOUND', message: 'Código de invitación inválido o expirado' } },
+          { error: { code: 'NOT_FOUND', message: 'CÃ³digo de invitaciÃ³n invÃ¡lido o expirado' } },
           { status: 404 },
         );
       }
       if (inv.max_usos && inv.usos >= inv.max_usos) {
         return Response.json(
-          { error: { code: 'CONFLICT', message: 'Este código ya alcanzó el máximo de usos' } },
+          { error: { code: 'CONFLICT', message: 'Este cÃ³digo ya alcanzÃ³ el mÃ¡ximo de usos' } },
           { status: 409 },
         );
       }
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       const domain = email.split('@')[1]?.toLowerCase();
       if (!domain) {
         return Response.json(
-          { error: { code: 'VALIDATION_ERROR', message: 'Email inválido' } },
+          { error: { code: 'VALIDATION_ERROR', message: 'Email invÃ¡lido' } },
           { status: 400 },
         );
       }
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
           error: {
             code: 'NOT_FOUND',
             message:
-              'No se encontró una organización para tu email. Pedile un código de invitación a tu organización.',
+              'No se encontrÃ³ una organizaciÃ³n para tu email. Pedile un cÃ³digo de invitaciÃ³n a tu organizaciÃ³n.',
           },
         },
         { status: 404 },
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     });
     if (!tenant) {
       return Response.json(
-        { error: { code: 'NOT_FOUND', message: 'La organización no está activa' } },
+        { error: { code: 'NOT_FOUND', message: 'La organizaciÃ³n no estÃ¡ activa' } },
         { status: 404 },
       );
     }
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
         {
           error: {
             code: 'CONFLICT',
-            message: 'Ya existe un usuario con este email en la organización',
+            message: 'Ya existe un usuario con este email en la organizaciÃ³n',
           },
         },
         { status: 409 },
@@ -215,19 +215,19 @@ export async function POST(request: NextRequest) {
     const verifyUrl = `${appUrl}/verificar-email?token=${token}&tipo=unirse`;
     await sendEmail({
       to: email,
-      subject: 'Verificá tu email — Box',
+      subject: 'VerificÃ¡ tu email â€” Box',
       html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-          <h2>¡Hola ${nombre}!</h2>
+          <h2>Â¡Hola ${escapeHtml(nombre)}!</h2>
           <p>Gracias por unirte a <strong>${tenant!.nombre}</strong>.</p>
-          <p>Para activar tu cuenta, hacé click en el siguiente enlace:</p>
+          <p>Para activar tu cuenta, hacÃ© click en el siguiente enlace:</p>
           <p style="margin: 24px 0;">
             <a href="${verifyUrl}" style="background: #00C2CB; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
               Verificar email
             </a>
           </p>
           <p style="color: #666; font-size: 14px;">Este enlace expira en 24 horas.</p>
-          <p style="color: #666; font-size: 14px;">Si no creaste esta cuenta, ignorá este email.</p>
+          <p style="color: #666; font-size: 14px;">Si no creaste esta cuenta, ignorÃ¡ este email.</p>
         </div>
       `,
     });
@@ -237,8 +237,8 @@ export async function POST(request: NextRequest) {
       await notificarPorRol(
         tenantId,
         'admin',
-        `Nuevo empleado sugiere área "${area_texto}"`,
-        `${nombre} (${email}) se registró y sugirió el área "${area_texto}". Podés crearla desde Administración > Áreas y luego asignar al usuario.`,
+        `Nuevo empleado sugiere Ã¡rea "${area_texto}"`,
+        `${nombre} (${email}) se registrÃ³ y sugiriÃ³ el Ã¡rea "${area_texto}". PodÃ©s crearla desde AdministraciÃ³n > Ãreas y luego asignar al usuario.`,
       );
     }
 
@@ -261,7 +261,7 @@ export async function POST(request: NextRequest) {
     return Response.json(
       {
         message:
-          'Te enviamos un email de verificación. Revisá tu bandeja de entrada para activar tu cuenta.',
+          'Te enviamos un email de verificaciÃ³n. RevisÃ¡ tu bandeja de entrada para activar tu cuenta.',
       },
       { status: 201 },
     );

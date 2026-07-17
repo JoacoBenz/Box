@@ -11,6 +11,7 @@ const { mockSession, mockDb } = vi.hoisted(() => {
   };
   const mockDb = {
     delegaciones: { findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
+    usuarios: { findFirst: vi.fn() },
   };
   return { mockSession, mockDb };
 });
@@ -77,6 +78,7 @@ describe('POST /api/delegaciones', () => {
   });
 
   it('creates a delegation', async () => {
+    mockDb.usuarios.findFirst.mockResolvedValue({ id: 2, activo: true });
     mockDb.delegaciones.create.mockResolvedValue({ id: 1 });
     const futureStart = new Date();
     futureStart.setDate(futureStart.getDate() + 1);

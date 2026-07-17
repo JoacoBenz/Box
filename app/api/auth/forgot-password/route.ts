@@ -1,8 +1,8 @@
-import { NextRequest } from 'next/server';
+﻿import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { checkRateLimitDb } from '@/lib/rate-limit';
 import { generateToken, hashToken } from '@/lib/tokens';
-import { sendEmail } from '@/lib/email';
+import { sendEmail, escapeHtml } from '@/lib/email';
 import { logApiError } from '@/lib/logger';
 import { z } from 'zod';
 
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
       return Response.json(
-        { error: { code: 'VALIDATION_ERROR', message: 'Email inválido' } },
+        { error: { code: 'VALIDATION_ERROR', message: 'Email invÃ¡lido' } },
         { status: 400 },
       );
     }
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       // Still return success to not reveal rate limiting per email
       return Response.json({
         message:
-          'Si el email está registrado, te enviamos un enlace para restablecer tu contraseña.',
+          'Si el email estÃ¡ registrado, te enviamos un enlace para restablecer tu contraseÃ±a.',
       });
     }
 
@@ -54,36 +54,38 @@ export async function POST(request: NextRequest) {
       if (usuario.password_hash) {
         await sendEmail({
           to: email,
-          subject: 'Restablecé tu contraseña — Gestión de Compras',
+          subject: 'RestablecÃ© tu contraseÃ±a â€” GestiÃ³n de Compras',
           html: `
-            <h2>Hola ${usuario.nombre},</h2>
-            <p>Recibimos una solicitud para restablecer tu contraseña.</p>
-            <p><a href="${resetUrl}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Restablecer contraseña</a></p>
+            <h2>Hola ${escapeHtml(usuario.nombre)},</h2>
+            <p>Recibimos una solicitud para restablecer tu contraseÃ±a.</p>
+            <p><a href="${resetUrl}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Restablecer contraseÃ±a</a></p>
             <p>Este enlace expira en 1 hora.</p>
-            <p>Si no solicitaste esto, ignorá este email.</p>
+            <p>Si no solicitaste esto, ignorÃ¡ este email.</p>
           `,
         });
       } else {
         await sendEmail({
           to: email,
-          subject: 'Solicitud de restablecimiento — Gestión de Compras',
+          subject: 'Solicitud de restablecimiento â€” GestiÃ³n de Compras',
           html: `
-            <h2>Hola ${usuario.nombre},</h2>
-            <p>Recibimos una solicitud para restablecer tu contraseña, pero tu cuenta usa inicio de sesión con Google o Microsoft (SSO).</p>
-            <p>No necesitás una contraseña — ingresá usando el botón de Google o Microsoft en la página de login.</p>
-            <p>Si no solicitaste esto, ignorá este email.</p>
+            <h2>Hola ${escapeHtml(usuario.nombre)},</h2>
+            <p>Recibimos una solicitud para restablecer tu contraseÃ±a, pero tu cuenta usa inicio de sesiÃ³n con Google o Microsoft (SSO).</p>
+            <p>No necesitÃ¡s una contraseÃ±a â€” ingresÃ¡ usando el botÃ³n de Google o Microsoft en la pÃ¡gina de login.</p>
+            <p>Si no solicitaste esto, ignorÃ¡ este email.</p>
           `,
         });
       }
     }
 
     return Response.json({
-      message: 'Si el email está registrado, te enviamos un enlace para restablecer tu contraseña.',
+      message:
+        'Si el email estÃ¡ registrado, te enviamos un enlace para restablecer tu contraseÃ±a.',
     });
   } catch (error) {
     logApiError('/api/auth/forgot-password', 'POST', error);
     return Response.json({
-      message: 'Si el email está registrado, te enviamos un enlace para restablecer tu contraseña.',
+      message:
+        'Si el email estÃ¡ registrado, te enviamos un enlace para restablecer tu contraseÃ±a.',
     });
   }
 }

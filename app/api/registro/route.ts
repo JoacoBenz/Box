@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+﻿import { NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { registroSchema } from '@/lib/validators';
@@ -6,7 +6,7 @@ import { checkRateLimitDb } from '@/lib/rate-limit';
 import { getClientIp } from '@/lib/audit';
 import { logApiError } from '@/lib/logger';
 import { generateToken, hashToken } from '@/lib/tokens';
-import { sendEmail } from '@/lib/email';
+import { sendEmail, escapeHtml } from '@/lib/email';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
         {
           error: {
             code: 'RATE_LIMITED',
-            message: 'Demasiados intentos. Intentá de nuevo más tarde.',
+            message: 'Demasiados intentos. IntentÃ¡ de nuevo mÃ¡s tarde.',
           },
         },
         { status: 429 },
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
         {
           error: {
             code: 'VALIDATION_ERROR',
-            message: 'Datos inválidos',
+            message: 'Datos invÃ¡lidos',
             details: result.error.issues.map((i) => ({
               field: i.path.join('.'),
               message: i.message,
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     const existingUser = await prisma.usuarios.findFirst({ where: { email } });
     if (existingUser) {
       return Response.json(
-        { error: { code: 'CONFLICT', message: 'Este email ya está registrado' } },
+        { error: { code: 'CONFLICT', message: 'Este email ya estÃ¡ registrado' } },
         { status: 409 },
       );
     }
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
           error: {
             code: 'CONFLICT',
             message:
-              'Ya hay un registro pendiente de verificación para este email. Revisá tu bandeja de entrada.',
+              'Ya hay un registro pendiente de verificaciÃ³n para este email. RevisÃ¡ tu bandeja de entrada.',
           },
         },
         { status: 409 },
@@ -91,18 +91,18 @@ export async function POST(request: NextRequest) {
 
     await sendEmail({
       to: email,
-      subject: 'Verificá tu email — Gestión de Compras',
+      subject: 'VerificÃ¡ tu email â€” GestiÃ³n de Compras',
       html: `
-        <h2>Hola ${nombreUsuario},</h2>
+        <h2>Hola ${escapeHtml(nombreUsuario)},</h2>
         <p>Gracias por registrar <strong>${nombreOrganizacion}</strong>.</p>
-        <p>Para completar el registro, verificá tu email:</p>
+        <p>Para completar el registro, verificÃ¡ tu email:</p>
         <p><a href="${verifyUrl}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Verificar email</a></p>
         <p>Este enlace expira en 24 horas.</p>
       `,
     });
 
     return Response.json(
-      { message: 'Te enviamos un email de verificación. Revisá tu bandeja de entrada.' },
+      { message: 'Te enviamos un email de verificaciÃ³n. RevisÃ¡ tu bandeja de entrada.' },
       { status: 201 },
     );
   } catch (error) {

@@ -10,12 +10,12 @@ import {
   shouldSendDigest,
   ROLE_CONFIGS,
 } from '@/lib/email-digest';
+import { isCronAuthorized } from '@/lib/cron-auth';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 export async function POST(request: NextRequest) {
-  const secret = request.headers.get('x-cron-secret');
-  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
+  if (!isCronAuthorized(request)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

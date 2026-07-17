@@ -53,11 +53,36 @@ const ROLE_ROUTES: Record<string, string[]> = {
 /** Super-admins manage the platform tenant and don't have a billing sub. */
 const PLATFORM_TENANT_ROLE = 'super_admin';
 
+// ponytail: CSP con 'unsafe-inline' (AntD y Next inyectan inline styles/scripts);
+// migrar a nonces si algún día hace falta CSP estricta.
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
+  "connect-src 'self' https:",
+  "frame-ancestors 'none'",
+].join('; ');
+
+function withSecurityHeaders(response: NextResponse) {
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  response.headers.set('Content-Security-Policy', CSP);
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  return response;
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
-    return NextResponse.next();
+    // Las rutas públicas (login, registro...) también necesitan los headers.
+    return withSecurityHeaders(NextResponse.next());
   }
 
   const token = await getToken({
@@ -104,19 +129,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  const response = NextResponse.next();
-
-  // Security headers
-  response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set('X-XSS-Protection', '1; mode=block');
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-  if (process.env.NODE_ENV === 'production') {
-    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  }
-
-  return response;
+  return withSecurityHeaders(NextResponse.next());
 }
 
 export const config = {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   prisma: {
@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => ({
     compare: vi.fn(),
   },
   rateLimit: {
-    checkRateLimit: vi.fn(),
+    checkRateLimitDb: vi.fn(),
   },
   lockout: {
     isAccountLocked: vi.fn(),
@@ -54,7 +54,7 @@ vi.mock('@/lib/tenant-config', () => mocks.tenantConfig);
 
 import { authorizeCredentials, signInOAuth } from '@/lib/auth-callbacks';
 
-// ── Shared test fixtures ──
+// â”€â”€ Shared test fixtures â”€â”€
 
 function makeUser(overrides: Record<string, unknown> = {}) {
   return {
@@ -79,10 +79,10 @@ function resetMocks() {
   // Default "happy path" values
   mocks.lockout.isAccountLocked.mockReturnValue({ locked: false, remainingMs: 0 });
   mocks.lockout.recordFailedLogin.mockReturnValue({ locked: false, attemptsRemaining: 4 });
-  mocks.rateLimit.checkRateLimit.mockReturnValue({ allowed: true });
+  mocks.rateLimit.checkRateLimitDb.mockResolvedValue({ allowed: true });
 }
 
-// ── authorizeCredentials ──
+// â”€â”€ authorizeCredentials â”€â”€
 
 describe('authorizeCredentials', () => {
   beforeEach(resetMocks);
@@ -103,7 +103,7 @@ describe('authorizeCredentials', () => {
   });
 
   it('returns null when rate limit is exceeded', async () => {
-    mocks.rateLimit.checkRateLimit.mockReturnValue({ allowed: false });
+    mocks.rateLimit.checkRateLimitDb.mockResolvedValue({ allowed: false });
     const result = await authorizeCredentials({ email: 'a@b.com', password: 'x' });
     expect(result).toBeNull();
     expect(mocks.logger.logRateLimited).toHaveBeenCalled();
@@ -189,7 +189,7 @@ describe('authorizeCredentials', () => {
   });
 });
 
-// ── signInOAuth ──
+// â”€â”€ signInOAuth â”€â”€
 
 describe('signInOAuth', () => {
   beforeEach(resetMocks);
