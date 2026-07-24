@@ -381,7 +381,6 @@ describe('Workflow State Machine - Cierre', () => {
     const cerrar = TRANSITIONS.find((t) => t.action === 'cerrar');
     expect(cerrar!.from).toContain('recibida_con_obs');
   });
-
 });
 
 describe('Workflow State Machine - Role Requirements', () => {
@@ -499,4 +498,3 @@ describe('Workflow State Machine - Edición', () => {
     }
   });
 });
-

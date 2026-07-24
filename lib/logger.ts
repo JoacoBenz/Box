@@ -1,4 +1,6 @@
 import * as Sentry from '@sentry/nextjs';
+import { after } from 'next/server';
+import pkg from '../package.json';
 
 type LogLevel = 'info' | 'warn' | 'error';
 
@@ -36,6 +38,44 @@ function formatError(error: unknown): unknown {
   return String(error);
 }
 
+// Deploy correlation: the release this app is running. Prefers APP_RELEASE,
+// then a CI git SHA, falling back to the package version.
+function appRelease(): string {
+  return (
+    process.env.APP_RELEASE ||
+    process.env.VERCEL_GIT_COMMIT_SHA ||
+    process.env.GIT_SHA ||
+    pkg.version
+  );
+}
+
+// Optional centralized monitoring: when MISSION_CONTROL_URL and
+// MISSION_CONTROL_API_KEY are set, warn/error entries are also shipped to the
+// Mission Control dashboard. Fire-and-forget: monitoring must never break the app.
+function deliver(entry: LogEntry): void {
+  const url = process.env.MISSION_CONTROL_URL;
+  const key = process.env.MISSION_CONTROL_API_KEY;
+  if (!url || !key) return;
+  void fetch(`${url.replace(/\/$/, '')}/api/ingest`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+    body: JSON.stringify({ ...entry, release: appRelease() }),
+    // keepalive lets the request outlive the response on most runtimes.
+    keepalive: true,
+  }).catch(() => undefined);
+}
+
+function ship(entry: LogEntry): void {
+  // after() defers delivery until the response is sent and keeps the instance
+  // alive until it completes. Outside a request scope (scripts, boot) it throws:
+  // send direct.
+  try {
+    after(() => deliver(entry));
+  } catch {
+    deliver(entry);
+  }
+}
+
 function log(entry: LogEntry): void {
   const output = JSON.stringify(entry);
   switch (entry.level) {
@@ -48,6 +88,8 @@ function log(entry: LogEntry): void {
     default:
       console.log(output);
   }
+  // Centralized monitoring also receives warn/error (Sentry stays as-is).
+  if (entry.level === 'error' || entry.level === 'warn') ship(entry);
 }
 
 function captureToSentry(error: unknown, entry: LogEntry): void {
